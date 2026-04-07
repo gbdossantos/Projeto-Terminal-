@@ -1,13 +1,25 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useState } from "react";
 import FormPasto from "@/components/lotes/FormPasto";
 import FormConfinamento from "@/components/lotes/FormConfinamento";
 import FormSemi from "@/components/lotes/FormSemi";
 import FormCria from "@/components/lotes/FormCria";
 import FormRecria from "@/components/lotes/FormRecria";
 
+const TABS = [
+  { id: "pasto", label: "Terminacao pasto" },
+  { id: "confinamento", label: "Confinamento" },
+  { id: "semi", label: "Semiconfinamento" },
+  { id: "cria", label: "Cria" },
+  { id: "recria", label: "Recria" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
 export default function LotesPage() {
+  const [tab, setTab] = useState<TabId>("pasto");
+
   return (
     <div className="space-y-6">
       <div>
@@ -17,21 +29,34 @@ export default function LotesPage() {
         </p>
       </div>
 
-      <Tabs defaultValue={0}>
-        <TabsList variant="line" className="mb-6">
-          <TabsTrigger value={0}>Terminacao pasto</TabsTrigger>
-          <TabsTrigger value={1}>Confinamento</TabsTrigger>
-          <TabsTrigger value={2}>Semiconfinamento</TabsTrigger>
-          <TabsTrigger value={3}>Cria</TabsTrigger>
-          <TabsTrigger value={4}>Recria</TabsTrigger>
-        </TabsList>
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
+              tab === t.id
+                ? "text-t-primary"
+                : "text-t-tertiary hover:text-t-secondary"
+            }`}
+          >
+            {t.label}
+            {tab === t.id && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra" />
+            )}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value={0}><FormPasto /></TabsContent>
-        <TabsContent value={1}><FormConfinamento /></TabsContent>
-        <TabsContent value={2}><FormSemi /></TabsContent>
-        <TabsContent value={3}><FormCria /></TabsContent>
-        <TabsContent value={4}><FormRecria /></TabsContent>
-      </Tabs>
+      {/* Tab content */}
+      <div>
+        {tab === "pasto" && <FormPasto />}
+        {tab === "confinamento" && <FormConfinamento />}
+        {tab === "semi" && <FormSemi />}
+        {tab === "cria" && <FormCria />}
+        {tab === "recria" && <FormRecria />}
+      </div>
     </div>
   );
 }

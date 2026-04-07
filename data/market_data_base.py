@@ -263,7 +263,7 @@ def _buscar_historico_arroba(dias: int = 180) -> list[dict]:
                             historico.append({"data": data_str, "valor": valor})
                     except ValueError:
                         continue
-        return historico[:dias]  # mais recente primeiro
+        return list(reversed(historico[:dias]))  # mais antigo primeiro (para grafico)
     except Exception as e:
         logger.warning("Historico CEPEA arroba falhou: %s", e)
     return []
@@ -298,7 +298,7 @@ def _buscar_historico_milho(dias: int = 180) -> list[dict]:
                             historico.append({"data": data_str, "valor": valor})
                     except ValueError:
                         continue
-        return historico[:dias]
+        return list(reversed(historico[:dias]))  # mais antigo primeiro (para grafico)
     except Exception as e:
         logger.warning("Historico CEPEA milho falhou: %s", e)
     return []
