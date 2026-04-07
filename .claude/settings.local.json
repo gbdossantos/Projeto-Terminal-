@@ -15,7 +15,17 @@
       "Bash(npx --yes shadcn@latest init -d)",
       "Bash(npx shadcn@latest add card badge separator tabs sheet scroll-area select slider tooltip -y)",
       "Bash(npx next:*)",
-      "Bash(node -e \"console.log\\(''\\\\u2014''\\)\")"
+      "Bash(node -e \"console.log\\(''\\\\u2014''\\)\")",
+      "WebSearch",
+      "WebFetch(domain:br.tradingview.com)",
+      "WebFetch(domain:www.investing.com)",
+      "WebFetch(domain:br.advfn.com)",
+      "WebFetch(domain:brapi.dev)",
+      "WebFetch(domain:www.b3.com.br)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.cmegroup.com)",
+      "WebFetch(domain:www.scotconsultoria.com.br)",
+      "WebFetch(domain:investorshub.advfn.com)"
     ]
   }
 }

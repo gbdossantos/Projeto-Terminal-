@@ -326,10 +326,113 @@ def _parsear_vencimento_bgi(codigo: str) -> date | None:
     return None
 
 
+_MESES_PT = {
+    "jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6,
+    "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12,
+}
+
+# Mapa mês → letra BGI
+_MES_PARA_LETRA = {
+    1: "F", 2: "G", 3: "H", 4: "J", 5: "K", 6: "M",
+    7: "N", 8: "Q", 9: "U", 10: "V", 11: "X", 12: "Z",
+}
+
+
+def _buscar_futuros_scot() -> Optional[CurvaFuturos]:
+    """Busca futuros BGI via Scot Consultoria (fonte primária, cloud-friendly)."""
+    if BeautifulSoup is None:
+        return None
+
+    try:
+        url = "https://www.scotconsultoria.com.br/cotacoes/mercado-futuro/"
+        resp = requests.get(url, headers=_HEADERS, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        contratos = []
+        for row in soup.find_all("tr"):
+            cells = row.find_all("td")
+            if len(cells) < 2:
+                continue
+
+            venc_text = cells[0].get_text(strip=True).lower()
+            # Formato: "Abr/26", "Mai/26", etc.
+            if "/" not in venc_text:
+                continue
+
+            parts = venc_text.split("/")
+            if len(parts) != 2:
+                continue
+
+            mes_str = parts[0].strip()[:3]
+            ano_str = parts[1].strip()
+
+            if mes_str not in _MESES_PT:
+                continue
+
+            try:
+                mes = _MESES_PT[mes_str]
+                ano = int(ano_str)
+                if ano < 100:
+                    ano += 2000
+            except ValueError:
+                continue
+
+            # Preço de ajuste — segunda coluna
+            preco_str = cells[1].get_text(strip=True).replace(".", "").replace(",", ".")
+            try:
+                preco = float(preco_str)
+            except ValueError:
+                continue
+            if not (200 < preco < 600):
+                continue
+
+            # Vencimento: último dia do mês
+            if mes == 12:
+                venc_date = date(ano + 1, 1, 1) - timedelta(days=1)
+            else:
+                venc_date = date(ano, mes + 1, 1) - timedelta(days=1)
+
+            letra = _MES_PARA_LETRA[mes]
+            codigo = f"BGI{letra}{ano % 100:02d}"
+
+            # Volume (contratos abertos) — pode estar em outra coluna
+            volume = 0
+            if len(cells) >= 4:
+                vol_str = cells[3].get_text(strip=True).replace(".", "").replace(",", ".")
+                try:
+                    volume = int(float(vol_str))
+                except ValueError:
+                    pass
+
+            contratos.append(ContratoFuturo(
+                codigo=codigo,
+                vencimento=venc_date,
+                preco_ajuste=preco,
+                volume=volume,
+            ))
+
+        if contratos:
+            logger.info("Scot Consultoria: %d contratos BGI carregados", len(contratos))
+            return CurvaFuturos(
+                contratos=tuple(sorted(contratos, key=lambda c: c.vencimento)),
+                fonte="scot_consultoria",
+            )
+    except Exception as e:
+        logger.warning("Scot Consultoria futuros BGI falhou: %s", e)
+
+    return None
+
+
 def _buscar_futuros_bgi() -> Optional[CurvaFuturos]:
     if BeautifulSoup is None:
         logger.warning("bs4 não instalado — scraping de futuros indisponível")
         return None
+
+    # Fonte 0: Scot Consultoria (primária, cloud-friendly)
+    result = _buscar_futuros_scot()
+    if result:
+        return result
 
     # Fonte 1: Notícias Agrícolas
     try:
