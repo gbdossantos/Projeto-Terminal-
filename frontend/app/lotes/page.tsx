@@ -174,7 +174,7 @@ export default function LotesPage() {
                 ? "Margem apertada"
                 : "Margem saudavel"
             }
-            detalhe={`Margem de ${fmtPct(r.margem_percentual)} \u2014 spread de ${fmtBRL(form.preco_venda - r.break_even_price)}/@ sobre o break-even`}
+            detalhe={`Margem de ${fmtPct(r.margem_percentual)} — spread de ${fmtBRL(form.preco_venda - r.break_even_price)}/@ sobre o break-even`}
           />
 
           {/* Cotacoes */}

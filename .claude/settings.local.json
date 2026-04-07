@@ -14,7 +14,8 @@
       "Bash(npm install:*)",
       "Bash(npx --yes shadcn@latest init -d)",
       "Bash(npx shadcn@latest add card badge separator tabs sheet scroll-area select slider tooltip -y)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(node -e \"console.log\\(''\\\\u2014''\\)\")"
     ]
   }
 }

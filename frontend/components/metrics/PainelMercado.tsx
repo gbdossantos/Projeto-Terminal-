@@ -19,25 +19,25 @@ export function PainelMercado({ cotacoes, breakEven }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricCard
           label="Arroba CEPEA/SP"
-          value={cotacoes.arroba_boi_gordo?.toFixed(2) ?? "\u2014"}
+          value={cotacoes.arroba_boi_gordo?.toFixed(2) ?? "—"}
           unit="/@"
           delta={breakEven ? `BE: R$ ${breakEven.toFixed(0)}/@` : undefined}
           compact
         />
         <MetricCard
           label="Dolar PTAX"
-          value={cotacoes.dolar_ptax?.toFixed(2) ?? "\u2014"}
+          value={cotacoes.dolar_ptax?.toFixed(2) ?? "—"}
           compact
         />
         <MetricCard
           label="Milho ESALQ"
-          value={cotacoes.milho_esalq?.toFixed(2) ?? "\u2014"}
+          value={cotacoes.milho_esalq?.toFixed(2) ?? "—"}
           unit="/sc"
           compact
         />
         <MetricCard
           label="CDI"
-          value={cotacoes.cdi_anual ? `${(cotacoes.cdi_anual * 100).toFixed(2)}%` : "\u2014"}
+          value={cotacoes.cdi_anual ? `${(cotacoes.cdi_anual * 100).toFixed(2)}%` : "—"}
           unit="a.a."
           compact
         />

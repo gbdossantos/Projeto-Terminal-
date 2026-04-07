@@ -89,9 +89,9 @@ export default function HomePage() {
         <h2 className="text-sm font-medium text-t-secondary mb-3">Resumo da operacao</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MetricCard label="Lotes ativos" value="1" />
-          <MetricCard label="Exposicao total" value="\u2014" unit="@" />
-          <MetricCard label="Margem media" value="\u2014" />
-          <MetricCard label="Proxima venda" value="\u2014" />
+          <MetricCard label="Exposicao total" value="—" unit="@" />
+          <MetricCard label="Margem media" value="—" />
+          <MetricCard label="Proxima venda" value="—" />
         </div>
         <p className="text-[11px] text-t-tertiary mt-3">
           Calcule seu primeiro lote para ver o resumo aqui
