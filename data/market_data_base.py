@@ -230,6 +230,81 @@ def _buscar_historico_dolar(dias: int = 30) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Historico CEPEA — Boi Gordo (scraping da pagina de indicador)
+# ---------------------------------------------------------------------------
+
+def _buscar_historico_arroba(dias: int = 180) -> list[dict]:
+    """Busca historico do indicador CEPEA boi gordo via scraping da pagina de series."""
+    if BeautifulSoup is None:
+        return []
+
+    try:
+        # Tenta pegar a tabela de historico da pagina do CEPEA
+        url = "https://cepea.org.br/br/indicador/boi-gordo.aspx"
+        resp = requests.get(url, headers=_HEADERS, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        tabela = soup.find("table", {"id": "imagenet-indicador1"})
+        if not tabela:
+            return []
+
+        historico = []
+        tbody = tabela.find("tbody")
+        if tbody:
+            for row in tbody.find_all("tr"):
+                cells = row.find_all("td")
+                if len(cells) >= 2:
+                    data_str = cells[0].get_text(strip=True)
+                    valor_str = cells[1].get_text(strip=True).replace(".", "").replace(",", ".")
+                    try:
+                        valor = float(valor_str)
+                        if 100 < valor < 1000:
+                            historico.append({"data": data_str, "valor": valor})
+                    except ValueError:
+                        continue
+        return historico[:dias]  # mais recente primeiro
+    except Exception as e:
+        logger.warning("Historico CEPEA arroba falhou: %s", e)
+    return []
+
+
+def _buscar_historico_milho(dias: int = 180) -> list[dict]:
+    """Busca historico do indicador CEPEA milho via scraping."""
+    if BeautifulSoup is None:
+        return []
+
+    try:
+        url = "https://cepea.org.br/br/indicador/milho.aspx"
+        resp = requests.get(url, headers=_HEADERS, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        tabela = soup.find("table", {"id": "imagenet-indicador1"})
+        if not tabela:
+            return []
+
+        historico = []
+        tbody = tabela.find("tbody")
+        if tbody:
+            for row in tbody.find_all("tr"):
+                cells = row.find_all("td")
+                if len(cells) >= 2:
+                    data_str = cells[0].get_text(strip=True)
+                    valor_str = cells[1].get_text(strip=True).replace(".", "").replace(",", ".")
+                    try:
+                        valor = float(valor_str)
+                        if 20 < valor < 300:
+                            historico.append({"data": data_str, "valor": valor})
+                    except ValueError:
+                        continue
+        return historico[:dias]
+    except Exception as e:
+        logger.warning("Historico CEPEA milho falhou: %s", e)
+    return []
+
+
+# ---------------------------------------------------------------------------
 # Futuros B3 — Boi Gordo (BGI)
 # ---------------------------------------------------------------------------
 

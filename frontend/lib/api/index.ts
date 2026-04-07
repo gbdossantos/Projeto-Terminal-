@@ -23,6 +23,18 @@ export async function fetchHistoricoDolar(dias = 30): Promise<HistoricoDolarEntr
   return res.json();
 }
 
+export async function fetchHistoricoArroba(): Promise<HistoricoDolarEntry[]> {
+  const res = await fetch(`${BASE}/historico-arroba`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchHistoricoMilho(): Promise<HistoricoDolarEntry[]> {
+  const res = await fetch(`${BASE}/historico-milho`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
 export async function fetchCotacoes(): Promise<CotacaoMercado> {
   const res = await fetch(`${BASE}/cotacoes`);
   if (!res.ok) throw new Error(`Cotacoes: ${res.status}`);

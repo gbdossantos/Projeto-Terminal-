@@ -17,30 +17,20 @@ export default function LotesPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="pasto">
+      <Tabs defaultValue={0}>
         <TabsList variant="line" className="mb-6">
-          <TabsTrigger value="pasto">Terminacao pasto</TabsTrigger>
-          <TabsTrigger value="confinamento">Confinamento</TabsTrigger>
-          <TabsTrigger value="semi">Semiconfinamento</TabsTrigger>
-          <TabsTrigger value="cria">Cria</TabsTrigger>
-          <TabsTrigger value="recria">Recria</TabsTrigger>
+          <TabsTrigger value={0}>Terminacao pasto</TabsTrigger>
+          <TabsTrigger value={1}>Confinamento</TabsTrigger>
+          <TabsTrigger value={2}>Semiconfinamento</TabsTrigger>
+          <TabsTrigger value={3}>Cria</TabsTrigger>
+          <TabsTrigger value={4}>Recria</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pasto">
-          <FormPasto />
-        </TabsContent>
-        <TabsContent value="confinamento">
-          <FormConfinamento />
-        </TabsContent>
-        <TabsContent value="semi">
-          <FormSemi />
-        </TabsContent>
-        <TabsContent value="cria">
-          <FormCria />
-        </TabsContent>
-        <TabsContent value="recria">
-          <FormRecria />
-        </TabsContent>
+        <TabsContent value={0}><FormPasto /></TabsContent>
+        <TabsContent value={1}><FormConfinamento /></TabsContent>
+        <TabsContent value={2}><FormSemi /></TabsContent>
+        <TabsContent value={3}><FormCria /></TabsContent>
+        <TabsContent value={4}><FormRecria /></TabsContent>
       </Tabs>
     </div>
   );
