@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Layers,
   TrendingUp,
-  ShieldAlert,
   Clock,
   Settings,
 } from "lucide-react";
@@ -14,13 +13,8 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const nav = [
   { href: "/", label: "Visao geral", icon: LayoutDashboard },
-  { href: "/lotes", label: "Terminacao pasto", icon: Layers },
-  { href: "/confinamento", label: "Confinamento", icon: Layers },
-  { href: "/semiconfinamento", label: "Semiconfinamento", icon: Layers },
-  { href: "/cria", label: "Cria", icon: Layers },
-  { href: "/recria", label: "Recria", icon: Layers },
+  { href: "/lotes", label: "Lotes", icon: Layers },
   { href: "/mercado", label: "Mercado", icon: TrendingUp },
-  { href: "/impacto", label: "Impacto & cenarios", icon: ShieldAlert },
   { href: "/historico", label: "Historico", icon: Clock },
   { href: "/configuracoes", label: "Configuracoes", icon: Settings },
 ];

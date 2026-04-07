@@ -5,9 +5,23 @@ import type {
   CriaRequest, CriaResponse,
   RecriaRequest, RecriaResponse,
   CotacaoMercado,
+  CurvaFuturos,
+  HistoricoDolarEntry,
 } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+
+export async function fetchFuturos(): Promise<CurvaFuturos> {
+  const res = await fetch(`${BASE}/futuros`);
+  if (!res.ok) throw new Error(`Futuros: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistoricoDolar(dias = 30): Promise<HistoricoDolarEntry[]> {
+  const res = await fetch(`${BASE}/historico-dolar?dias=${dias}`);
+  if (!res.ok) throw new Error(`Historico dolar: ${res.status}`);
+  return res.json();
+}
 
 export async function fetchCotacoes(): Promise<CotacaoMercado> {
   const res = await fetch(`${BASE}/cotacoes`);

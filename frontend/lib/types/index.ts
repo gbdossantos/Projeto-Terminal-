@@ -1,5 +1,23 @@
 // Terminal API types — mirrors Python Pydantic schemas
 
+export interface ContratoFuturo {
+  codigo: string;
+  vencimento: string;
+  preco_ajuste: number;
+  volume: number;
+}
+
+export interface CurvaFuturos {
+  contratos: ContratoFuturo[];
+  timestamp: string | null;
+  fonte: string;
+}
+
+export interface HistoricoDolarEntry {
+  data: string;
+  valor: number;
+}
+
 export interface CotacaoMercado {
   arroba_boi_gordo: number | null;
   dolar_ptax: number | null;
