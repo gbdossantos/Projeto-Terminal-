@@ -1,0 +1,139 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { ConfinamentoRequest, ConfinamentoResponse } from "@/lib/types";
+import { calcularConfinamento, fetchCotacoes } from "@/lib/api";
+import { fmtBRL, fmtPct } from "@/lib/utils/format";
+import { MetricCard } from "@/components/metrics/MetricCard";
+import { PainelMercado } from "@/components/metrics/PainelMercado";
+import { Semaforo } from "@/components/decision/Semaforo";
+import { TabelaCenarios } from "@/components/decision/TabelaCenarios";
+import { PerguntaInvertida } from "@/components/decision/PerguntaInvertida";
+import { PainelHedge } from "@/components/decision/PainelHedge";
+
+const DEFAULTS: ConfinamentoRequest = {
+  num_animais: 500,
+  peso_entrada_kg: 380,
+  peso_saida_estimado_kg: 510,
+  dias_ciclo: 100,
+  custo_reposicao_total: 1050000,
+  consumo_ms_pct_pv: 0.024,
+  custo_dieta_kg_ms: 0.68,
+  custo_sanidade_dia: 0.9,
+  custo_mao_obra_dia: 1.5,
+  custo_instalacoes_dia: 0.8,
+  preco_venda: 315,
+  rendimento_carcaca: 0.54,
+  custo_frete_entrada: 18000,
+  custo_frete_saida: 20000,
+  custo_mortalidade_estimada: 8400,
+};
+
+function Field({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (v: number) => void; step?: number }) {
+  return (
+    <div>
+      <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">{label}</label>
+      <input type="number" value={value} step={step} onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra transition-colors" />
+    </div>
+  );
+}
+
+export default function ConfinamentoPage() {
+  const [form, setForm] = useState(DEFAULTS);
+  const [data, setData] = useState<ConfinamentoResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => { fetchCotacoes().then((c) => { if (c.arroba_boi_gordo) setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! })); }).catch(() => {}); }, []);
+
+  const calculate = useCallback(async (req: ConfinamentoRequest) => {
+    setLoading(true); setError(null);
+    try { setData(await calcularConfinamento(req)); } catch (e: unknown) { setError(e instanceof Error ? e.message : "Erro"); } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { if (debounceRef.current) clearTimeout(debounceRef.current); debounceRef.current = setTimeout(() => calculate(form), 400); return () => clearTimeout(debounceRef.current); }, [form, calculate]);
+
+  const set = (key: keyof ConfinamentoRequest, value: number) => setForm((f) => ({ ...f, [key]: value }));
+  const r = data?.resultado;
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-display text-3xl font-semibold text-t-primary">Confinamento</h1>
+        <p className="text-sm text-t-secondary mt-1">Indicador central: custo por arroba · participacao da dieta</p>
+      </div>
+
+      <div className="border border-border rounded-lg bg-card p-5 space-y-5">
+        <p className="text-xs font-medium text-t-secondary uppercase tracking-wider">Dados do lote</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Animais" value={form.num_animais} onChange={(v) => set("num_animais", v)} />
+          <Field label="Peso entrada (kg)" value={form.peso_entrada_kg} onChange={(v) => set("peso_entrada_kg", v)} />
+          <Field label="Peso saida (kg)" value={form.peso_saida_estimado_kg} onChange={(v) => set("peso_saida_estimado_kg", v)} />
+          <Field label="Dias de ciclo" value={form.dias_ciclo} onChange={(v) => set("dias_ciclo", v)} />
+          <Field label="Rendimento carcaca (%)" value={(form.rendimento_carcaca ?? 0.54) * 100} onChange={(v) => set("rendimento_carcaca", v / 100)} />
+          <Field label="Reposicao total (R$)" value={form.custo_reposicao_total} onChange={(v) => set("custo_reposicao_total", v)} step={10000} />
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Dieta</p>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Consumo MS (% peso vivo)" value={form.consumo_ms_pct_pv * 100} onChange={(v) => set("consumo_ms_pct_pv", v / 100)} step={0.1} />
+            <Field label="Custo dieta (R$/kg MS)" value={form.custo_dieta_kg_ms} onChange={(v) => set("custo_dieta_kg_ms", v)} step={0.01} />
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Outros custos (R$/cab/dia)</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
+            <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
+            <Field label="Instalacoes" value={form.custo_instalacoes_dia} onChange={(v) => set("custo_instalacoes_dia", v)} step={0.1} />
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Field label="Frete entrada (R$)" value={form.custo_frete_entrada ?? 0} onChange={(v) => set("custo_frete_entrada", v)} step={500} />
+            <Field label="Frete saida (R$)" value={form.custo_frete_saida ?? 0} onChange={(v) => set("custo_frete_saida", v)} step={500} />
+            <Field label="Cotacao arroba (R$/@)" value={form.preco_venda} onChange={(v) => set("preco_venda", v)} />
+          </div>
+        </div>
+      </div>
+
+      {error && <div className="bg-danger-bg border border-danger/30 rounded-lg px-5 py-3 text-sm text-danger">{error}</div>}
+      {loading && !data && <div className="text-center py-12 text-t-tertiary text-sm">Calculando...</div>}
+
+      {r && data && (
+        <>
+          <Semaforo
+            status={form.preco_venda < r.break_even_price ? "vermelho" : r.margem_percentual < 0.08 ? "amarelo" : "verde"}
+            titulo={form.preco_venda < r.break_even_price ? "Abaixo do break-even" : r.margem_percentual < 0.08 ? "Margem apertada" : "Margem saudavel"}
+            detalhe={`Margem de ${fmtPct(r.margem_percentual)} — spread de ${fmtBRL(form.preco_venda - r.break_even_price)}/@ sobre o break-even`}
+          />
+          <PainelMercado cotacoes={data.cotacoes} breakEven={r.break_even_price} />
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MetricCard label="Custo por arroba" value={r.custo_por_arroba.toFixed(2)} unit="/@" />
+            <MetricCard label="Break-even" value={r.break_even_price.toFixed(2)} unit="/@" delta={`spread R$ ${(form.preco_venda - r.break_even_price).toFixed(0)}`} deltaType={form.preco_venda > r.break_even_price ? "positive" : "negative"} />
+            <MetricCard label="Margem bruta" value={fmtBRL(r.margem_bruta)} delta={fmtPct(r.margem_percentual)} deltaType={r.margem_percentual > 0.08 ? "positive" : "negative"} />
+            <MetricCard label="ROI anualizado" value={fmtPct(r.roi_anualizado)} />
+          </div>
+          <MetricCard label="Participacao da dieta" value={fmtPct(r.participacao_dieta_pct)} compact />
+
+          <div className="space-y-4">
+            <h2 className="text-sm font-medium text-t-primary">Painel de impacto economico</h2>
+            <TabelaCenarios cenarios={data.impacto.cenarios} />
+            <PerguntaInvertida texto={data.impacto.pergunta_invertida} tipo={data.impacto.cenarios.some((c) => c.semaforo === "vermelho") ? "alerta" : "ok"} />
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-sm font-medium text-t-primary">Protecao com futuros B3</h2>
+            <PainelHedge hedge={data.hedge} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

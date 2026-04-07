@@ -340,3 +340,223 @@ class TerminacaoPastoResponse(BaseModel):
     impacto: EconomicImpactReportSchema
     hedge: Optional[HedgeResultSchema] = None
     cotacoes: CotacaoMercadoSchema
+
+
+# ---------------------------------------------------------------------------
+# Request — Confinamento
+# ---------------------------------------------------------------------------
+
+class ConfinamentoRequest(BaseModel):
+    num_animais: int = Field(..., gt=0, le=10000)
+    peso_entrada_kg: float = Field(..., gt=0, le=600)
+    custo_reposicao_total: float = Field(..., ge=0)
+    dias_ciclo: int = Field(..., gt=0, le=365)
+    peso_saida_estimado_kg: float = Field(..., gt=0, le=700)
+    consumo_ms_pct_pv: float = Field(..., gt=0, le=0.10)
+    custo_dieta_kg_ms: float = Field(..., ge=0)
+    custo_sanidade_dia: float = Field(..., ge=0)
+    custo_mao_obra_dia: float = Field(..., ge=0)
+    custo_instalacoes_dia: float = Field(..., ge=0)
+    preco_venda: float = Field(..., gt=0, le=600)
+    rendimento_carcaca: float = 0.54
+    outros_custos_dia: float = 0.0
+    custo_frete_entrada: float = 0.0
+    custo_frete_saida: float = 0.0
+    custo_mortalidade_estimada: float = 0.0
+    regiao: str = "MS"
+    basis_estimado: float = -5.0
+    margem_garantia_pct: float = 0.05
+
+
+class ResultConfinamentoSchema(BaseModel):
+    nome: str
+    num_animais: int
+    dias_ciclo: int
+    arrobas_totais: float
+    gmd_estimado: float
+    custo_reposicao: float
+    custo_dieta_total: float
+    custo_dieta_por_arroba: float
+    custo_outros_operacional: float
+    custo_fixo: float
+    custo_oportunidade: float
+    custo_total: float
+    participacao_dieta_pct: float
+    custo_por_arroba: float
+    custo_por_cabeca: float
+    break_even_price: float
+    capital_empregado: float
+    receita_estimada: float
+    margem_bruta: float
+    margem_percentual: float
+    roi_ciclo: float
+    roi_anualizado: float
+    exposicao_preco: float
+    impacto_queda_10pct: float
+    impacto_queda_20pct: float
+    margem_apertada: bool
+    roi_abaixo_cdi: bool
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class ConfinamentoResponse(BaseModel):
+    resultado: ResultConfinamentoSchema
+    exposicao: LotExposureSchema
+    impacto: EconomicImpactReportSchema
+    hedge: Optional[HedgeResultSchema] = None
+    cotacoes: CotacaoMercadoSchema
+
+
+# ---------------------------------------------------------------------------
+# Request — Semiconfinamento
+# ---------------------------------------------------------------------------
+
+class SemiconfinamentoRequest(BaseModel):
+    num_animais: int = Field(..., gt=0, le=10000)
+    peso_entrada_kg: float = Field(..., gt=0, le=600)
+    custo_reposicao_total: float = Field(..., ge=0)
+    dias_ciclo: int = Field(..., gt=0, le=365)
+    peso_saida_estimado_kg: float = Field(..., gt=0, le=700)
+    custo_arrendamento_dia: float = Field(..., ge=0)
+    custo_manutencao_pasto_dia: float = Field(..., ge=0)
+    consumo_suplemento_kg_dia: float = Field(..., ge=0)
+    custo_suplemento_kg: float = Field(..., ge=0)
+    custo_sanidade_dia: float = Field(..., ge=0)
+    custo_mao_obra_dia: float = Field(..., ge=0)
+    preco_venda: float = Field(..., gt=0, le=600)
+    rendimento_carcaca: float = 0.53
+    outros_custos_dia: float = 0.0
+    custo_frete_entrada: float = 0.0
+    custo_frete_saida: float = 0.0
+    custo_mortalidade_estimada: float = 0.0
+    regiao: str = "MS"
+    basis_estimado: float = -5.0
+    margem_garantia_pct: float = 0.05
+
+
+class ResultSemiconfinamentoSchema(BaseModel):
+    nome: str
+    num_animais: int
+    dias_ciclo: int
+    arrobas_totais: float
+    gmd_estimado: float
+    custo_reposicao: float
+    custo_pastagem: float
+    custo_suplementacao: float
+    custo_suplementacao_por_arroba: float
+    custo_outros: float
+    custo_oportunidade: float
+    custo_total: float
+    custo_por_arroba: float
+    break_even_price: float
+    capital_empregado: float
+    receita_estimada: float
+    margem_bruta: float
+    margem_percentual: float
+    roi_ciclo: float
+    roi_anualizado: float
+    exposicao_preco: float
+    impacto_queda_10pct: float
+    impacto_queda_20pct: float
+    margem_apertada: bool
+    roi_abaixo_cdi: bool
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class SemiconfinamentoResponse(BaseModel):
+    resultado: ResultSemiconfinamentoSchema
+    exposicao: LotExposureSchema
+    impacto: EconomicImpactReportSchema
+    hedge: Optional[HedgeResultSchema] = None
+    cotacoes: CotacaoMercadoSchema
+
+
+# ---------------------------------------------------------------------------
+# Request — Cria
+# ---------------------------------------------------------------------------
+
+class CriaRequest(BaseModel):
+    num_matrizes: int = Field(..., gt=0, le=10000)
+    taxa_natalidade: float = Field(..., gt=0, le=1.0)
+    taxa_desmama: float = Field(..., gt=0, le=1.0)
+    peso_desmama_kg: float = Field(..., gt=0, le=300)
+    custo_nutricao_ua_ano: float = Field(..., ge=0)
+    custo_sanidade_ua_ano: float = Field(..., ge=0)
+    custo_reproducao_ua_ano: float = Field(..., ge=0)
+    custo_mao_obra_ua_ano: float = Field(..., ge=0)
+    custo_arrendamento_ua_ano: float = Field(..., ge=0)
+    valor_matriz: float = Field(..., ge=0)
+    outros_custos_ua_ano: float = 0.0
+
+
+class ResultCriaSchema(BaseModel):
+    nome: str
+    num_matrizes: int
+    bezerros_desmamados: int
+    taxa_natalidade: float
+    taxa_desmama: float
+    peso_desmama_kg: float
+    kg_produzido_por_matriz: float
+    custo_operacional_ano: float
+    custo_oportunidade: float
+    custo_total_ano: float
+    custo_por_matriz_ano: float
+    custo_por_bezerro_produzido: float
+    capital_rebanho: float
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class CriaResponse(BaseModel):
+    resultado: ResultCriaSchema
+    cotacoes: CotacaoMercadoSchema
+
+
+# ---------------------------------------------------------------------------
+# Request — Recria
+# ---------------------------------------------------------------------------
+
+class RecriaRequest(BaseModel):
+    num_animais: int = Field(..., gt=0, le=10000)
+    peso_entrada_kg: float = Field(..., gt=0, le=400)
+    custo_aquisicao_total: float = Field(..., ge=0)
+    dias_ciclo: int = Field(..., gt=0, le=400)
+    peso_saida_estimado_kg: float = Field(..., gt=0, le=500)
+    custo_nutricao_dia: float = Field(..., ge=0)
+    custo_sanidade_dia: float = Field(..., ge=0)
+    custo_mao_obra_dia: float = Field(..., ge=0)
+    custo_arrendamento_dia: float = Field(..., ge=0)
+    outros_custos_dia: float = 0.0
+    custo_frete_entrada: float = 0.0
+    custo_frete_saida: float = 0.0
+
+
+class ResultRecriaSchema(BaseModel):
+    nome: str
+    num_animais: int
+    dias_ciclo: int
+    gmd_estimado: float
+    kg_ganho_total: float
+    custo_operacional: float
+    custo_oportunidade: float
+    custo_total: float
+    custo_por_cabeca: float
+    custo_por_kg_ganho: float
+    capital_empregado: float
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class RecriaResponse(BaseModel):
+    resultado: ResultRecriaSchema
+    cotacoes: CotacaoMercadoSchema
