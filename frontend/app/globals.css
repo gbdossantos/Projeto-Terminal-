@@ -1,0 +1,147 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Inter + JetBrains Mono via next/font handled in layout.tsx ── */
+
+@layer base {
+  /* ── Light mode — Terra Premium ── */
+  :root {
+    --background: #FAF8F3;
+    --foreground: #1A1814;
+    --card: #FFFFFF;
+    --card-foreground: #1A1814;
+    --popover: #FFFFFF;
+    --popover-foreground: #1A1814;
+    --primary: #B8763E;
+    --primary-foreground: #FAF8F3;
+    --secondary: #F2EEE5;
+    --secondary-foreground: #1A1814;
+    --muted: #F2EEE5;
+    --muted-foreground: #6B6359;
+    --accent: #F2EEE5;
+    --accent-foreground: #1A1814;
+    --destructive: #B54134;
+    --border: #E8E2D4;
+    --input: #E8E2D4;
+    --ring: #B8763E;
+    --radius: 0.5rem;
+
+    /* Terminal semantic */
+    --success: #5C8A3A;
+    --success-bg: rgba(92, 138, 58, 0.12);
+    --warning: #C89B3C;
+    --warning-bg: rgba(200, 155, 60, 0.12);
+    --danger: #B54134;
+    --danger-bg: rgba(181, 65, 52, 0.12);
+
+    /* Terminal brand */
+    --terra: #B8763E;
+    --terra-bg: rgba(184, 118, 62, 0.08);
+    --pasto: #4A5D3A;
+    --couro: #8B4513;
+
+    /* Text levels */
+    --text-primary: #1A1814;
+    --text-secondary: #6B6359;
+    --text-tertiary: #9B9388;
+
+    /* Sidebar */
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #1A1814;
+    --sidebar-primary: #B8763E;
+    --sidebar-primary-foreground: #FAF8F3;
+    --sidebar-accent: #F2EEE5;
+    --sidebar-accent-foreground: #1A1814;
+    --sidebar-border: #E8E2D4;
+    --sidebar-ring: #B8763E;
+
+    /* Charts */
+    --chart-1: #B8763E;
+    --chart-2: #4A5D3A;
+    --chart-3: #C89B3C;
+    --chart-4: #8B4513;
+    --chart-5: #5C8A3A;
+  }
+
+  /* ── Dark mode — Terra Premium ── */
+  .dark {
+    --background: #0F0E0B;
+    --foreground: #F5F1E8;
+    --card: #1A1814;
+    --card-foreground: #F5F1E8;
+    --popover: #1A1814;
+    --popover-foreground: #F5F1E8;
+    --primary: #B8763E;
+    --primary-foreground: #F5F1E8;
+    --secondary: #252320;
+    --secondary-foreground: #F5F1E8;
+    --muted: #252320;
+    --muted-foreground: #A39B8C;
+    --accent: #252320;
+    --accent-foreground: #F5F1E8;
+    --destructive: #B54134;
+    --border: #2E2A24;
+    --input: #2E2A24;
+    --ring: #B8763E;
+
+    /* Terminal semantic */
+    --success: #5C8A3A;
+    --success-bg: rgba(92, 138, 58, 0.18);
+    --warning: #C89B3C;
+    --warning-bg: rgba(200, 155, 60, 0.18);
+    --danger: #B54134;
+    --danger-bg: rgba(181, 65, 52, 0.18);
+
+    /* Terminal brand */
+    --terra: #B8763E;
+    --terra-bg: rgba(184, 118, 62, 0.12);
+    --pasto: #6B8F54;
+    --couro: #A0642A;
+
+    /* Text levels */
+    --text-primary: #F5F1E8;
+    --text-secondary: #A39B8C;
+    --text-tertiary: #6B6359;
+
+    /* Sidebar */
+    --sidebar: #1A1814;
+    --sidebar-foreground: #F5F1E8;
+    --sidebar-primary: #B8763E;
+    --sidebar-primary-foreground: #F5F1E8;
+    --sidebar-accent: #252320;
+    --sidebar-accent-foreground: #F5F1E8;
+    --sidebar-border: #2E2A24;
+    --sidebar-ring: #B8763E;
+
+    /* Charts */
+    --chart-1: #C89B3C;
+    --chart-2: #6B8F54;
+    --chart-3: #B8763E;
+    --chart-4: #A0642A;
+    --chart-5: #5C8A3A;
+  }
+
+  * {
+    @apply border-border;
+    outline-color: var(--ring);
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ── Utility classes ── */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .font-mono-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
