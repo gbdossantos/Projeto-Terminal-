@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m py_compile models/*.py data/*.py)",
+      "Bash(python3 -c \"from models.cost_model_v2 import FarmEconomicsV2; from models.production_systems import InputCria; from datetime import date; e = FarmEconomicsV2\\(\\); r = e.calcular_cria\\(InputCria\\(nome=''test'', data_referencia=date.today\\(\\), num_matrizes=1, taxa_natalidade=0.8, taxa_desmama=0.9, peso_desmama_kg=200, custo_nutricao_ua_ano=100, custo_sanidade_ua_ano=50, custo_reproducao_ua_ano=30, custo_mao_obra_ua_ano=40, custo_arrendamento_ua_ano=60, valor_matriz=5000\\)\\); print\\(''OK''\\)\")",
+      "Bash(python3:*)",
+      "Bash(python test_all_systems.py)",
+      "Bash(rm -rf frontend)",
+      "Bash(mkdir -p frontend)",
+      "Bash(npx create-next-app@14 . --typescript --tailwind --eslint --app --src-dir --no-import-alias --use-npm)",
+      "Bash(export PATH=\"/opt/homebrew/bin:$PATH\")",
+      "Bash(npm --version)",
+      "Bash(npx --yes create-next-app@14 . --typescript --tailwind --eslint --app --no-src-dir --no-import-alias --use-npm)",
+      "Bash(npm install:*)",
+      "Bash(npx --yes shadcn@latest init -d)",
+      "Bash(npx shadcn@latest add card badge separator tabs sheet scroll-area select slider tooltip -y)",
+      "Bash(npx next:*)"
+    ]
+  }
+}
