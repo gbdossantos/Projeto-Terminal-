@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Layers,
   TrendingUp,
   FlaskConical,
   Clock,
-  Settings,
+  User,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { getProfile } from "@/lib/profile";
 
 const nav = [
   { href: "/", label: "Visao geral", icon: LayoutDashboard },
@@ -18,11 +20,17 @@ const nav = [
   { href: "/simulador", label: "Simulador", icon: FlaskConical },
   { href: "/mercado", label: "Mercado", icon: TrendingUp },
   { href: "/historico", label: "Historico", icon: Clock },
-  { href: "/configuracoes", label: "Configuracoes", icon: Settings },
+  { href: "/configuracoes", label: "Perfil", icon: User },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [farmName, setFarmName] = useState("");
+
+  useEffect(() => {
+    const p = getProfile();
+    if (p.nome_fazenda) setFarmName(p.nome_fazenda);
+  }, [pathname]); // re-read on navigation (catches saves)
 
   return (
     <aside className="hidden md:flex md:flex-col w-60 min-h-screen border-r border-border bg-card px-4 py-6 justify-between">
@@ -34,7 +42,9 @@ export function Sidebar() {
           </div>
           <div>
             <p className="text-sm font-semibold text-t-primary leading-none">Terminal</p>
-            <p className="text-[11px] text-t-tertiary leading-tight mt-0.5">Farm risk management</p>
+            <p className="text-[11px] text-t-tertiary leading-tight mt-0.5">
+              {farmName || "Farm risk management"}
+            </p>
           </div>
         </div>
 
