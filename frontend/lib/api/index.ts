@@ -7,6 +7,8 @@ import type {
   CotacaoMercado,
   CurvaFuturos,
   HistoricoDolarEntry,
+  SimulatorRequest,
+  SimulatorResponse,
 } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -83,4 +85,8 @@ export function calcularCria(req: CriaRequest) {
 
 export function calcularRecria(req: RecriaRequest) {
   return postCalc<RecriaRequest, RecriaResponse>("recria/calcular", req);
+}
+
+export function simularCenarios(req: SimulatorRequest) {
+  return postCalc<SimulatorRequest, SimulatorResponse>("simulador/calcular", req);
 }

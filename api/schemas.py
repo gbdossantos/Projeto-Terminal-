@@ -560,3 +560,62 @@ class ResultRecriaSchema(BaseModel):
 class RecriaResponse(BaseModel):
     resultado: ResultRecriaSchema
     cotacoes: CotacaoMercadoSchema
+
+
+# ---------------------------------------------------------------------------
+# Simulator
+# ---------------------------------------------------------------------------
+
+class SimulatorScenarioInput(BaseModel):
+    nome: str
+    var_arroba_pct: float = 0.0
+    var_milho_pct: float = 0.0
+    var_dolar_pct: float = 0.0
+    hedge_arroba: bool = False
+    preco_hedge_arroba: float = 0.0
+    hedge_milho: bool = False
+    preco_hedge_milho: float = 0.0
+
+
+class SimulatorRequest(BaseModel):
+    # Lote
+    arrobas_totais: float = Field(..., gt=0)
+    custo_total: float = Field(..., gt=0)
+    dias_ciclo: int = Field(..., gt=0)
+    custo_dieta_total: float = Field(..., ge=0)
+    custo_nao_dieta: float = Field(..., ge=0)
+    # Precos atuais
+    preco_arroba: float = Field(..., gt=0)
+    preco_milho_saca: float = Field(..., gt=0)
+    dolar_ptax: float = Field(..., gt=0)
+    # Cenarios
+    cenarios: list[SimulatorScenarioInput]
+
+
+class SimulatorScenarioOutput(BaseModel):
+    nome: str
+    preco_arroba_cenario: float
+    preco_milho_cenario: float
+    dolar_cenario: float
+    receita_sem_hedge: float
+    custo_cenario: float
+    margem_sem_hedge: float
+    margem_pct_sem_hedge: float
+    receita_com_hedge: float
+    custo_com_hedge: float
+    margem_com_hedge: float
+    margem_pct_com_hedge: float
+    variacao_margem: float
+    tem_hedge_arroba: bool
+    tem_hedge_milho: bool
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class SimulatorResponse(BaseModel):
+    cenarios: list[SimulatorScenarioOutput]
+    cenario_base: SimulatorScenarioOutput
+    pior_cenario: SimulatorScenarioOutput
+    melhor_cenario: SimulatorScenarioOutput

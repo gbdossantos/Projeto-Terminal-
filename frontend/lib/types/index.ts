@@ -348,3 +348,53 @@ export interface RecriaResponse {
   resultado: ResultRecria;
   cotacoes: CotacaoMercado;
 }
+
+// --- Simulator ---
+
+export interface SimulatorScenarioInput {
+  nome: string;
+  var_arroba_pct: number;
+  var_milho_pct: number;
+  var_dolar_pct: number;
+  hedge_arroba: boolean;
+  preco_hedge_arroba: number;
+  hedge_milho: boolean;
+  preco_hedge_milho: number;
+}
+
+export interface SimulatorRequest {
+  arrobas_totais: number;
+  custo_total: number;
+  dias_ciclo: number;
+  custo_dieta_total: number;
+  custo_nao_dieta: number;
+  preco_arroba: number;
+  preco_milho_saca: number;
+  dolar_ptax: number;
+  cenarios: SimulatorScenarioInput[];
+}
+
+export interface SimulatorScenarioOutput {
+  nome: string;
+  preco_arroba_cenario: number;
+  preco_milho_cenario: number;
+  dolar_cenario: number;
+  receita_sem_hedge: number;
+  custo_cenario: number;
+  margem_sem_hedge: number;
+  margem_pct_sem_hedge: number;
+  receita_com_hedge: number;
+  custo_com_hedge: number;
+  margem_com_hedge: number;
+  margem_pct_com_hedge: number;
+  variacao_margem: number;
+  tem_hedge_arroba: boolean;
+  tem_hedge_milho: boolean;
+}
+
+export interface SimulatorResponse {
+  cenarios: SimulatorScenarioOutput[];
+  cenario_base: SimulatorScenarioOutput;
+  pior_cenario: SimulatorScenarioOutput;
+  melhor_cenario: SimulatorScenarioOutput;
+}

@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Layers,
   TrendingUp,
+  FlaskConical,
   Clock,
   Settings,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 const nav = [
   { href: "/", label: "Visao geral", icon: LayoutDashboard },
   { href: "/lotes", label: "Lotes", icon: Layers },
+  { href: "/simulador", label: "Simulador", icon: FlaskConical },
   { href: "/mercado", label: "Mercado", icon: TrendingUp },
   { href: "/historico", label: "Historico", icon: Clock },
   { href: "/configuracoes", label: "Configuracoes", icon: Settings },

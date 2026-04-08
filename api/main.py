@@ -20,7 +20,7 @@ sys.path.insert(0, ROOT)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import cotacoes, terminacao
+from api.routes import cotacoes, terminacao, simulator
 
 app = FastAPI(
     title="Terminal API",
@@ -43,6 +43,7 @@ app.add_middleware(
 
 app.include_router(cotacoes.router, prefix="/api", tags=["Cotações"])
 app.include_router(terminacao.router, prefix="/api", tags=["Terminação"])
+app.include_router(simulator.router, prefix="/api", tags=["Simulador"])
 
 
 @app.get("/api/health")
