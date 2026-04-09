@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { Sidebar } from "@/components/layout/Sidebar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +23,7 @@ const sourceSerif = Source_Serif_4({
 
 export const metadata: Metadata = {
   title: "Terminal — Farm risk management",
-  description: "Inteligencia financeira para pecuaria de corte",
+  description: "Clareza economica da operacao antes de qualquer decisao financeira",
 };
 
 export default function RootLayout({
@@ -38,14 +37,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrains.variable} ${sourceSerif.variable} font-sans antialiased`}
       >
         <ThemeProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1 overflow-auto">
-              <div className="max-w-5xl mx-auto px-6 py-8">
-                {children}
-              </div>
-            </main>
-          </div>
+          {children}
         </ThemeProvider>
       </body>
     </html>

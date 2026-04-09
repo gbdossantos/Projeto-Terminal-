@@ -25,7 +25,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.cmegroup.com)",
       "WebFetch(domain:www.scotconsultoria.com.br)",
-      "WebFetch(domain:investorshub.advfn.com)"
+      "WebFetch(domain:investorshub.advfn.com)",
+      "Bash(mkdir -p \"app/\\(dashboard\\)\")",
+      "Bash(mv app/lotes app/simulador app/mercado app/historico app/configuracoes \"app/\\(dashboard\\)/\")"
     ]
   }
 }
