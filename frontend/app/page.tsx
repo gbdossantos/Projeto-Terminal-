@@ -306,7 +306,7 @@ export default function LandingPage() {
           className="font-display text-[22px] italic max-w-[480px] mx-auto mb-8 leading-relaxed"
           style={{ color: "#6B6860", fontWeight: 400 }}
         >
-          &ldquo;Nao vendemos hedge. Vendemos clareza economica da operacao.&rdquo;
+          &ldquo;O risco que voce nao enxerga e o que mais custa.&rdquo;
         </p>
         <Link
           href="/lotes"
