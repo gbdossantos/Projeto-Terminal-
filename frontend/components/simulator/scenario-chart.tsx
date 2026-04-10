@@ -26,8 +26,8 @@ export function ScenarioChart({ data }: ScenarioChartProps) {
   return (
     <div
       style={{
-        background: "#1A1814",
-        border: "0.5px solid #2A2820",
+        background: "var(--surface)",
+        border: "0.5px solid var(--border-subtle)",
         borderRadius: 12,
         padding: "16px 20px",
       }}
@@ -36,7 +36,7 @@ export function ScenarioChart({ data }: ScenarioChartProps) {
         style={{
           fontFamily: "'Source Serif 4', serif",
           fontSize: 13,
-          color: "#F5F1E8",
+          color: "var(--text-primary)",
           marginBottom: 4,
         }}
       >
@@ -46,7 +46,7 @@ export function ScenarioChart({ data }: ScenarioChartProps) {
         style={{
           fontFamily: "Inter, sans-serif",
           fontSize: 11,
-          color: "#6B6860",
+          color: "var(--text-tertiary)",
           marginBottom: 12,
         }}
       >
@@ -55,7 +55,7 @@ export function ScenarioChart({ data }: ScenarioChartProps) {
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid
-            stroke="#2A2820"
+            stroke="var(--border-subtle)"
             strokeDasharray="3 3"
             horizontal={true}
             vertical={false}
@@ -65,7 +65,7 @@ export function ScenarioChart({ data }: ScenarioChartProps) {
             tick={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              fill: "#6B6860",
+              fill: "var(--text-tertiary)",
             }}
             tickLine={false}
             axisLine={false}
@@ -75,7 +75,7 @@ export function ScenarioChart({ data }: ScenarioChartProps) {
             tick={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              fill: "#6B6860",
+              fill: "var(--text-tertiary)",
             }}
             tickLine={false}
             axisLine={false}
@@ -83,22 +83,22 @@ export function ScenarioChart({ data }: ScenarioChartProps) {
           <Tooltip
             formatter={(value) => [fmtBRL(Number(value)), "Margem"]}
             contentStyle={{
-              background: "#1A1814",
-              border: "0.5px solid #2A2820",
+              background: "var(--surface)",
+              border: "0.5px solid var(--border-subtle)",
               borderRadius: 8,
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 12,
-              color: "#F5F1E8",
+              color: "var(--text-primary)",
             }}
-            labelStyle={{ color: "#6B6860", fontSize: 11 }}
-            cursor={{ fill: "#2A282044" }}
+            labelStyle={{ color: "var(--text-tertiary)", fontSize: 11 }}
+            cursor={{ fill: "var(--surface-2)" }}
           />
-          <ReferenceLine y={0} stroke="#3A3628" strokeWidth={1} />
+          <ReferenceLine y={0} stroke="var(--border-subtle)" strokeWidth={1} />
           <Bar dataKey="margem" radius={[4, 4, 0, 0]}>
             {data.map((entry, i) => (
               <Cell
                 key={i}
-                fill={entry.margem >= 0 ? "#4A5D3A" : "#B54134"}
+                fill={entry.margem >= 0 ? "var(--green)" : "var(--red)"}
               />
             ))}
           </Bar>

@@ -12,24 +12,21 @@ interface ScenarioCardProps {
 
 const config = {
   best: {
-    accentColor: "#4A5D3A",
-    accentStyle: { borderLeft: "2px solid #4A5D3A", borderRadius: "0 10px 10px 0" },
-    valueColor: "#F5F1E8",
-    subColor: "#6B8F5A",
+    accentStyle: { borderLeft: "2px solid var(--green)", borderRadius: "0 10px 10px 0" },
+    valueColor: "var(--text-primary)",
+    subColor: "var(--green-2)",
     arrow: "\u2191",
   },
   base: {
-    accentColor: "#B8763E",
-    accentStyle: { borderTop: "2px solid #B8763E", borderRadius: "0 0 10px 10px" },
-    valueColor: "#F5F1E8",
-    subColor: "#6B6860",
+    accentStyle: { borderTop: "2px solid var(--brand)", borderRadius: "0 0 10px 10px" },
+    valueColor: "var(--text-primary)",
+    subColor: "var(--text-tertiary)",
     arrow: "",
   },
   worst: {
-    accentColor: "#B54134",
-    accentStyle: { borderLeft: "2px solid #B54134", borderRadius: "0 10px 10px 0" },
-    valueColor: "#D4614A",
-    subColor: "#D4614A",
+    accentStyle: { borderLeft: "2px solid var(--red)", borderRadius: "0 10px 10px 0" },
+    valueColor: "var(--red-2)",
+    subColor: "var(--red-2)",
     arrow: "\u2193",
   },
 };
@@ -40,8 +37,8 @@ export function ScenarioCard({ type, label, value, subLabel, subValue }: Scenari
   return (
     <div
       style={{
-        background: "#1A1814",
-        border: "0.5px solid #2A2820",
+        background: "var(--surface)",
+        border: "0.5px solid var(--border-subtle)",
         padding: "14px 18px",
         ...c.accentStyle,
       }}
@@ -51,7 +48,7 @@ export function ScenarioCard({ type, label, value, subLabel, subValue }: Scenari
         style={{
           fontFamily: "Inter, sans-serif",
           fontSize: 9,
-          color: "#6B6860",
+          color: "var(--text-tertiary)",
           letterSpacing: "0.04em",
           marginBottom: 6,
         }}

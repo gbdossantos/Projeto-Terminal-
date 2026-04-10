@@ -12,7 +12,7 @@ export default function DashboardLayout({
   const isFullWidth = pathname === "/simulador" || pathname === "/mercado";
 
   return (
-    <div className="min-h-screen" style={{ background: "#0F0E0B" }}>
+    <div className="min-h-screen" style={{ background: "var(--background)" }}>
       <TopNav />
       {isFullWidth ? (
         <main>{children}</main>

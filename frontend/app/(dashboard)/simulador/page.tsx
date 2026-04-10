@@ -238,8 +238,8 @@ export default function SimuladorPage() {
         className="shrink-0 flex flex-col overflow-y-auto"
         style={{
           width: 280,
-          background: "#0A0908",
-          borderRight: "0.5px solid #2A2820",
+          background: "var(--bg-deep)",
+          borderRight: "0.5px solid var(--border-subtle)",
           padding: "20px 18px",
           gap: 20,
         }}
@@ -250,7 +250,7 @@ export default function SimuladorPage() {
             style={{
               fontFamily: "'Source Serif 4', serif",
               fontSize: 13,
-              color: "#F5F1E8",
+              color: "var(--text-primary)",
               marginBottom: 14,
             }}
           >
@@ -286,14 +286,14 @@ export default function SimuladorPage() {
         </div>
 
         {/* Section 2: Precos de mercado (display only) */}
-        <div style={{ borderTop: "0.5px solid #2A2820", paddingTop: 16 }}>
+        <div style={{ borderTop: "0.5px solid var(--border-subtle)", paddingTop: 16 }}>
           <span
             className="block uppercase"
             style={{
               fontFamily: "Inter, sans-serif",
               fontSize: 10,
               fontWeight: 500,
-              color: "#6B6860",
+              color: "var(--text-tertiary)",
               letterSpacing: "0.04em",
               marginBottom: 10,
             }}
@@ -308,14 +308,14 @@ export default function SimuladorPage() {
         </div>
 
         {/* Section 3: Protecao (hedge) */}
-        <div style={{ borderTop: "0.5px solid #2A2820", paddingTop: 14 }}>
+        <div style={{ borderTop: "0.5px solid var(--border-subtle)", paddingTop: 14 }}>
           <span
             className="block"
             style={{
               fontFamily: "Inter, sans-serif",
               fontSize: 11,
               fontWeight: 500,
-              color: "#6B6860",
+              color: "var(--text-tertiary)",
               marginBottom: 10,
             }}
           >
@@ -336,12 +336,12 @@ export default function SimuladorPage() {
         </div>
 
         {/* Section 4: Variacoes por cenario */}
-        <div style={{ borderTop: "0.5px solid #2A2820", paddingTop: 16 }}>
+        <div style={{ borderTop: "0.5px solid var(--border-subtle)", paddingTop: 16 }}>
           <h3
             style={{
               fontFamily: "'Source Serif 4', serif",
               fontSize: 13,
-              color: "#F5F1E8",
+              color: "var(--text-primary)",
               marginBottom: 14,
             }}
           >
@@ -351,7 +351,7 @@ export default function SimuladorPage() {
           {/* Arroba group */}
           <SliderGroup
             label="Arroba"
-            labelColor="#B8763E"
+            labelColor="var(--brand)"
             open={openGroups.arroba ?? false}
             onToggle={() => toggleGroup("arroba")}
           >
@@ -368,7 +368,7 @@ export default function SimuladorPage() {
           {/* Milho group */}
           <SliderGroup
             label="Milho"
-            labelColor="#6B6860"
+            labelColor="var(--text-tertiary)"
             open={openGroups.milho ?? false}
             onToggle={() => toggleGroup("milho")}
           >
@@ -385,7 +385,7 @@ export default function SimuladorPage() {
           {/* Dolar group */}
           <SliderGroup
             label="Dolar"
-            labelColor="#6B6860"
+            labelColor="var(--text-tertiary)"
             open={openGroups.dolar ?? false}
             onToggle={() => toggleGroup("dolar")}
           >
@@ -407,8 +407,8 @@ export default function SimuladorPage() {
             disabled={loading}
             className="w-full flex items-center justify-center gap-2"
             style={{
-              background: loading ? "#B8763E99" : "#B8763E",
-              color: "#FAF0E0",
+              background: loading ? "var(--brand)" : "var(--brand)",
+              color: "var(--brand-fg)",
               borderRadius: 8,
               padding: 10,
               fontFamily: "Inter, sans-serif",
@@ -436,7 +436,7 @@ export default function SimuladorPage() {
       <main
         className="flex-1 flex flex-col overflow-y-auto"
         style={{
-          background: "#0F0E0B",
+          background: "var(--background)",
           padding: "20px 24px",
           gap: 14,
         }}
@@ -447,7 +447,7 @@ export default function SimuladorPage() {
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 11,
-              color: "#6B6860",
+              color: "var(--text-tertiary)",
             }}
           >
             {timestamp}
@@ -457,13 +457,13 @@ export default function SimuladorPage() {
         {error && (
           <div
             style={{
-              background: "#B5413418",
-              border: "0.5px solid #B5413444",
+              background: "var(--danger-bg)",
+              border: "0.5px solid var(--red)",
               borderRadius: 8,
               padding: "10px 14px",
               fontFamily: "Inter, sans-serif",
               fontSize: 12,
-              color: "#D4614A",
+              color: "var(--red-2)",
             }}
           >
             {error}
@@ -473,7 +473,7 @@ export default function SimuladorPage() {
         {!result && !loading && (
           <div
             className="flex-1 flex items-center justify-center"
-            style={{ color: "#6B6860", fontFamily: "Inter, sans-serif", fontSize: 13 }}
+            style={{ color: "var(--text-tertiary)", fontFamily: "Inter, sans-serif", fontSize: 13 }}
           >
             Ajuste os parametros e clique em &ldquo;Simular cenarios&rdquo;
           </div>
@@ -482,7 +482,7 @@ export default function SimuladorPage() {
         {loading && !result && (
           <div
             className="flex-1 flex items-center justify-center"
-            style={{ color: "#6B6860", fontFamily: "Inter, sans-serif", fontSize: 13 }}
+            style={{ color: "var(--text-tertiary)", fontFamily: "Inter, sans-serif", fontSize: 13 }}
           >
             Simulando cenarios...
           </div>
@@ -549,7 +549,7 @@ function LoteInput({
         style={{
           fontFamily: "Inter, sans-serif",
           fontSize: 10,
-          color: "#6B6860",
+          color: "var(--text-tertiary)",
           marginBottom: 4,
         }}
       >
@@ -564,13 +564,13 @@ function LoteInput({
         style={{
           width: "100%",
           height: 34,
-          background: "#0F0E0B",
-          border: "0.5px solid #2A2820",
+          background: "var(--background)",
+          border: "0.5px solid var(--border-subtle)",
           borderRadius: 8,
           padding: "0 10px",
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 12,
-          color: "#F5F1E8",
+          color: "var(--text-primary)",
           outline: "none",
         }}
       />
@@ -590,7 +590,7 @@ function MarketRow({
   return (
     <div className="flex items-baseline justify-between">
       <span
-        style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "#6B6860" }}
+        style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "var(--text-tertiary)" }}
       >
         {label}
       </span>
@@ -599,7 +599,7 @@ function MarketRow({
           style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 13,
-            color: "#F5F1E8",
+            color: "var(--text-primary)",
           }}
         >
           {value}
@@ -609,7 +609,7 @@ function MarketRow({
             style={{
               fontFamily: "Inter, sans-serif",
               fontSize: 10,
-              color: "#6B6860",
+              color: "var(--text-tertiary)",
               marginLeft: 2,
             }}
           >

@@ -18,8 +18,8 @@ export function HedgeCheckbox({ checked, onChange, label }: HedgeCheckboxProps) 
           width: 16,
           height: 16,
           borderRadius: 4,
-          border: `0.5px solid ${checked ? "#4A5D3A44" : "#2A2820"}`,
-          background: checked ? "#4A5D3A18" : "transparent",
+          border: `0.5px solid ${checked ? "var(--green)" : "var(--border-subtle)"}`,
+          background: checked ? "var(--success-bg)" : "transparent",
           transition: "all 150ms",
         }}
       >
@@ -27,7 +27,7 @@ export function HedgeCheckbox({ checked, onChange, label }: HedgeCheckboxProps) 
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path
               d="M2 5L4.5 7.5L8 3"
-              stroke="#6B8F5A"
+              stroke="var(--green-2)"
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -39,7 +39,7 @@ export function HedgeCheckbox({ checked, onChange, label }: HedgeCheckboxProps) 
         style={{
           fontFamily: "Inter, sans-serif",
           fontSize: 11,
-          color: checked ? "#F5F1E8" : "#6B6860",
+          color: checked ? "var(--text-primary)" : "var(--text-tertiary)",
           transition: "color 150ms",
         }}
       >

@@ -14,7 +14,6 @@ function getBusinessDaysUntil(dateStr: string): number {
   const current = new Date(now);
   current.setHours(0, 0, 0, 0);
   target.setHours(0, 0, 0, 0);
-
   while (current < target) {
     current.setDate(current.getDate() + 1);
     const day = current.getDay();
@@ -24,32 +23,25 @@ function getBusinessDaysUntil(dateStr: string): number {
 }
 
 function getSpreadBadge(spread: number): { label: string; bg: string; color: string } {
-  if (spread > 0) return { label: "em premio", bg: "#4A5D3A22", color: "#6B8F5A" };
-  if (spread >= -5) return { label: "leve desc.", bg: "#C89B3C22", color: "#C89B3C" };
-  return { label: "desconto", bg: "#B5413422", color: "#D4614A" };
+  if (spread > 0) return { label: "em premio", bg: "var(--success-bg)", color: "var(--green-2)" };
+  if (spread >= -5) return { label: "leve desc.", bg: "var(--warning-bg)", color: "var(--amber)" };
+  return { label: "desconto", bg: "var(--danger-bg)", color: "var(--red-2)" };
 }
 
 export function ContratosTable({ contratos, spotPrice }: ContratosTableProps) {
   const headers = ["Contrato", "Vencimento", "Preco ajuste", "Spread vs spot", "Dias uteis", "Status"];
 
   return (
-    <div style={{ borderTop: "0.5px solid #2A2820" }}>
+    <div style={{ borderTop: "0.5px solid var(--border-subtle)" }}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr style={{ background: "#221F18", borderBottom: "0.5px solid #2A2820" }}>
+            <tr style={{ background: "var(--surface-2)", borderBottom: "0.5px solid var(--border-subtle)" }}>
               {headers.map((h) => (
                 <th
                   key={h}
                   className={`uppercase ${h === "Contrato" || h === "Vencimento" ? "text-left" : "text-right"}`}
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 9,
-                    fontWeight: 500,
-                    color: "#6B6860",
-                    padding: "7px 14px",
-                    letterSpacing: "0.04em",
-                  }}
+                  style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 500, color: "var(--text-tertiary)", padding: "7px 14px", letterSpacing: "0.04em" }}
                 >
                   {h}
                 </th>
@@ -67,100 +59,37 @@ export function ContratosTable({ contratos, spotPrice }: ContratosTableProps) {
               return (
                 <tr
                   key={c.codigo}
-                  className="group"
-                  style={{
-                    borderBottom: isLast ? "none" : "0.5px solid #2A2820",
-                    transition: "background 100ms",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "#221F18";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "transparent";
-                  }}
+                  className="transition-colors"
+                  style={{ borderBottom: isLast ? "none" : "0.5px solid var(--border-subtle)" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
-                  {/* Contrato */}
                   <td style={{ padding: "7px 14px" }}>
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 11,
-                        fontWeight: isNear ? 600 : 400,
-                        color: isNear ? "#B8763E" : "#F5F1E8",
-                      }}
-                    >
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: isNear ? 600 : 400, color: isNear ? "var(--brand)" : "var(--text-primary)" }}>
                       {c.codigo}
                     </span>
                   </td>
-
-                  {/* Vencimento */}
                   <td style={{ padding: "7px 14px" }}>
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 11,
-                        color: "#F5F1E8",
-                      }}
-                    >
-                      {c.vencimento}
-                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--text-primary)" }}>{c.vencimento}</span>
                   </td>
-
-                  {/* Preco ajuste */}
                   <td className="text-right" style={{ padding: "7px 14px" }}>
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 11,
-                        color: "#F5F1E8",
-                      }}
-                    >
-                      R$ {c.preco_ajuste.toFixed(2)}/@
-                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--text-primary)" }}>R$ {c.preco_ajuste.toFixed(2)}/@</span>
                   </td>
-
-                  {/* Spread */}
                   <td className="text-right" style={{ padding: "7px 14px" }}>
                     {spread != null ? (
-                      <span
-                        style={{
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontSize: 11,
-                          color: spread >= 0 ? "#6B8F5A" : "#D4614A",
-                        }}
-                      >
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: spread >= 0 ? "var(--green-2)" : "var(--red-2)" }}>
                         {spread >= 0 ? "+" : ""}R$ {spread.toFixed(2)}
                       </span>
                     ) : (
-                      <span style={{ color: "#6B6860", fontSize: 11 }}>—</span>
+                      <span style={{ color: "var(--text-tertiary)", fontSize: 11 }}>—</span>
                     )}
                   </td>
-
-                  {/* Dias uteis */}
                   <td className="text-right" style={{ padding: "7px 14px" }}>
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 11,
-                        color: "#6B6860",
-                      }}
-                    >
-                      {bizDays}d
-                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--text-tertiary)" }}>{bizDays}d</span>
                   </td>
-
-                  {/* Status badge */}
                   <td className="text-right" style={{ padding: "7px 14px" }}>
                     {badge && (
-                      <span
-                        className="inline-block px-2 py-0.5 rounded text-[10px]"
-                        style={{
-                          fontFamily: "Inter, sans-serif",
-                          fontWeight: 500,
-                          background: badge.bg,
-                          color: badge.color,
-                        }}
-                      >
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px]" style={{ fontFamily: "Inter, sans-serif", fontWeight: 500, background: badge.bg, color: badge.color }}>
                         {badge.label}
                       </span>
                     )}

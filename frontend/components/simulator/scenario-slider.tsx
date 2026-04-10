@@ -18,7 +18,7 @@ export function ScenarioSlider({
   step = 1,
 }: ScenarioSliderProps) {
   const color =
-    value > 0 ? "#6B8F5A" : value < 0 ? "#D4614A" : "#F5F1E8";
+    value > 0 ? "var(--green-2)" : value < 0 ? "var(--red-2)" : "var(--text-primary)";
   const displayValue = value > 0 ? `+${value}%` : `${value}%`;
 
   return (
@@ -27,7 +27,7 @@ export function ScenarioSlider({
         className="shrink-0 text-[9px]"
         style={{
           fontFamily: "Inter, sans-serif",
-          color: "#6B6860",
+          color: "var(--text-tertiary)",
           minWidth: 90,
         }}
       >

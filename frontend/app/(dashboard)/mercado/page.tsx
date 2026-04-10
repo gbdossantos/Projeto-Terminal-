@@ -70,26 +70,26 @@ export default function MercadoPage() {
         {/* Ticker skeleton */}
         <div
           className="animate-pulse"
-          style={{ background: "#221F18", height: 28, borderBottom: "0.5px solid #2A2820" }}
+          style={{ background: "var(--surface-2)", height: 28, borderBottom: "0.5px solid var(--border-subtle)" }}
         />
         {/* Cotacoes skeleton */}
-        <div className="grid grid-cols-4" style={{ borderBottom: "0.5px solid #2A2820" }}>
+        <div className="grid grid-cols-4" style={{ borderBottom: "0.5px solid var(--border-subtle)" }}>
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
               className="animate-pulse"
               style={{
                 height: 80,
-                background: "#1A1814",
-                borderRight: i < 4 ? "0.5px solid #2A2820" : "none",
+                background: "var(--surface)",
+                borderRight: i < 4 ? "0.5px solid var(--border-subtle)" : "none",
               }}
             />
           ))}
         </div>
         {/* Main skeleton */}
-        <div className="grid" style={{ gridTemplateColumns: "1fr 240px", borderBottom: "0.5px solid #2A2820" }}>
-          <div className="animate-pulse" style={{ height: 400, background: "#0F0E0B" }} />
-          <div className="animate-pulse" style={{ height: 400, background: "#0F0E0B", borderLeft: "0.5px solid #2A2820" }} />
+        <div className="grid" style={{ gridTemplateColumns: "1fr 240px", borderBottom: "0.5px solid var(--border-subtle)" }}>
+          <div className="animate-pulse" style={{ height: 400, background: "var(--background)" }} />
+          <div className="animate-pulse" style={{ height: 400, background: "var(--background)", borderLeft: "0.5px solid var(--border-subtle)" }} />
         </div>
       </div>
     );
@@ -103,7 +103,7 @@ export default function MercadoPage() {
       {/* ── COTACOES STRIP ── */}
       <div
         className="grid grid-cols-4"
-        style={{ borderBottom: "0.5px solid #2A2820" }}
+        style={{ borderBottom: "0.5px solid var(--border-subtle)" }}
       >
         <CotacaoCard
           label="Arroba CEPEA/SP"
@@ -111,7 +111,7 @@ export default function MercadoPage() {
           suffix="/@"
           large
           sparkData={arrobaSparkData}
-          sparkColor={arrobaSparkData.length > 1 && arrobaSparkData[arrobaSparkData.length - 1] >= arrobaSparkData[0] ? "#6B8F5A" : "#D4614A"}
+          sparkColor={arrobaSparkData.length > 1 && arrobaSparkData[arrobaSparkData.length - 1] >= arrobaSparkData[0] ? "var(--green-2)" : "var(--red-2)"}
         />
         <CotacaoCard
           label="Dolar PTAX"
@@ -122,7 +122,7 @@ export default function MercadoPage() {
           value={cotacoes?.milho_esalq != null ? `R$ ${cotacoes.milho_esalq.toFixed(2)}` : "—"}
           suffix="/sc"
           sparkData={milhoSparkData}
-          sparkColor={milhoSparkData.length > 1 && milhoSparkData[milhoSparkData.length - 1] >= milhoSparkData[0] ? "#6B8F5A" : "#D4614A"}
+          sparkColor={milhoSparkData.length > 1 && milhoSparkData[milhoSparkData.length - 1] >= milhoSparkData[0] ? "var(--green-2)" : "var(--red-2)"}
         />
         <CotacaoCard
           label="CDI"
@@ -138,7 +138,7 @@ export default function MercadoPage() {
         className="grid"
         style={{
           gridTemplateColumns: "1fr 240px",
-          borderBottom: "0.5px solid #2A2820",
+          borderBottom: "0.5px solid var(--border-subtle)",
         }}
       >
         {/* Left — Curva BGI + Contratos table */}
@@ -159,7 +159,7 @@ export default function MercadoPage() {
                 height: 300,
                 fontFamily: "Inter, sans-serif",
                 fontSize: 13,
-                color: "#6B6860",
+                color: "var(--text-tertiary)",
               }}
             >
               Dados de futuros indisponiveis no momento
@@ -171,7 +171,7 @@ export default function MercadoPage() {
         <div
           className="flex flex-col"
           style={{
-            borderLeft: "0.5px solid #2A2820",
+            borderLeft: "0.5px solid var(--border-subtle)",
             padding: 14,
             gap: 9,
           }}
@@ -180,7 +180,7 @@ export default function MercadoPage() {
             style={{
               fontFamily: "'Source Serif 4', serif",
               fontSize: 13,
-              color: "#F5F1E8",
+              color: "var(--text-primary)",
               marginBottom: 2,
             }}
           >
@@ -200,8 +200,8 @@ export default function MercadoPage() {
           {milhoSparkData.length > 1 && (
             <div
               style={{
-                background: "#1A1814",
-                border: "0.5px solid #2A2820",
+                background: "var(--surface)",
+                border: "0.5px solid var(--border-subtle)",
                 borderRadius: 8,
                 padding: "10px 12px",
               }}
@@ -211,7 +211,7 @@ export default function MercadoPage() {
                   style={{
                     fontFamily: "Inter, sans-serif",
                     fontSize: 10,
-                    color: "#6B6860",
+                    color: "var(--text-tertiary)",
                   }}
                 >
                   Milho ESALQ — 20d
@@ -221,7 +221,7 @@ export default function MercadoPage() {
                     style={{
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 11,
-                      color: "#F5F1E8",
+                      color: "var(--text-primary)",
                     }}
                   >
                     R$ {milhoAtual.toFixed(2)}
@@ -230,7 +230,7 @@ export default function MercadoPage() {
               </div>
               <SparkLine
                 data={milhoSparkData}
-                color="#B8763E"
+                color="var(--brand)"
                 width={208}
                 height={36}
                 strokeWidth={1.5}
@@ -241,7 +241,7 @@ export default function MercadoPage() {
                     style={{
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 9,
-                      color: "#6B6860",
+                      color: "var(--text-tertiary)",
                     }}
                   >
                     min R${milhoMin.toFixed(2)}
@@ -250,7 +250,7 @@ export default function MercadoPage() {
                     style={{
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 9,
-                      color: "#6B6860",
+                      color: "var(--text-tertiary)",
                     }}
                   >
                     max R${milhoMax.toFixed(2)}
@@ -263,8 +263,8 @@ export default function MercadoPage() {
           {/* Interpretation banner */}
           <div
             style={{
-              background: "#4A5D3A15",
-              border: "0.5px solid #4A5D3A33",
+              background: "var(--success-bg)",
+              border: "0.5px solid var(--green)",
               borderRadius: 7,
               padding: "9px 11px",
             }}
@@ -275,7 +275,7 @@ export default function MercadoPage() {
                 fontFamily: "Inter, sans-serif",
                 fontSize: 10,
                 fontWeight: 500,
-                color: "#6B8F5A",
+                color: "var(--green-2)",
                 marginBottom: 4,
               }}
             >
@@ -285,7 +285,7 @@ export default function MercadoPage() {
               style={{
                 fontFamily: "Inter, sans-serif",
                 fontSize: 11,
-                color: "#6B6860",
+                color: "var(--text-tertiary)",
                 lineHeight: 1.5,
               }}
             >

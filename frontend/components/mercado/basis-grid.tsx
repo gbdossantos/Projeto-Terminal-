@@ -16,96 +16,94 @@ const BASES: { regiao: string; basis: number }[] = [
 ];
 // TODO: carregar bases dinamicas via API
 
-function getBasisStyle(basis: number): { bg: string; border: string; deltaColor: string } {
-  if (basis === 0) return { bg: "#4A5D3A2A", border: "#4A5D3A44", deltaColor: "#6B8F5A" };
-  if (basis >= -3) return { bg: "#3D5128", border: "#4A5D3A22", deltaColor: "#6B8F5A" };
-  if (basis >= -5) return { bg: "#2A3D1A", border: "#3A4D2A22", deltaColor: "#C89B3C" };
-  if (basis >= -7) return { bg: "#2A2010", border: "#3A3020", deltaColor: "#C89B3C" };
-  if (basis >= -10) return { bg: "#2A1A0C", border: "#3A2A1A", deltaColor: "#D4614A" };
-  if (basis >= -12) return { bg: "#2A1208", border: "#3A2215", deltaColor: "#D4614A" };
-  return { bg: "#2A0E06", border: "#3A1E10", deltaColor: "#D4614A" };
+function getBasisStyle(basis: number, isDark: boolean): { bg: string; border: string; deltaColor: string } {
+  // Dark mode uses deep tones, light mode uses tinted backgrounds
+  if (basis === 0) return { bg: isDark ? "#4A5D3A2A" : "#4A5D3A18", border: isDark ? "#4A5D3A44" : "#4A5D3A33", deltaColor: "var(--green-2)" };
+  if (basis >= -3) return { bg: isDark ? "#3D5128" : "#4A5D3A12", border: isDark ? "#4A5D3A22" : "#4A5D3A22", deltaColor: "var(--green-2)" };
+  if (basis >= -5) return { bg: isDark ? "#2A3D1A" : "#8B7A3A10", border: isDark ? "#3A4D2A22" : "#8B7A3A18", deltaColor: "var(--amber)" };
+  if (basis >= -7) return { bg: isDark ? "#2A2010" : "#C89B3C10", border: isDark ? "#3A3020" : "#C89B3C18", deltaColor: "var(--amber)" };
+  if (basis >= -10) return { bg: isDark ? "#2A1A0C" : "#B5413410", border: isDark ? "#3A2A1A" : "#B5413418", deltaColor: "var(--red-2)" };
+  if (basis >= -12) return { bg: isDark ? "#2A1208" : "#B541340C", border: isDark ? "#3A2215" : "#B5413414", deltaColor: "var(--red-2)" };
+  return { bg: isDark ? "#2A0E06" : "#B5413408", border: isDark ? "#3A1E10" : "#B5413410", deltaColor: "var(--red-2)" };
 }
 
 export function BasisGrid({ spotPrice }: BasisGridProps) {
+  // Detect dark mode via CSS variable — we check at render time
+  // Since we're using CSS vars for text colors, the bg colors are the only ones
+  // that need explicit dark/light handling due to the gradient approach.
+  // We'll use a simple className-based approach.
   return (
     <div style={{ padding: "14px 22px 18px" }}>
-      {/* Header */}
       <div className="flex items-baseline gap-2" style={{ marginBottom: 10 }}>
-        <h3
-          style={{
-            fontFamily: "'Source Serif 4', serif",
-            fontSize: 12,
-            color: "#F5F1E8",
-          }}
-        >
+        <h3 style={{ fontFamily: "'Source Serif 4', serif", fontSize: 12, color: "var(--text-primary)" }}>
           Basis por regiao
         </h3>
-        <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "#6B6860" }}>
+        <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "var(--text-tertiary)" }}>
           Desconto local vs indicador CEPEA/SP (R$/@)
         </span>
       </div>
 
-      {/* Grid */}
-      <div
-        className="grid"
-        style={{
-          gridTemplateColumns: "repeat(8, 1fr)",
-          gap: 8,
-        }}
-      >
+      <div className="grid" style={{ gridTemplateColumns: "repeat(8, 1fr)", gap: 8 }}>
         {BASES.map((b) => {
-          const style = getBasisStyle(b.basis);
-          const precoEfetivo = spotPrice + b.basis;
           const isSP = b.regiao === "SP";
-
           return (
-            <div
-              key={b.regiao}
-              className="text-center"
-              style={{
-                borderRadius: 8,
-                padding: "10px 12px",
-                background: style.bg,
-                border: `0.5px solid ${style.border}`,
-              }}
-            >
-              <span
-                className="block uppercase"
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 9,
-                  color: "#6B6860",
-                  letterSpacing: "0.04em",
-                  marginBottom: 4,
-                }}
-              >
-                {b.regiao}
-              </span>
-              <span
-                className="block"
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 14,
-                  color: "#F5F1E8",
-                  lineHeight: 1.2,
-                }}
-              >
-                R${Math.round(precoEfetivo)}
-              </span>
-              <span
-                className="block mt-1"
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 9,
-                  color: style.deltaColor,
-                }}
-              >
-                {isSP ? "referencia" : `${b.basis}/@`}
-              </span>
-            </div>
+            <BasisCell key={b.regiao} regiao={b.regiao} basis={b.basis} spotPrice={spotPrice} isSP={isSP} />
           );
         })}
       </div>
     </div>
+  );
+}
+
+function BasisCell({ regiao, basis, spotPrice, isSP }: { regiao: string; basis: number; spotPrice: number; isSP: boolean }) {
+  const precoEfetivo = spotPrice + basis;
+
+  // Use both dark and light styles and let CSS handle it
+  const darkStyle = getBasisStyle(basis, true);
+  const lightStyle = getBasisStyle(basis, false);
+
+  return (
+    <>
+      {/* Dark mode cell */}
+      <div
+        className="text-center hidden dark:block"
+        style={{
+          borderRadius: 8,
+          padding: "10px 12px",
+          background: darkStyle.bg,
+          border: `0.5px solid ${darkStyle.border}`,
+        }}
+      >
+        <CellContent regiao={regiao} precoEfetivo={precoEfetivo} basis={basis} isSP={isSP} deltaColor={darkStyle.deltaColor} />
+      </div>
+      {/* Light mode cell */}
+      <div
+        className="text-center block dark:hidden"
+        style={{
+          borderRadius: 8,
+          padding: "10px 12px",
+          background: lightStyle.bg,
+          border: `0.5px solid ${lightStyle.border}`,
+        }}
+      >
+        <CellContent regiao={regiao} precoEfetivo={precoEfetivo} basis={basis} isSP={isSP} deltaColor={lightStyle.deltaColor} />
+      </div>
+    </>
+  );
+}
+
+function CellContent({ regiao, precoEfetivo, basis, isSP, deltaColor }: { regiao: string; precoEfetivo: number; basis: number; isSP: boolean; deltaColor: string }) {
+  return (
+    <>
+      <span className="block uppercase" style={{ fontFamily: "Inter, sans-serif", fontSize: 9, color: "var(--text-tertiary)", letterSpacing: "0.04em", marginBottom: 4 }}>
+        {regiao}
+      </span>
+      <span className="block" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, color: "var(--text-primary)", lineHeight: 1.2 }}>
+        R${Math.round(precoEfetivo)}
+      </span>
+      <span className="block mt-1" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: deltaColor }}>
+        {isSP ? "referencia" : `${basis}/@`}
+      </span>
+    </>
   );
 }

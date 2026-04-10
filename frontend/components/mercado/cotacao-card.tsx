@@ -18,7 +18,7 @@ export function CotacaoCard({
   value,
   suffix,
   sparkData,
-  sparkColor = "#6B8F5A",
+  sparkColor = "var(--green-2)",
   subLine,
   large = false,
   isLast = false,
@@ -27,7 +27,7 @@ export function CotacaoCard({
     <div
       style={{
         padding: "12px 18px",
-        borderRight: isLast ? "none" : "0.5px solid #2A2820",
+        borderRight: isLast ? "none" : "0.5px solid var(--border-subtle)",
       }}
     >
       <span
@@ -35,7 +35,7 @@ export function CotacaoCard({
         style={{
           fontFamily: "Inter, sans-serif",
           fontSize: 9,
-          color: "#6B6860",
+          color: "var(--text-tertiary)",
           letterSpacing: "0.04em",
           marginBottom: 6,
         }}
@@ -49,21 +49,14 @@ export function CotacaoCard({
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: large ? 26 : 20,
             fontWeight: 500,
-            color: "#F5F1E8",
+            color: "var(--text-primary)",
             lineHeight: 1,
           }}
         >
           {value}
         </span>
         {suffix && (
-          <span
-            style={{
-              fontFamily: "Inter, sans-serif",
-              fontSize: 11,
-              color: "#6B6860",
-              marginBottom: 1,
-            }}
-          >
+          <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--text-tertiary)", marginBottom: 1 }}>
             {suffix}
           </span>
         )}
@@ -77,11 +70,7 @@ export function CotacaoCard({
       {subLine && (
         <span
           className="block mt-1"
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10,
-            color: "#6B6860",
-          }}
+          style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--text-tertiary)" }}
         >
           {subLine}
         </span>

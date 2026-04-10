@@ -26,21 +26,21 @@ export function TopNav() {
   return (
     <nav
       className="flex items-center justify-between px-10 h-14"
-      style={{ borderBottom: "0.5px solid #2A2820", background: "#0F0E0B" }}
+      style={{ borderBottom: "0.5px solid var(--border-subtle)", background: "var(--bg-deep)" }}
     >
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5">
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: "#B8763E" }}
+          style={{ background: "var(--brand)" }}
         >
-          <span className="text-xs font-medium" style={{ color: "#FAF0E0" }}>T</span>
+          <span className="text-xs font-medium" style={{ color: "var(--brand-fg)" }}>T</span>
         </div>
-        <span className="text-[15px] font-medium" style={{ color: "#F5F1E8" }}>
+        <span className="text-[15px] font-medium" style={{ color: "var(--text-primary)" }}>
           Terminal
         </span>
         {farmName && (
-          <span className="text-[11px] hidden md:inline" style={{ color: "#6B6860" }}>
+          <span className="text-[11px] hidden md:inline" style={{ color: "var(--text-tertiary)" }}>
             · {farmName}
           </span>
         )}
@@ -56,8 +56,8 @@ export function TopNav() {
               href={item.href}
               className="relative text-[13px] px-3 py-1.5 rounded-md transition-colors"
               style={{
-                color: active ? "#F5F1E8" : "#6B6860",
-                background: active ? "#B8763E18" : "transparent",
+                color: active ? "var(--text-primary)" : "var(--text-tertiary)",
+                background: active ? "var(--terra-bg)" : "transparent",
               }}
             >
               {item.label}
