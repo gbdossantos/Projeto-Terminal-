@@ -1,64 +1,163 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { fetchCotacoes, simularCenarios } from "@/lib/api";
-import type { SimulatorRequest, SimulatorResponse, SimulatorScenarioInput, CotacaoMercado } from "@/lib/types";
+import type {
+  SimulatorRequest,
+  SimulatorResponse,
+  SimulatorScenarioInput,
+  CotacaoMercado,
+} from "@/lib/types";
 import { fmtBRL, fmtPct } from "@/lib/utils/format";
-import { MetricCard } from "@/components/metrics/MetricCard";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ReferenceLine, ResponsiveContainer
-} from "recharts";
+import { ScenarioSlider } from "@/components/simulator/scenario-slider";
+import { ScenarioCard } from "@/components/simulator/scenario-card";
+import { ScenarioChart } from "@/components/simulator/scenario-chart";
+import { ScenarioTable } from "@/components/simulator/scenario-table";
+import { HedgeCheckbox } from "@/components/simulator/hedge-checkbox";
 
-// Default cenarios pre-configurados
-const DEFAULT_SCENARIOS: SimulatorScenarioInput[] = [
-  { nome: "Otimista", var_arroba_pct: 0.10, var_milho_pct: -0.05, var_dolar_pct: -0.03, hedge_arroba: false, preco_hedge_arroba: 0, hedge_milho: false, preco_hedge_milho: 0 },
-  { nome: "Base (atual)", var_arroba_pct: 0, var_milho_pct: 0, var_dolar_pct: 0, hedge_arroba: false, preco_hedge_arroba: 0, hedge_milho: false, preco_hedge_milho: 0 },
-  { nome: "Estresse leve", var_arroba_pct: -0.10, var_milho_pct: 0.10, var_dolar_pct: 0.05, hedge_arroba: false, preco_hedge_arroba: 0, hedge_milho: false, preco_hedge_milho: 0 },
-  { nome: "Estresse severo", var_arroba_pct: -0.20, var_milho_pct: 0.20, var_dolar_pct: 0.10, hedge_arroba: false, preco_hedge_arroba: 0, hedge_milho: false, preco_hedge_milho: 0 },
-  { nome: "Pesadelo", var_arroba_pct: -0.30, var_milho_pct: 0.30, var_dolar_pct: 0.15, hedge_arroba: false, preco_hedge_arroba: 0, hedge_milho: false, preco_hedge_milho: 0 },
-];
+// Scenario names (excluding "Base (atual)" which is always 0%)
+const SCENARIO_KEYS = [
+  "otimista",
+  "estresseLeve",
+  "estresseSevero",
+  "pesadelo",
+] as const;
+
+const SCENARIO_LABELS: Record<string, string> = {
+  otimista: "Otimista",
+  estresseLeve: "Estresse leve",
+  estresseSevero: "Estresse severo",
+  pesadelo: "Pesadelo",
+};
+
+type ScenarioKey = (typeof SCENARIO_KEYS)[number];
+
+interface Variacoes {
+  otimista: { arroba: number; milho: number; dolar: number };
+  estresseLeve: { arroba: number; milho: number; dolar: number };
+  estresseSevero: { arroba: number; milho: number; dolar: number };
+  pesadelo: { arroba: number; milho: number; dolar: number };
+}
+
+const DEFAULT_VARIACOES: Variacoes = {
+  otimista: { arroba: 10, milho: -5, dolar: -3 },
+  estresseLeve: { arroba: -10, milho: 10, dolar: 5 },
+  estresseSevero: { arroba: -20, milho: 20, dolar: 10 },
+  pesadelo: { arroba: -30, milho: 30, dolar: 15 },
+};
+
+function buildCenarios(
+  variacoes: Variacoes,
+  hedgeArroba: boolean,
+  hedgeMilho: boolean,
+  precoHedgeArroba: number,
+  precoHedgeMilho: number
+): SimulatorScenarioInput[] {
+  const hedgeFields = {
+    hedge_arroba: hedgeArroba,
+    preco_hedge_arroba: hedgeArroba ? precoHedgeArroba : 0,
+    hedge_milho: hedgeMilho,
+    preco_hedge_milho: hedgeMilho ? precoHedgeMilho : 0,
+  };
+
+  return [
+    {
+      nome: "Otimista",
+      var_arroba_pct: variacoes.otimista.arroba / 100,
+      var_milho_pct: variacoes.otimista.milho / 100,
+      var_dolar_pct: variacoes.otimista.dolar / 100,
+      ...hedgeFields,
+    },
+    {
+      nome: "Base (atual)",
+      var_arroba_pct: 0,
+      var_milho_pct: 0,
+      var_dolar_pct: 0,
+      ...hedgeFields,
+    },
+    {
+      nome: "Estresse leve",
+      var_arroba_pct: variacoes.estresseLeve.arroba / 100,
+      var_milho_pct: variacoes.estresseLeve.milho / 100,
+      var_dolar_pct: variacoes.estresseLeve.dolar / 100,
+      ...hedgeFields,
+    },
+    {
+      nome: "Estresse severo",
+      var_arroba_pct: variacoes.estresseSevero.arroba / 100,
+      var_milho_pct: variacoes.estresseSevero.milho / 100,
+      var_dolar_pct: variacoes.estresseSevero.dolar / 100,
+      ...hedgeFields,
+    },
+    {
+      nome: "Pesadelo",
+      var_arroba_pct: variacoes.pesadelo.arroba / 100,
+      var_milho_pct: variacoes.pesadelo.milho / 100,
+      var_dolar_pct: variacoes.pesadelo.dolar / 100,
+      ...hedgeFields,
+    },
+  ];
+}
 
 export default function SimuladorPage() {
+  // Cotacoes
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
-  const [result, setResult] = useState<SimulatorResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Parametros do lote (editaveis)
+  // Lote params
   const [arrobas, setArrobas] = useState(3000);
   const [custoTotal, setCustoTotal] = useState(850000);
   const [custoDieta, setCustoDieta] = useState(280000);
   const [diasCiclo, setDiasCiclo] = useState(100);
 
-  // Cenarios
-  const [cenarios, setCenarios] = useState(DEFAULT_SCENARIOS);
-
-  // Hedge toggles
+  // Hedge
   const [hedgeArroba, setHedgeArroba] = useState(false);
-  const [precoHedgeArroba, setPrecoHedgeArroba] = useState(340);
   const [hedgeMilho, setHedgeMilho] = useState(false);
+  const [precoHedgeArroba, setPrecoHedgeArroba] = useState(340);
   const [precoHedgeMilho, setPrecoHedgeMilho] = useState(70);
 
+  // Variacoes
+  const [variacoes, setVariacoes] = useState<Variacoes>(DEFAULT_VARIACOES);
+
+  // Collapsible slider groups
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    arroba: true,
+    milho: false,
+    dolar: false,
+  });
+
+  // Results
+  const [result, setResult] = useState<SimulatorResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Auto-calc guard
+  const initialLoadDone = useRef(false);
+
   useEffect(() => {
-    fetchCotacoes().then(setCotacoes).catch(() => {});
+    fetchCotacoes()
+      .then((c) => {
+        setCotacoes(c);
+        if (c.arroba_boi_gordo) setPrecoHedgeArroba(Math.round(c.arroba_boi_gordo));
+        if (c.milho_esalq) setPrecoHedgeMilho(Math.round(c.milho_esalq));
+      })
+      .catch(() => {});
   }, []);
 
   const precoArroba = cotacoes?.arroba_boi_gordo ?? 350;
   const precoMilho = cotacoes?.milho_esalq ?? 70;
-  const dolar = cotacoes?.dolar_ptax ?? 5.20;
+  const dolar = cotacoes?.dolar_ptax ?? 5.2;
 
   const calcular = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    // Aplicar hedge toggles a todos os cenarios
-    const cenariosComHedge = cenarios.map(c => ({
-      ...c,
-      hedge_arroba: hedgeArroba,
-      preco_hedge_arroba: hedgeArroba ? precoHedgeArroba : 0,
-      hedge_milho: hedgeMilho,
-      preco_hedge_milho: hedgeMilho ? precoHedgeMilho : 0,
-    }));
+    const cenarios = buildCenarios(
+      variacoes,
+      hedgeArroba,
+      hedgeMilho,
+      precoHedgeArroba,
+      precoHedgeMilho
+    );
 
     const req: SimulatorRequest = {
       arrobas_totais: arrobas,
@@ -69,7 +168,7 @@ export default function SimuladorPage() {
       preco_arroba: precoArroba,
       preco_milho_saca: precoMilho,
       dolar_ptax: dolar,
-      cenarios: cenariosComHedge,
+      cenarios,
     };
 
     try {
@@ -79,261 +178,525 @@ export default function SimuladorPage() {
     } finally {
       setLoading(false);
     }
-  }, [arrobas, custoTotal, custoDieta, diasCiclo, cenarios, hedgeArroba, precoHedgeArroba, hedgeMilho, precoHedgeMilho, precoArroba, precoMilho, dolar]);
+  }, [
+    arrobas,
+    custoTotal,
+    custoDieta,
+    diasCiclo,
+    variacoes,
+    hedgeArroba,
+    hedgeMilho,
+    precoHedgeArroba,
+    precoHedgeMilho,
+    precoArroba,
+    precoMilho,
+    dolar,
+  ]);
 
-  // Auto-calcular quando parametros mudam
+  // Auto-sim on first load once cotacoes arrive
   useEffect(() => {
-    const t = setTimeout(calcular, 500);
-    return () => clearTimeout(t);
-  }, [calcular]);
+    if (cotacoes && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      calcular();
+    }
+  }, [cotacoes, calcular]);
 
-  const chartData = result?.cenarios.map(c => ({
-    nome: c.nome,
-    "Sem hedge": c.margem_sem_hedge,
-    "Com hedge": (c.tem_hedge_arroba || c.tem_hedge_milho) ? c.margem_com_hedge : null,
-  })) ?? [];
+  const updateVariacao = (
+    scenario: ScenarioKey,
+    variable: "arroba" | "milho" | "dolar",
+    value: number
+  ) => {
+    setVariacoes((prev) => ({
+      ...prev,
+      [scenario]: { ...prev[scenario], [variable]: value },
+    }));
+  };
+
+  const toggleGroup = (key: string) => {
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const showHedge = hedgeArroba || hedgeMilho;
+
+  const chartData =
+    result?.cenarios.map((c) => ({
+      nome: c.nome.replace("(atual)", "").trim(),
+      margem: c.margem_sem_hedge,
+    })) ?? [];
+
+  // Timestamp
+  const now = new Date();
+  const timestamp = `Atualizado ${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")} \u00b7 ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-semibold text-t-primary">Simulador de cenarios</h1>
-        <p className="text-sm text-t-secondary mt-1">
-          Teste o impacto combinado de variacoes em boi, milho e dolar sobre seu lote
-        </p>
-      </div>
-
-      {/* Parametros do lote */}
-      <div className="border border-border rounded-lg bg-card p-5 space-y-5">
-        <p className="text-xs font-medium text-t-secondary uppercase tracking-wider">Parametros do lote</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">Arrobas totais</label>
-            <input type="number" value={arrobas} onChange={e => setArrobas(Number(e.target.value))} step={100}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra" />
-          </div>
-          <div>
-            <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">Custo total (R$)</label>
-            <input type="number" value={custoTotal} onChange={e => setCustoTotal(Number(e.target.value))} step={10000}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra" />
-          </div>
-          <div>
-            <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">Custo dieta (R$)</label>
-            <input type="number" value={custoDieta} onChange={e => setCustoDieta(Number(e.target.value))} step={5000}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra" />
-          </div>
-          <div>
-            <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">Dias ciclo</label>
-            <input type="number" value={diasCiclo} onChange={e => setDiasCiclo(Number(e.target.value))}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra" />
-          </div>
-        </div>
-
-        <div className="border-t border-border pt-4">
-          <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Precos de mercado (atuais)</p>
-          <div className="grid grid-cols-3 gap-4">
-            <MetricCard label="Arroba" value={fmtBRL(precoArroba, 2)} unit="/@" compact />
-            <MetricCard label="Milho" value={fmtBRL(precoMilho, 2)} unit="/sc" compact />
-            <MetricCard label="Dolar" value={`R$ ${dolar.toFixed(2)}`} compact />
-          </div>
-        </div>
-      </div>
-
-      {/* Hedge toggles */}
-      <div className="border border-border rounded-lg bg-card p-5 space-y-4">
-        <p className="text-xs font-medium text-t-secondary uppercase tracking-wider">Protecao (hedge)</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={hedgeArroba} onChange={e => setHedgeArroba(e.target.checked)}
-                className="w-4 h-4 rounded border-border accent-terra" />
-              <span className="text-sm text-t-primary">Travar preco da arroba (venda de futuro)</span>
-            </label>
-            {hedgeArroba && (
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">Preco travado (R$/@)</label>
-                <input type="number" value={precoHedgeArroba} onChange={e => setPrecoHedgeArroba(Number(e.target.value))} step={1}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra" />
-              </div>
-            )}
-          </div>
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={hedgeMilho} onChange={e => setHedgeMilho(e.target.checked)}
-                className="w-4 h-4 rounded border-border accent-terra" />
-              <span className="text-sm text-t-primary">Travar preco do milho (compra de futuro)</span>
-            </label>
-            {hedgeMilho && (
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">Preco travado (R$/saca)</label>
-                <input type="number" value={precoHedgeMilho} onChange={e => setPrecoHedgeMilho(Number(e.target.value))} step={0.5}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra" />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {error && <div className="bg-danger-bg border border-danger/30 rounded-lg px-5 py-3 text-sm text-danger">{error}</div>}
-      {loading && !result && <div className="text-center py-12 text-t-tertiary text-sm">Simulando cenarios...</div>}
-
-      {result && (
-        <>
-          {/* Resumo */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <MetricCard
-              label="Melhor cenario"
-              value={fmtBRL(result.melhor_cenario.margem_sem_hedge)}
-              delta={result.melhor_cenario.nome}
-              deltaType="positive"
+    <div
+      className="flex"
+      style={{ minHeight: "calc(100vh - 56px)" }}
+    >
+      {/* ─── LEFT PANEL ─── */}
+      <aside
+        className="shrink-0 flex flex-col overflow-y-auto"
+        style={{
+          width: 280,
+          background: "#0A0908",
+          borderRight: "0.5px solid #2A2820",
+          padding: "20px 18px",
+          gap: 20,
+        }}
+      >
+        {/* Section 1: Parametros do lote */}
+        <div>
+          <h3
+            style={{
+              fontFamily: "'Source Serif 4', serif",
+              fontSize: 13,
+              color: "#F5F1E8",
+              marginBottom: 14,
+            }}
+          >
+            Parametros do lote
+          </h3>
+          <div className="flex flex-col" style={{ gap: 8 }}>
+            <LoteInput
+              label="Arrobas totais"
+              value={arrobas}
+              onChange={setArrobas}
+              step={100}
             />
-            <MetricCard
-              label="Cenario base"
-              value={fmtBRL(result.cenario_base.margem_sem_hedge)}
-              delta={fmtPct(result.cenario_base.margem_pct_sem_hedge)}
+            <LoteInput
+              label="Custo total (R$)"
+              value={custoTotal}
+              onChange={setCustoTotal}
+              step={10000}
             />
-            <MetricCard
-              label="Pior cenario"
-              value={fmtBRL(result.pior_cenario.margem_sem_hedge)}
-              delta={result.pior_cenario.nome}
-              deltaType={result.pior_cenario.margem_sem_hedge < 0 ? "negative" : "neutral"}
-            />
-          </div>
-
-          {/* Grafico de barras */}
-          <div className="border border-border rounded-lg bg-card p-5">
-            <h2 className="text-sm font-medium text-t-primary mb-1">Impacto por cenario</h2>
-            <p className="text-[11px] text-t-tertiary mb-4">Margem do lote (R$) em cada cenario simulado</p>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData} margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
-                <XAxis dataKey="nome" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip
-                  formatter={(value) => fmtBRL(Number(value))}
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="4 4" />
-                <Bar dataKey="Sem hedge" fill="var(--terra)" radius={[4, 4, 0, 0]} />
-                {(hedgeArroba || hedgeMilho) && (
-                  <Bar dataKey="Com hedge" fill="var(--success)" radius={[4, 4, 0, 0]} />
-                )}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Tabela detalhada */}
-          <div className="border border-border rounded-lg bg-card p-5">
-            <h2 className="text-sm font-medium text-t-primary mb-4">Detalhamento por cenario</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-border text-left">
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium">Cenario</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Arroba</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Milho</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Dolar</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Receita</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Custo</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Margem</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Margem %</th>
-                    {(hedgeArroba || hedgeMilho) && (
-                      <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Margem c/ hedge</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.cenarios.map((c, i) => {
-                    const isBase = c.nome.includes("Base");
-                    const isNeg = c.margem_sem_hedge < 0;
-                    return (
-                      <tr key={i} className={`border-b border-border ${isBase ? "bg-secondary/30" : ""}`}>
-                        <td className={`py-2 px-3 ${isBase ? "font-medium text-t-primary" : "text-t-secondary"}`}>{c.nome}</td>
-                        <td className="py-2 px-3 text-right font-mono font-mono-nums text-t-secondary">{fmtBRL(c.preco_arroba_cenario, 0)}/@</td>
-                        <td className="py-2 px-3 text-right font-mono font-mono-nums text-t-secondary">{fmtBRL(c.preco_milho_cenario, 0)}/sc</td>
-                        <td className="py-2 px-3 text-right font-mono font-mono-nums text-t-secondary">R$ {c.dolar_cenario.toFixed(2)}</td>
-                        <td className="py-2 px-3 text-right font-mono font-mono-nums text-t-secondary">{fmtBRL(c.receita_sem_hedge)}</td>
-                        <td className="py-2 px-3 text-right font-mono font-mono-nums text-t-secondary">{fmtBRL(c.custo_cenario)}</td>
-                        <td className={`py-2 px-3 text-right font-mono font-mono-nums font-medium ${isNeg ? "text-danger" : "text-success"}`}>
-                          {fmtBRL(c.margem_sem_hedge)}
-                        </td>
-                        <td className="py-2 px-3 text-right">
-                          <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-medium font-mono ${
-                            c.margem_pct_sem_hedge >= 0.15 ? "bg-success-bg text-success" :
-                            c.margem_pct_sem_hedge >= 0.05 ? "bg-warning-bg text-warning" :
-                            "bg-danger-bg text-danger"
-                          }`}>
-                            {fmtPct(c.margem_pct_sem_hedge)}
-                          </span>
-                        </td>
-                        {(hedgeArroba || hedgeMilho) && (
-                          <td className={`py-2 px-3 text-right font-mono font-mono-nums font-medium ${
-                            c.margem_com_hedge < 0 ? "text-danger" : "text-success"
-                          }`}>
-                            {fmtBRL(c.margem_com_hedge)}
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-2" style={{ gap: 8 }}>
+              <LoteInput
+                label="Custo dieta (R$)"
+                value={custoDieta}
+                onChange={setCustoDieta}
+                step={5000}
+              />
+              <LoteInput
+                label="Dias ciclo"
+                value={diasCiclo}
+                onChange={setDiasCiclo}
+              />
             </div>
           </div>
+        </div>
 
-          {/* Cenarios editaveis */}
-          <div className="border border-border rounded-lg bg-card p-5">
-            <h2 className="text-sm font-medium text-t-primary mb-1">Cenarios customizados</h2>
-            <p className="text-[11px] text-t-tertiary mb-4">Edite as variacoes percentuais de cada cenario</p>
-            <div className="space-y-3">
-              {cenarios.map((c, i) => (
-                <div key={i} className="grid grid-cols-4 gap-3 items-end">
-                  <div>
-                    <label className="block text-[11px] text-t-tertiary mb-1">{c.nome}</label>
-                    <span className="text-[10px] text-t-tertiary">Arroba</span>
-                    <input type="number" value={c.var_arroba_pct * 100} step={5}
-                      onChange={e => {
-                        const updated = [...cenarios];
-                        updated[i] = { ...c, var_arroba_pct: Number(e.target.value) / 100 };
-                        setCenarios(updated);
-                      }}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs font-mono text-t-primary focus:outline-none focus:border-terra"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-t-tertiary">Milho</span>
-                    <input type="number" value={c.var_milho_pct * 100} step={5}
-                      onChange={e => {
-                        const updated = [...cenarios];
-                        updated[i] = { ...c, var_milho_pct: Number(e.target.value) / 100 };
-                        setCenarios(updated);
-                      }}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs font-mono text-t-primary focus:outline-none focus:border-terra"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-t-tertiary">Dolar</span>
-                    <input type="number" value={c.var_dolar_pct * 100} step={5}
-                      onChange={e => {
-                        const updated = [...cenarios];
-                        updated[i] = { ...c, var_dolar_pct: Number(e.target.value) / 100 };
-                        setCenarios(updated);
-                      }}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs font-mono text-t-primary focus:outline-none focus:border-terra"
-                    />
-                  </div>
-                  <div className="text-right">
-                    <span className={`text-xs font-mono ${
-                      (result?.cenarios[i]?.margem_sem_hedge ?? 0) < 0 ? "text-danger" : "text-success"
-                    }`}>
-                      {result?.cenarios[i] ? fmtBRL(result.cenarios[i].margem_sem_hedge) : "—"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Section 2: Precos de mercado (display only) */}
+        <div style={{ borderTop: "0.5px solid #2A2820", paddingTop: 16 }}>
+          <span
+            className="block uppercase"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 10,
+              fontWeight: 500,
+              color: "#6B6860",
+              letterSpacing: "0.04em",
+              marginBottom: 10,
+            }}
+          >
+            Precos de mercado
+          </span>
+          <div className="flex flex-col" style={{ gap: 6 }}>
+            <MarketRow label="Arroba" value={fmtBRL(precoArroba, 2)} suffix="/@" />
+            <MarketRow label="Milho" value={fmtBRL(precoMilho, 2)} suffix="/sc" />
+            <MarketRow label="Dolar" value={`R$ ${dolar.toFixed(2)}`} />
           </div>
-        </>
+        </div>
+
+        {/* Section 3: Protecao (hedge) */}
+        <div style={{ borderTop: "0.5px solid #2A2820", paddingTop: 14 }}>
+          <span
+            className="block"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 11,
+              fontWeight: 500,
+              color: "#6B6860",
+              marginBottom: 10,
+            }}
+          >
+            Protecao
+          </span>
+          <div className="flex flex-col" style={{ gap: 8 }}>
+            <HedgeCheckbox
+              checked={hedgeArroba}
+              onChange={setHedgeArroba}
+              label="Travar preco da arroba (venda de futuro)"
+            />
+            <HedgeCheckbox
+              checked={hedgeMilho}
+              onChange={setHedgeMilho}
+              label="Travar preco do milho (compra de futuro)"
+            />
+          </div>
+        </div>
+
+        {/* Section 4: Variacoes por cenario */}
+        <div style={{ borderTop: "0.5px solid #2A2820", paddingTop: 16 }}>
+          <h3
+            style={{
+              fontFamily: "'Source Serif 4', serif",
+              fontSize: 13,
+              color: "#F5F1E8",
+              marginBottom: 14,
+            }}
+          >
+            Variacoes por cenario
+          </h3>
+
+          {/* Arroba group */}
+          <SliderGroup
+            label="Arroba"
+            labelColor="#B8763E"
+            open={openGroups.arroba ?? false}
+            onToggle={() => toggleGroup("arroba")}
+          >
+            {SCENARIO_KEYS.map((key) => (
+              <ScenarioSlider
+                key={key}
+                label={SCENARIO_LABELS[key]}
+                value={variacoes[key].arroba}
+                onChange={(v) => updateVariacao(key, "arroba", v)}
+              />
+            ))}
+          </SliderGroup>
+
+          {/* Milho group */}
+          <SliderGroup
+            label="Milho"
+            labelColor="#6B6860"
+            open={openGroups.milho ?? false}
+            onToggle={() => toggleGroup("milho")}
+          >
+            {SCENARIO_KEYS.map((key) => (
+              <ScenarioSlider
+                key={key}
+                label={SCENARIO_LABELS[key]}
+                value={variacoes[key].milho}
+                onChange={(v) => updateVariacao(key, "milho", v)}
+              />
+            ))}
+          </SliderGroup>
+
+          {/* Dolar group */}
+          <SliderGroup
+            label="Dolar"
+            labelColor="#6B6860"
+            open={openGroups.dolar ?? false}
+            onToggle={() => toggleGroup("dolar")}
+          >
+            {SCENARIO_KEYS.map((key) => (
+              <ScenarioSlider
+                key={key}
+                label={SCENARIO_LABELS[key]}
+                value={variacoes[key].dolar}
+                onChange={(v) => updateVariacao(key, "dolar", v)}
+              />
+            ))}
+          </SliderGroup>
+        </div>
+
+        {/* Section 5: Simular button (pushed to bottom) */}
+        <div style={{ marginTop: "auto" }}>
+          <button
+            onClick={calcular}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2"
+            style={{
+              background: loading ? "#B8763E99" : "#B8763E",
+              color: "#FAF0E0",
+              borderRadius: 8,
+              padding: 10,
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              fontWeight: 500,
+              border: "none",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1,
+              transition: "opacity 150ms",
+            }}
+          >
+            {loading ? (
+              <>
+                <Spinner />
+                Simulando...
+              </>
+            ) : (
+              "Simular cenarios \u2192"
+            )}
+          </button>
+        </div>
+      </aside>
+
+      {/* ─── RIGHT PANEL ─── */}
+      <main
+        className="flex-1 flex flex-col overflow-y-auto"
+        style={{
+          background: "#0F0E0B",
+          padding: "20px 24px",
+          gap: 14,
+        }}
+      >
+        {/* Timestamp */}
+        <div className="flex justify-end">
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 11,
+              color: "#6B6860",
+            }}
+          >
+            {timestamp}
+          </span>
+        </div>
+
+        {error && (
+          <div
+            style={{
+              background: "#B5413418",
+              border: "0.5px solid #B5413444",
+              borderRadius: 8,
+              padding: "10px 14px",
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              color: "#D4614A",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {!result && !loading && (
+          <div
+            className="flex-1 flex items-center justify-center"
+            style={{ color: "#6B6860", fontFamily: "Inter, sans-serif", fontSize: 13 }}
+          >
+            Ajuste os parametros e clique em &ldquo;Simular cenarios&rdquo;
+          </div>
+        )}
+
+        {loading && !result && (
+          <div
+            className="flex-1 flex items-center justify-center"
+            style={{ color: "#6B6860", fontFamily: "Inter, sans-serif", fontSize: 13 }}
+          >
+            Simulando cenarios...
+          </div>
+        )}
+
+        {result && (
+          <>
+            {/* 3 headline cards */}
+            <div className="grid grid-cols-3" style={{ gap: 10 }}>
+              <ScenarioCard
+                type="best"
+                label="Melhor cenario"
+                value={result.melhor_cenario.margem_sem_hedge}
+                subLabel={result.melhor_cenario.nome}
+                subValue={fmtPct(result.melhor_cenario.margem_pct_sem_hedge)}
+              />
+              <ScenarioCard
+                type="base"
+                label="Cenario base"
+                value={result.cenario_base.margem_sem_hedge}
+                subLabel={`${fmtPct(result.cenario_base.margem_pct_sem_hedge)} de margem`}
+              />
+              <ScenarioCard
+                type="worst"
+                label="Pior cenario"
+                value={result.pior_cenario.margem_sem_hedge}
+                subLabel={result.pior_cenario.nome}
+                subValue={fmtPct(result.pior_cenario.margem_pct_sem_hedge)}
+              />
+            </div>
+
+            {/* Bar chart */}
+            <ScenarioChart data={chartData} />
+
+            {/* Detail table */}
+            <ScenarioTable
+              cenarios={result.cenarios}
+              showHedge={showHedge}
+            />
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+/* ─── Inline sub-components ─── */
+
+function LoteInput({
+  label,
+  value,
+  onChange,
+  step = 1,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  step?: number;
+}) {
+  return (
+    <div>
+      <label
+        className="block"
+        style={{
+          fontFamily: "Inter, sans-serif",
+          fontSize: 10,
+          color: "#6B6860",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </label>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        step={step}
+        className="sim-input"
+        style={{
+          width: "100%",
+          height: 34,
+          background: "#0F0E0B",
+          border: "0.5px solid #2A2820",
+          borderRadius: 8,
+          padding: "0 10px",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 12,
+          color: "#F5F1E8",
+          outline: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+function MarketRow({
+  label,
+  value,
+  suffix,
+}: {
+  label: string;
+  value: string;
+  suffix?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <span
+        style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "#6B6860" }}
+      >
+        {label}
+      </span>
+      <span>
+        <span
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 13,
+            color: "#F5F1E8",
+          }}
+        >
+          {value}
+        </span>
+        {suffix && (
+          <span
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 10,
+              color: "#6B6860",
+              marginLeft: 2,
+            }}
+          >
+            {suffix}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function SliderGroup({
+  label,
+  labelColor,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string;
+  labelColor: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-1 w-full text-left"
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: "4px 0",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 9,
+            color: labelColor,
+            transition: "transform 150ms",
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+            display: "inline-block",
+          }}
+        >
+          \u25B8
+        </span>
+        <span
+          className="uppercase"
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 10,
+            fontWeight: 500,
+            color: labelColor,
+            letterSpacing: "0.04em",
+          }}
+        >
+          {label}
+        </span>
+      </button>
+      {open && (
+        <div className="flex flex-col" style={{ gap: 6, paddingTop: 6, paddingLeft: 4 }}>
+          {children}
+        </div>
       )}
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      className="animate-spin"
+    >
+      <circle
+        cx="6"
+        cy="6"
+        r="5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeDasharray="20 10"
+      />
+    </svg>
   );
 }

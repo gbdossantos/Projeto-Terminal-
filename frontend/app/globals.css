@@ -158,6 +158,55 @@
   }
 }
 
+/* ── Scenario sliders ── */
+input[type="range"].scenario-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"].scenario-slider::-webkit-slider-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #2A2820;
+}
+
+input[type="range"].scenario-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #B8763E;
+  margin-top: -3px;
+  border: none;
+}
+
+input[type="range"].scenario-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #2A2820;
+  border: none;
+}
+
+input[type="range"].scenario-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #B8763E;
+  border: none;
+}
+
+/* Number input spinner removal for simulator */
+input[type="number"].sim-input::-webkit-inner-spin-button,
+input[type="number"].sim-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].sim-input {
+  -moz-appearance: textfield;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
