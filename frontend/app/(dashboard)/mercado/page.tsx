@@ -4,22 +4,21 @@ import { useEffect, useState } from "react";
 import {
   fetchCotacoes,
   fetchFuturos,
-  fetchHistoricoDolar,
   fetchHistoricoArroba,
   fetchHistoricoMilho,
 } from "@/lib/api";
 import type { CotacaoMercado, CurvaFuturos, HistoricoDolarEntry } from "@/lib/types";
-import { PainelMercado } from "@/components/metrics/PainelMercado";
-import { MetricCard } from "@/components/metrics/MetricCard";
-import { CurvaFuturosChart } from "@/components/mercado/CurvaFuturosChart";
-import { BasisRegiao } from "@/components/mercado/BasisRegiao";
-import { HistoricoDolar } from "@/components/mercado/HistoricoDolar";
-import { fmtBRL } from "@/lib/utils/format";
+import { TickerTape } from "@/components/mercado/ticker-tape";
+import { CotacaoCard } from "@/components/mercado/cotacao-card";
+import { CurvaBGIChart } from "@/components/mercado/curva-bgi-chart";
+import { ContratosTable } from "@/components/mercado/contratos-table";
+import { AlertasFeed } from "@/components/mercado/alertas-feed";
+import { SparkLine } from "@/components/mercado/spark-line";
+import { BasisGrid } from "@/components/mercado/basis-grid";
 
 export default function MercadoPage() {
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
   const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
-  const [histDolar, setHistDolar] = useState<HistoricoDolarEntry[]>([]);
   const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
   const [histMilho, setHistMilho] = useState<HistoricoDolarEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,223 +27,278 @@ export default function MercadoPage() {
     Promise.all([
       fetchCotacoes().catch(() => null),
       fetchFuturos().catch(() => null),
-      fetchHistoricoDolar(90).catch(() => []),
       fetchHistoricoArroba().catch(() => []),
       fetchHistoricoMilho().catch(() => []),
-    ]).then(([c, f, hd, ha, hm]) => {
+    ]).then(([c, f, ha, hm]) => {
       if (c) setCotacoes(c);
       if (f) setFuturos(f);
-      if (Array.isArray(hd)) setHistDolar(hd);
       if (Array.isArray(ha)) setHistArroba(ha);
       if (Array.isArray(hm)) setHistMilho(hm);
       setLoading(false);
     });
   }, []);
 
+  const spotPrice = cotacoes?.arroba_boi_gordo ?? null;
+  const contratos = futuros?.contratos ?? [];
+
+  // Sparkline data (last 20 points)
+  const arrobaSparkData = histArroba.slice(-20).map((d) => d.valor);
+  const milhoSparkData = histMilho.slice(-20).map((d) => d.valor);
+
+  // Milho stats
+  const milhoAtual = cotacoes?.milho_esalq ?? (histMilho.length > 0 ? histMilho[histMilho.length - 1].valor : null);
+  const milhoMin = milhoSparkData.length > 0 ? Math.min(...milhoSparkData) : null;
+  const milhoMax = milhoSparkData.length > 0 ? Math.max(...milhoSparkData) : null;
+
+  // CDI sub line
+  const cdiSub =
+    cotacoes?.cdi_anual != null && spotPrice != null
+      ? `${((cotacoes.cdi_anual / 12) * 100).toFixed(2)}% a.m. · R$${(spotPrice * cotacoes.cdi_anual * (90 / 365)).toFixed(2)}/@ 90d`
+      : undefined;
+
+  // Backwardation check for interpretation banner
+  const avgFutures =
+    contratos.length > 0
+      ? contratos.reduce((s, c) => s + c.preco_ajuste, 0) / contratos.length
+      : 0;
+  const isBackwardation = spotPrice != null && spotPrice > avgFutures;
+
+  // Loading skeleton
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-t-primary">Mercado</h1>
-          <p className="text-sm text-t-secondary mt-1">Carregando dados de mercado...</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div>
+        {/* Ticker skeleton */}
+        <div
+          className="animate-pulse"
+          style={{ background: "#221F18", height: 28, borderBottom: "0.5px solid #2A2820" }}
+        />
+        {/* Cotacoes skeleton */}
+        <div className="grid grid-cols-4" style={{ borderBottom: "0.5px solid #2A2820" }}>
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="border border-border rounded-lg bg-card h-20 animate-pulse" />
+            <div
+              key={i}
+              className="animate-pulse"
+              style={{
+                height: 80,
+                background: "#1A1814",
+                borderRight: i < 4 ? "0.5px solid #2A2820" : "none",
+              }}
+            />
           ))}
+        </div>
+        {/* Main skeleton */}
+        <div className="grid" style={{ gridTemplateColumns: "1fr 240px", borderBottom: "0.5px solid #2A2820" }}>
+          <div className="animate-pulse" style={{ height: 400, background: "#0F0E0B" }} />
+          <div className="animate-pulse" style={{ height: 400, background: "#0F0E0B", borderLeft: "0.5px solid #2A2820" }} />
         </div>
       </div>
     );
   }
 
-  // Calcular spread spot vs futuros
-  const spotPrice = cotacoes?.arroba_boi_gordo ?? null;
-  const futuroProximo = futuros?.contratos?.[0];
-  const spread = spotPrice && futuroProximo ? spotPrice - futuroProximo.preco_ajuste : null;
-
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-semibold text-t-primary">Mercado</h1>
-        <p className="text-sm text-t-secondary mt-1">
-          Inteligencia de mercado para pecuaria de corte
-        </p>
+    <div>
+      {/* ── TICKER TAPE ── */}
+      <TickerTape cotacoes={cotacoes} contratos={contratos} />
+
+      {/* ── COTACOES STRIP ── */}
+      <div
+        className="grid grid-cols-4"
+        style={{ borderBottom: "0.5px solid #2A2820" }}
+      >
+        <CotacaoCard
+          label="Arroba CEPEA/SP"
+          value={spotPrice != null ? `R$ ${spotPrice.toFixed(2)}` : "—"}
+          suffix="/@"
+          large
+          sparkData={arrobaSparkData}
+          sparkColor={arrobaSparkData.length > 1 && arrobaSparkData[arrobaSparkData.length - 1] >= arrobaSparkData[0] ? "#6B8F5A" : "#D4614A"}
+        />
+        <CotacaoCard
+          label="Dolar PTAX"
+          value={cotacoes?.dolar_ptax != null ? `R$ ${cotacoes.dolar_ptax.toFixed(2)}` : "—"}
+        />
+        <CotacaoCard
+          label="Milho ESALQ"
+          value={cotacoes?.milho_esalq != null ? `R$ ${cotacoes.milho_esalq.toFixed(2)}` : "—"}
+          suffix="/sc"
+          sparkData={milhoSparkData}
+          sparkColor={milhoSparkData.length > 1 && milhoSparkData[milhoSparkData.length - 1] >= milhoSparkData[0] ? "#6B8F5A" : "#D4614A"}
+        />
+        <CotacaoCard
+          label="CDI"
+          value={cotacoes?.cdi_anual != null ? `${(cotacoes.cdi_anual * 100).toFixed(2)}%` : "—"}
+          suffix="a.a."
+          subLine={cdiSub}
+          isLast
+        />
       </div>
 
-      {/* Snapshot cotacoes */}
-      {cotacoes && <PainelMercado cotacoes={cotacoes} />}
+      {/* ── MAIN 2-COL BLOCK ── */}
+      <div
+        className="grid"
+        style={{
+          gridTemplateColumns: "1fr 240px",
+          borderBottom: "0.5px solid #2A2820",
+        }}
+      >
+        {/* Left — Curva BGI + Contratos table */}
+        <div>
+          {contratos.length > 0 ? (
+            <>
+              <CurvaBGIChart
+                contratos={contratos}
+                spotPrice={spotPrice}
+                fonte={futuros?.fonte ?? ""}
+              />
+              <ContratosTable contratos={contratos} spotPrice={spotPrice} />
+            </>
+          ) : (
+            <div
+              className="flex items-center justify-center"
+              style={{
+                height: 300,
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "#6B6860",
+              }}
+            >
+              Dados de futuros indisponiveis no momento
+            </div>
+          )}
+        </div>
 
-      {/* Historico da arroba */}
-      <div className="border border-border rounded-lg bg-card p-5">
-        <h2 className="text-sm font-medium text-t-primary mb-1">Indicador CEPEA — boi gordo</h2>
-        <p className="text-[11px] text-t-tertiary mb-4">
-          Historico recente do indicador CEPEA/ESALQ (R$/@, praca SP)
-        </p>
-        {histArroba.length > 0 ? (
-          <HistoricoDolar dados={histArroba} />
-        ) : (
-          <p className="text-sm text-t-tertiary py-8 text-center">
-            Historico de arroba indisponivel — scraping bloqueado em cloud
-          </p>
-        )}
-      </div>
+        {/* Right — Alertas + Milho + Interpretation */}
+        <div
+          className="flex flex-col"
+          style={{
+            borderLeft: "0.5px solid #2A2820",
+            padding: 14,
+            gap: 9,
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: "'Source Serif 4', serif",
+              fontSize: 13,
+              color: "#F5F1E8",
+              marginBottom: 2,
+            }}
+          >
+            Alertas de mercado
+          </h3>
 
-      {/* Curva de futuros + tabela detalhada */}
-      <div className="border border-border rounded-lg bg-card p-5">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-sm font-medium text-t-primary">Curva de futuros B3 — boi gordo (BGI)</h2>
-          {futuros && (
-            <span className="text-[11px] text-t-tertiary">
-              Fonte: {futuros.fonte} · {futuros.contratos.length} contratos
+          {/* Alertas feed */}
+          <AlertasFeed
+            cotacoes={cotacoes}
+            contratos={contratos}
+            spotPrice={spotPrice}
+            histArroba={histArroba}
+            histMilho={histMilho}
+          />
+
+          {/* Milho sparkline card */}
+          {milhoSparkData.length > 1 && (
+            <div
+              style={{
+                background: "#1A1814",
+                border: "0.5px solid #2A2820",
+                borderRadius: 8,
+                padding: "10px 12px",
+              }}
+            >
+              <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
+                <span
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 10,
+                    color: "#6B6860",
+                  }}
+                >
+                  Milho ESALQ — 20d
+                </span>
+                {milhoAtual != null && (
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 11,
+                      color: "#F5F1E8",
+                    }}
+                  >
+                    R$ {milhoAtual.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <SparkLine
+                data={milhoSparkData}
+                color="#B8763E"
+                width={208}
+                height={36}
+                strokeWidth={1.5}
+              />
+              {milhoMin != null && milhoMax != null && (
+                <div className="flex justify-between mt-1">
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9,
+                      color: "#6B6860",
+                    }}
+                  >
+                    min R${milhoMin.toFixed(2)}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9,
+                      color: "#6B6860",
+                    }}
+                  >
+                    max R${milhoMax.toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Interpretation banner */}
+          <div
+            style={{
+              background: "#4A5D3A15",
+              border: "0.5px solid #4A5D3A33",
+              borderRadius: 7,
+              padding: "9px 11px",
+            }}
+          >
+            <span
+              className="block"
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 10,
+                fontWeight: 500,
+                color: "#6B8F5A",
+                marginBottom: 4,
+              }}
+            >
+              {isBackwardation ? "Janela de travamento" : "Contexto de mercado"}
             </span>
-          )}
-        </div>
-        <p className="text-[11px] text-t-tertiary mb-4">
-          Precos de ajuste por vencimento vs spot CEPEA
-        </p>
-
-        {futuros && futuros.contratos.length > 0 ? (
-          <>
-            <CurvaFuturosChart contratos={futuros.contratos} spotPrice={spotPrice} />
-
-            {/* Tabela detalhada de contratos */}
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-border text-left">
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium">Contrato</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium">Vencimento</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Preco ajuste</th>
-                    <th className="py-2 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">Spread vs spot</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {futuros.contratos.map((c) => {
-                    const sp = spotPrice ? c.preco_ajuste - spotPrice : null;
-                    return (
-                      <tr key={c.codigo} className="border-b border-border">
-                        <td className="py-2 px-3 font-mono text-t-primary font-medium">{c.codigo}</td>
-                        <td className="py-2 px-3 text-t-secondary">{c.vencimento}</td>
-                        <td className="py-2 px-3 text-right font-mono font-mono-nums text-t-primary">
-                          {fmtBRL(c.preco_ajuste, 2)}/@
-                        </td>
-                        <td className={`py-2 px-3 text-right font-mono font-mono-nums ${
-                          sp && sp > 0 ? "text-success" : sp && sp < 0 ? "text-danger" : "text-t-secondary"
-                        }`}>
-                          {sp !== null ? `${sp > 0 ? "+" : ""}${fmtBRL(sp, 2)}` : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Resumo spread */}
-            {spread !== null && (
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-                <MetricCard
-                  label="Spot CEPEA"
-                  value={fmtBRL(spotPrice!, 2)}
-                  unit="/@"
-                  compact
-                />
-                <MetricCard
-                  label={`Futuro proximo (${futuroProximo!.codigo})`}
-                  value={fmtBRL(futuroProximo!.preco_ajuste, 2)}
-                  unit="/@"
-                  compact
-                />
-                <MetricCard
-                  label="Spread spot-futuro"
-                  value={fmtBRL(spread, 2)}
-                  deltaType={spread > 0 ? "positive" : "negative"}
-                  delta={spread > 0 ? "Backwardation" : "Contango"}
-                  compact
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-t-tertiary py-8 text-center">
-            Dados de futuros indisponiveis no momento
-          </p>
-        )}
-      </div>
-
-      {/* Basis + dolar + milho — grid 2x2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Basis por regiao */}
-        <div className="border border-border rounded-lg bg-card p-5">
-          <h2 className="text-sm font-medium text-t-primary mb-1">Basis por regiao</h2>
-          <p className="text-[11px] text-t-tertiary mb-4">
-            Desconto da praca local vs indicador CEPEA/SP (R$/@)
-          </p>
-          <BasisRegiao />
-        </div>
-
-        {/* Historico dolar */}
-        <div className="border border-border rounded-lg bg-card p-5">
-          <h2 className="text-sm font-medium text-t-primary mb-1">Dolar PTAX — 90 dias</h2>
-          <p className="text-[11px] text-t-tertiary mb-4">
-            Cotacao de venda USD/BRL
-          </p>
-          {histDolar.length > 0 ? (
-            <HistoricoDolar dados={histDolar} />
-          ) : (
-            <p className="text-sm text-t-tertiary py-8 text-center">Indisponivel</p>
-          )}
-        </div>
-
-        {/* Historico milho */}
-        <div className="border border-border rounded-lg bg-card p-5">
-          <h2 className="text-sm font-medium text-t-primary mb-1">Milho ESALQ</h2>
-          <p className="text-[11px] text-t-tertiary mb-4">
-            Historico recente do indicador CEPEA/ESALQ (R$/saca 60kg)
-          </p>
-          {histMilho.length > 0 ? (
-            <HistoricoDolar dados={histMilho} />
-          ) : (
-            <p className="text-sm text-t-tertiary py-8 text-center">
-              Historico indisponivel
-            </p>
-          )}
-        </div>
-
-        {/* Indicadores de referencia */}
-        <div className="border border-border rounded-lg bg-card p-5">
-          <h2 className="text-sm font-medium text-t-primary mb-1">Indicadores de referencia</h2>
-          <p className="text-[11px] text-t-tertiary mb-4">
-            Benchmarks para avaliacao de retorno
-          </p>
-          <div className="space-y-4">
-            <div>
-              <p className="text-[11px] text-t-tertiary uppercase tracking-wider">CDI anualizado</p>
-              <p className="text-3xl font-mono font-medium text-t-primary">
-                {cotacoes?.cdi_anual ? `${(cotacoes.cdi_anual * 100).toFixed(2)}%` : "—"} <span className="text-sm text-t-tertiary">a.a.</span>
-              </p>
-            </div>
-            <p className="text-sm text-t-secondary leading-relaxed">
-              Se o ROI do lote nao supera o CDI, o capital rende mais aplicado.
-              A taxa de oportunidade atual e de{" "}
-              <span className="font-mono font-medium text-t-primary">
-                {cotacoes?.cdi_anual ? `${((cotacoes.cdi_anual / 12) * 100).toFixed(2)}% a.m.` : "—"}
-              </span>
-            </p>
-            {spotPrice && cotacoes?.cdi_anual && (
-              <div className="border-t border-border pt-3">
-                <p className="text-[11px] text-t-tertiary uppercase tracking-wider">Custo de carregar 1 arroba por 90 dias</p>
-                <p className="text-lg font-mono font-medium text-t-primary">
-                  {fmtBRL(spotPrice * cotacoes.cdi_anual * (90 / 365), 2)}
-                </p>
-                <p className="text-[11px] text-t-tertiary">
-                  Capital imobilizado de {fmtBRL(spotPrice)} rendendo CDI por 3 meses
-                </p>
-              </div>
-            )}
+            <span
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 11,
+                color: "#6B6860",
+                lineHeight: 1.5,
+              }}
+            >
+              {isBackwardation
+                ? "Mercado em backwardation — futuros abaixo do spot. Janela favoravel para travar precos se break-even esta coberto. Avaliar cenarios no Simulador."
+                : "Mercado em contango — futuros acima do spot. Custo de carrego embutido nos premios. Avaliar necessidade de protecao vs custo de oportunidade."}
+            </span>
           </div>
         </div>
       </div>
+
+      {/* ── BASIS GRID ── */}
+      {spotPrice != null && <BasisGrid spotPrice={spotPrice} />}
     </div>
   );
 }

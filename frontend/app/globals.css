@@ -158,6 +158,20 @@
   }
 }
 
+/* ── Ticker tape ── */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker-scroll {
+  animation: ticker 28s linear infinite;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
 /* ── Scenario sliders ── */
 input[type="range"].scenario-slider {
   -webkit-appearance: none;

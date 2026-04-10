@@ -9,12 +9,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isSimulador = pathname === "/simulador";
+  const isFullWidth = pathname === "/simulador" || pathname === "/mercado";
 
   return (
     <div className="min-h-screen" style={{ background: "#0F0E0B" }}>
       <TopNav />
-      {isSimulador ? (
+      {isFullWidth ? (
         <main>{children}</main>
       ) : (
         <main className="max-w-6xl mx-auto px-10 py-8">{children}</main>
