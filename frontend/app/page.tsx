@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 // TODO: conectar GET /api/cotacoes
 const MOCK_ARROBA = 312.4;
@@ -89,18 +90,33 @@ export default function LandingPage() {
 
         {/* Hero Right */}
         <div className="relative overflow-hidden" style={{ background: "#1A1814", minHeight: 400 }}>
-          {/* Placeholder for hero image */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-mono text-xs" style={{ color: "#2A2820" }}>
-              [ foto pecuaria ]
-            </span>
-          </div>
+          {/* Hero image */}
+          <Image
+            src="/images/hero-cattle.jpg"
+            alt="Rebanho em pastagem ao por do sol"
+            fill
+            priority
+            className="object-cover object-center"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
 
-          {/* Gradient overlay for left bleed */}
+          {/* Gradient overlays — blend image with dark background */}
           <div
-            className="absolute inset-0 pointer-events-none hidden md:block"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              background: "linear-gradient(to left, transparent 60%, #0F0E0B 100%)",
+              background: "linear-gradient(to left, transparent 40%, #0F0E0B 95%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: "linear-gradient(to top, #0F0E0B 0%, transparent 40%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: "rgba(15,14,11,0.3)",
             }}
           />
 
