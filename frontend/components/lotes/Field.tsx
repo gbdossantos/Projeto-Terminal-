@@ -11,7 +11,10 @@ export function Field({
 }) {
   return (
     <div>
-      <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-1.5">
+      <label
+        className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-1.5"
+        style={{ color: "#6B6860" }}
+      >
         {label}
       </label>
       <input
@@ -19,7 +22,20 @@ export function Field({
         value={value}
         step={step}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono text-t-primary focus:outline-none focus:border-terra transition-colors"
+        className="w-full h-10 px-3 font-mono text-sm rounded-lg transition-colors focus:outline-none"
+        style={{
+          background: "#0F0E0B",
+          border: "0.5px solid #2A2820",
+          color: "#F5F1E8",
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = "#B8763E";
+          e.target.style.boxShadow = "0 0 0 2px #B8763E22";
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = "#2A2820";
+          e.target.style.boxShadow = "none";
+        }}
       />
     </div>
   );

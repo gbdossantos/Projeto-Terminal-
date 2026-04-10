@@ -37,25 +37,15 @@ export default function FormPasto() {
 
   useEffect(() => {
     fetchCotacoes()
-      .then((c) => {
-        if (c.arroba_boi_gordo) {
-          setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! }));
-        }
-      })
+      .then((c) => { if (c.arroba_boi_gordo) setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! })); })
       .catch(() => {});
   }, []);
 
   const calculate = useCallback(async (req: TerminacaoPastoRequest) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await calcularTerminacaoPasto(req);
-      setData(result);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Erro no calculo");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true); setError(null);
+    try { setData(await calcularTerminacaoPasto(req)); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : "Erro"); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -68,13 +58,15 @@ export default function FormPasto() {
     setForm((f) => ({ ...f, [key]: value }));
 
   const r = data?.resultado;
-  const cdi = data?.cotacoes?.cdi_anual ?? 0.1415;
 
   return (
     <>
       {/* Form */}
-      <div className="border border-border rounded-lg bg-card p-5 space-y-5">
-        <p className="text-xs font-medium text-t-secondary uppercase tracking-wider">
+      <div
+        className="rounded-xl p-6 space-y-5"
+        style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}
+      >
+        <p className="text-[11px] font-medium uppercase tracking-[0.1em]" style={{ color: "#6B6860" }}>
           Dados do lote
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -86,8 +78,8 @@ export default function FormPasto() {
           <Field label="Reposicao total (R$)" value={form.custo_reposicao_total} onChange={(v) => set("custo_reposicao_total", v)} step={1000} />
         </div>
 
-        <div className="border-t border-border pt-4">
-          <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">
+        <div className="pt-5" style={{ borderTop: "0.5px solid #2A2820" }}>
+          <p className="text-[11px] font-medium uppercase tracking-[0.1em] mb-4" style={{ color: "#6B6860" }}>
             Custos operacionais (R$/cab/dia)
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -98,7 +90,7 @@ export default function FormPasto() {
           </div>
         </div>
 
-        <div className="border-t border-border pt-4">
+        <div className="pt-5" style={{ borderTop: "0.5px solid #2A2820" }}>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Field label="Frete frigorifico (R$)" value={form.custo_frete_saida ?? 0} onChange={(v) => set("custo_frete_saida", v)} step={100} />
             <Field label="Mortalidade (R$)" value={form.custo_mortalidade_estimada ?? 0} onChange={(v) => set("custo_mortalidade_estimada", v)} step={100} />
@@ -107,68 +99,45 @@ export default function FormPasto() {
         </div>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="bg-danger-bg border border-danger/30 rounded-lg px-5 py-3 text-sm text-danger">
+        <div
+          className="rounded-lg px-4 py-3 text-[13px]"
+          style={{ background: "#B5413418", border: "0.5px solid #B5413444", color: "#D4614A" }}
+        >
           {error}
         </div>
       )}
 
-      {/* Loading */}
       {loading && !data && (
-        <div className="text-center py-12 text-t-tertiary text-sm">Calculando...</div>
+        <div className="text-center py-12 text-[13px]" style={{ color: "#6B6860" }}>Calculando...</div>
       )}
 
-      {/* Results */}
       {r && data && (
         <>
-          {/* Semaforo */}
           <Semaforo
-            status={
-              form.preco_venda < r.break_even_price
-                ? "vermelho"
-                : r.margem_percentual < 0.08
-                ? "amarelo"
-                : "verde"
-            }
-            titulo={
-              form.preco_venda < r.break_even_price
-                ? "Abaixo do break-even"
-                : r.margem_percentual < 0.08
-                ? "Margem apertada"
-                : "Margem saudavel"
-            }
+            status={form.preco_venda < r.break_even_price ? "vermelho" : r.margem_percentual < 0.08 ? "amarelo" : "verde"}
+            titulo={form.preco_venda < r.break_even_price ? "Abaixo do break-even" : r.margem_percentual < 0.08 ? "Margem apertada" : "Margem saudavel"}
             detalhe={`Margem de ${fmtPct(r.margem_percentual)} — spread de ${fmtBRL(form.preco_venda - r.break_even_price)}/@ sobre o break-even`}
           />
 
-          {/* Cotacoes */}
           <PainelMercado cotacoes={data.cotacoes} breakEven={r.break_even_price} />
 
-          {/* Metricas */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <MetricCard label="Custo por arroba" value={r.custo_por_arroba.toFixed(2)} unit="/@" />
-            <MetricCard
-              label="Break-even"
-              value={r.break_even_price.toFixed(2)}
-              unit="/@"
+            <MetricCard label="Break-even" value={r.break_even_price.toFixed(2)} unit="/@"
               delta={`spread R$ ${(form.preco_venda - r.break_even_price).toFixed(0)}`}
-              deltaType={form.preco_venda > r.break_even_price ? "positive" : "negative"}
-            />
-            <MetricCard
-              label="Margem bruta"
-              value={fmtBRL(r.margem_bruta)}
+              deltaType={form.preco_venda > r.break_even_price ? "positive" : "negative"} />
+            <MetricCard label="Margem bruta" value={fmtBRL(r.margem_bruta)}
               delta={fmtPct(r.margem_percentual)}
-              deltaType={r.margem_percentual > 0.08 ? "positive" : "negative"}
-            />
-            <MetricCard
-              label="ROI anualizado"
-              value={fmtPct(r.roi_anualizado)}
-              deltaType={r.roi_anualizado > cdi ? "positive" : "negative"}
-            />
+              deltaType={r.margem_percentual > 0.08 ? "positive" : "negative"} />
+            <MetricCard label="ROI anualizado" value={fmtPct(r.roi_anualizado)} />
           </div>
 
           {r.margem_apertada && (
-            <div className="bg-warning-bg border-l-4 border-l-warning rounded-md px-4 py-2.5 text-sm text-warning">
+            <div
+              className="rounded-lg px-4 py-2.5 text-[13px]"
+              style={{ background: "#C89B3C18", borderLeft: "2px solid #C89B3C", color: "#C89B3C" }}
+            >
               Margem inferior a 8%
             </div>
           )}
@@ -176,8 +145,10 @@ export default function FormPasto() {
           {/* Impacto */}
           <div className="space-y-4">
             <div>
-              <h2 className="text-sm font-medium text-t-primary">Painel de impacto economico</h2>
-              <p className="text-[11px] text-t-tertiary mt-0.5">
+              <h2 className="font-display text-lg" style={{ color: "#F5F1E8", fontWeight: 400 }}>
+                Painel de impacto economico
+              </h2>
+              <p className="text-[13px] mt-1" style={{ color: "#6B6860" }}>
                 O que acontece com seu lote se a arroba cair?
               </p>
             </div>
@@ -190,13 +161,17 @@ export default function FormPasto() {
 
           {/* Hedge */}
           <div className="space-y-4">
-            <h2 className="text-sm font-medium text-t-primary">Protecao com futuros B3</h2>
+            <h2 className="font-display text-lg" style={{ color: "#F5F1E8", fontWeight: 400 }}>
+              Protecao com futuros B3
+            </h2>
             <PainelHedge hedge={data.hedge} />
           </div>
 
           {/* Composicao de custos */}
           <div className="space-y-3">
-            <h2 className="text-sm font-medium text-t-primary">Composicao de custos</h2>
+            <h2 className="text-[13px] font-medium" style={{ color: "#F5F1E8" }}>
+              Composicao de custos
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricCard label="Reposicao" value={fmtBRL(r.custo_reposicao)} compact />
               <MetricCard label="Operacional" value={fmtBRL(r.custo_operacional)} compact />

@@ -14,69 +14,90 @@ interface Props {
   cenarios: ScenarioResult[];
 }
 
-const badgeClass: Record<string, string> = {
-  verde: "bg-success-bg text-success",
-  amarelo: "bg-warning-bg text-warning",
-  vermelho: "bg-danger-bg text-danger",
+const badge: Record<string, { bg: string; text: string; dot: string }> = {
+  verde: { bg: "#4A5D3A18", text: "#6B8F5A", dot: "#4A5D3A" },
+  amarelo: { bg: "#C89B3C18", text: "#C89B3C", dot: "#C89B3C" },
+  vermelho: { bg: "#B5413418", text: "#D4614A", dot: "#B54134" },
 };
 
 export function TabelaCenarios({ cenarios }: Props) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b-2 border-border text-left">
-            <th className="py-3 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium w-8" />
-            <th className="py-3 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium">
-              Cenario
-            </th>
-            <th className="py-3 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">
-              Arroba
-            </th>
-            <th className="py-3 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">
-              Margem
-            </th>
-            <th className="py-3 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">
-              Margem %
-            </th>
-            <th className="py-3 px-3 text-[11px] uppercase tracking-wider text-t-tertiary font-medium text-right">
-              ROI anual
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {cenarios.map((c, i) => {
-            const isBase = c.variacao_pct === 0;
-            return (
-              <tr key={i} className="border-b border-border">
-                <td className="py-3 px-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    c.semaforo === "verde" ? "bg-success" :
-                    c.semaforo === "amarelo" ? "bg-warning" : "bg-danger"
-                  }`} />
-                </td>
-                <td className={`py-3 px-3 ${isBase ? "font-medium text-t-primary" : "text-t-secondary"}`}>
-                  {c.label}
-                </td>
-                <td className="py-3 px-3 text-right font-mono font-mono-nums text-t-secondary">
-                  {fmtBRL(c.preco_arroba)}
-                </td>
-                <td className="py-3 px-3 text-right font-mono font-mono-nums text-t-secondary">
-                  {fmtBRL(c.margem_brl)}
-                </td>
-                <td className="py-3 px-3 text-right">
-                  <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-medium font-mono ${badgeClass[c.semaforo]}`}>
-                    {fmtPct(c.margem_pct)}
-                  </span>
-                </td>
-                <td className="py-3 px-3 text-right font-mono font-mono-nums text-t-secondary">
-                  {fmtPct(c.roi_anualizado)}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}
+    >
+      {/* Header */}
+      <div
+        className="grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr] gap-0 px-5 py-3"
+        style={{ background: "#221F18", borderBottom: "0.5px solid #2A2820" }}
+      >
+        <span />
+        {["Cenario", "Arroba", "Margem", "Margem %", "ROI anual"].map((h) => (
+          <span
+            key={h}
+            className={`text-[10px] font-medium uppercase tracking-[0.08em] ${
+              h !== "Cenario" ? "text-right" : ""
+            }`}
+            style={{ color: "#6B6860" }}
+          >
+            {h}
+          </span>
+        ))}
+      </div>
+
+      {/* Rows */}
+      {cenarios.map((c, i) => {
+        const b = badge[c.semaforo];
+        const isBase = c.variacao_pct === 0;
+        const isLast = i === cenarios.length - 1;
+
+        return (
+          <div
+            key={i}
+            className="grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr] gap-0 items-center px-5 py-3.5 transition-colors hover:bg-[#221F18]"
+            style={{
+              borderBottom: isLast ? "none" : "0.5px solid #2A2820",
+            }}
+          >
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ background: b.dot }}
+            />
+            <span
+              className={`text-[13px] ${isBase ? "font-medium" : ""}`}
+              style={{ color: "#F5F1E8" }}
+            >
+              {c.label}
+            </span>
+            <span
+              className="text-right font-mono text-[13px]"
+              style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}
+            >
+              {fmtBRL(c.preco_arroba)}
+            </span>
+            <span
+              className="text-right font-mono text-[13px]"
+              style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}
+            >
+              {fmtBRL(c.margem_brl)}
+            </span>
+            <span className="text-right">
+              <span
+                className="inline-block font-mono text-xs font-medium px-2 py-0.5 rounded"
+                style={{ background: b.bg, color: b.text }}
+              >
+                {fmtPct(c.margem_pct)}
+              </span>
+            </span>
+            <span
+              className="text-right font-mono text-[13px]"
+              style={{ color: "#6B6860", fontVariantNumeric: "tabular-nums" }}
+            >
+              {fmtPct(c.roi_anualizado)}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

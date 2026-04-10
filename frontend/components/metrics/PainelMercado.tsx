@@ -43,8 +43,11 @@ export function PainelMercado({ cotacoes, breakEven }: Props) {
         />
       </div>
       {cotacoes.timestamp && (
-        <p className="text-[11px] text-t-tertiary mt-2">
-          Atualizado: {new Date(cotacoes.timestamp).toLocaleString("pt-BR")} &middot; CEPEA + BCB
+        <p
+          className="text-[11px] mt-2 text-right"
+          style={{ color: "#6B6860" }}
+        >
+          Atualizado: {new Date(cotacoes.timestamp).toLocaleString("pt-BR")} · CEPEA + BCB
         </p>
       )}
     </div>

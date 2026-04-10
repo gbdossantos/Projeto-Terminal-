@@ -21,36 +21,43 @@ export default function LotesPage() {
   const [tab, setTab] = useState<TabId>("pasto");
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold text-t-primary">Lotes</h1>
-        <p className="text-sm text-t-secondary mt-1">
-          Calcule custo, margem, ROI e protecao para cada sistema produtivo
-        </p>
-      </div>
+    <div>
+      {/* Header */}
+      <h1 className="font-display text-[28px]" style={{ color: "#F5F1E8", fontWeight: 400 }}>
+        Lotes
+      </h1>
+      <p className="text-sm mt-1 mb-7" style={{ color: "#6B6860" }}>
+        Calcule custo, margem, ROI e protecao para cada sistema produtivo
+      </p>
 
-      {/* Tab bar */}
-      <div className="flex gap-1 border-b border-border">
+      {/* Tabs */}
+      <div className="flex gap-0 mb-8" style={{ borderBottom: "0.5px solid #2A2820" }}>
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === t.id
-                ? "text-t-primary"
-                : "text-t-tertiary hover:text-t-secondary"
-            }`}
+            className="relative text-[13px] font-medium transition-colors cursor-pointer"
+            style={{
+              padding: "10px 0",
+              marginRight: "28px",
+              color: tab === t.id ? "#F5F1E8" : "#6B6860",
+              background: "none",
+              border: "none",
+            }}
           >
             {t.label}
             {tab === t.id && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra" />
+              <span
+                className="absolute bottom-0 left-0 right-0 h-0.5"
+                style={{ background: "#B8763E" }}
+              />
             )}
           </button>
         ))}
       </div>
 
-      {/* Tab content */}
-      <div>
+      {/* Content */}
+      <div className="space-y-6">
         {tab === "pasto" && <FormPasto />}
         {tab === "confinamento" && <FormConfinamento />}
         {tab === "semi" && <FormSemi />}
