@@ -138,30 +138,16 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Hero Right */}
+        {/* Hero Right — image only, no overlays (grid split handles separation) */}
         <div className="relative overflow-hidden" style={{ background: "var(--surface)", minHeight: 400 }}>
-          {/* Hero image */}
           <Image
             src="/images/hero-cattle.jpg"
             alt="Rebanho em pastagem ao por do sol"
             fill
             priority
-            className="object-cover object-center"
+            className="object-cover"
+            style={{ objectPosition: "center" }}
             sizes="(max-width: 768px) 100vw, 50vw"
-          />
-
-          {/* Single overlay per mode — left fade for text readability, right side clean */}
-          <div
-            className="absolute inset-0 pointer-events-none hidden dark:block"
-            style={{
-              background: "linear-gradient(to right, rgba(15,14,11,1.00) 0%, rgba(15,14,11,0.95) 25%, rgba(15,14,11,0.60) 45%, rgba(15,14,11,0.00) 65%, rgba(15,14,11,0.00) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none block dark:hidden"
-            style={{
-              background: "linear-gradient(to right, rgba(237,233,224,1.00) 0%, rgba(237,233,224,0.95) 25%, rgba(237,233,224,0.60) 45%, rgba(237,233,224,0.00) 65%, rgba(237,233,224,0.00) 100%)",
-            }}
           />
 
           {/* Data card — top right (arroba MS ao vivo) */}
