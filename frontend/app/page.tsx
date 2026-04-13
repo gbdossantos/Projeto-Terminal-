@@ -138,8 +138,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Hero Right — image only, no overlays (grid split handles separation) */}
-        <div className="relative overflow-hidden" style={{ background: "var(--surface)", minHeight: 400 }}>
+        {/* Hero Right — photo with edge fade to blend into left panel */}
+        <div className="relative overflow-hidden" style={{ background: "var(--bg-deep)", minHeight: 400 }}>
           <Image
             src="/images/hero-cattle.jpg"
             alt="Rebanho em pastagem ao por do sol"
@@ -148,6 +148,20 @@ export default function LandingPage() {
             className="object-cover"
             style={{ objectPosition: "center" }}
             sizes="(max-width: 768px) 100vw, 50vw"
+          />
+
+          {/* Edge fade — blends photo left edge into page background */}
+          <div
+            className="absolute inset-0 pointer-events-none hidden dark:block"
+            style={{
+              background: "linear-gradient(to right, rgba(15,14,11,0.85) 0%, rgba(15,14,11,0.25) 20%, rgba(15,14,11,0) 40%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none block dark:hidden"
+            style={{
+              background: "linear-gradient(to right, rgba(237,233,224,0.85) 0%, rgba(237,233,224,0.25) 20%, rgba(237,233,224,0) 40%)",
+            }}
           />
 
           {/* Data card — top right (arroba MS ao vivo) */}
