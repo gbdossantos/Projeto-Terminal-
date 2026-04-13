@@ -150,47 +150,39 @@ export default function LandingPage() {
             sizes="(max-width: 768px) 100vw, 50vw"
           />
 
-          {/* Gradient overlays — blend image with background */}
+          {/* Gradient overlays — smooth blend from text to image */}
+          {/* Dark: horizontal fade */}
           <div
             className="absolute inset-0 pointer-events-none hidden dark:block"
             style={{
-              background: "linear-gradient(to left, transparent 40%, #0F0E0B 95%)",
+              background: "linear-gradient(to right, rgba(15,14,11,0.97) 0%, rgba(15,14,11,0.93) 30%, rgba(15,14,11,0.70) 50%, rgba(15,14,11,0.30) 68%, rgba(15,14,11,0.08) 82%, rgba(15,14,11,0.00) 100%)",
             }}
           />
+          {/* Light: horizontal fade */}
           <div
             className="absolute inset-0 pointer-events-none block dark:hidden"
             style={{
-              background: "linear-gradient(to left, transparent 40%, #EDE9E0 95%)",
+              background: "linear-gradient(to right, rgba(237,233,224,0.97) 0%, rgba(237,233,224,0.93) 30%, rgba(237,233,224,0.70) 50%, rgba(237,233,224,0.30) 68%, rgba(237,233,224,0.08) 82%, rgba(237,233,224,0.00) 100%)",
             }}
           />
+          {/* Dark: bottom fade */}
           <div
             className="absolute inset-0 pointer-events-none hidden dark:block"
             style={{
               background: "linear-gradient(to top, #0F0E0B 0%, transparent 40%)",
             }}
           />
+          {/* Light: bottom fade */}
           <div
             className="absolute inset-0 pointer-events-none block dark:hidden"
             style={{
               background: "linear-gradient(to top, #EDE9E0 0%, transparent 40%)",
             }}
           />
-          <div
-            className="absolute inset-0 pointer-events-none hidden dark:block"
-            style={{
-              background: "rgba(15,14,11,0.3)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none block dark:hidden"
-            style={{
-              background: "rgba(237,233,224,0.2)",
-            }}
-          />
 
           {/* Data card — top right (arroba MS ao vivo) */}
           <div
-            className="absolute top-6 right-6 px-4 py-3 rounded-lg backdrop-blur-sm hidden dark:block"
+            className="absolute top-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm hidden dark:block"
             style={{
               background: "rgba(15,14,11,0.88)",
               border: "0.5px solid var(--border-subtle)",
@@ -199,7 +191,7 @@ export default function LandingPage() {
             <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
           </div>
           <div
-            className="absolute top-6 right-6 px-4 py-3 rounded-lg backdrop-blur-sm block dark:hidden"
+            className="absolute top-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm block dark:hidden"
             style={{
               background: "rgba(255,255,255,0.88)",
               border: "0.5px solid var(--border-subtle)",
@@ -208,9 +200,9 @@ export default function LandingPage() {
             <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
           </div>
 
-          {/* Data card — bottom right (margem) */}
+          {/* Data card — bottom right (calcule seu lote) */}
           <div
-            className="absolute bottom-6 right-6 px-4 py-3 rounded-lg backdrop-blur-sm hidden dark:block"
+            className="absolute bottom-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm hidden dark:block"
             style={{
               background: "rgba(15,14,11,0.88)",
               border: "0.5px solid var(--border-subtle)",
@@ -219,7 +211,7 @@ export default function LandingPage() {
             <MargemCard />
           </div>
           <div
-            className="absolute bottom-6 right-6 px-4 py-3 rounded-lg backdrop-blur-sm block dark:hidden"
+            className="absolute bottom-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm block dark:hidden"
             style={{
               background: "rgba(255,255,255,0.88)",
               border: "0.5px solid var(--border-subtle)",
@@ -431,9 +423,17 @@ function MargemCard() {
       <p className="font-mono text-[10px] mb-1" style={{ color: "var(--text-tertiary)" }}>
         Margem projetada
       </p>
-      <p className="font-mono text-lg font-medium" style={{ color: "var(--green-2)" }}>
-        —
-      </p>
+      <Link
+        href="/lotes"
+        style={{
+          fontFamily: "Inter, sans-serif",
+          fontSize: 11,
+          color: "var(--brand)",
+          textDecoration: "none",
+        }}
+      >
+        Calcule seu lote &rarr;
+      </Link>
     </>
   );
 }
