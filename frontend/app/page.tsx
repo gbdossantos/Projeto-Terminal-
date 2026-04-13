@@ -89,12 +89,53 @@ export default function LandingPage() {
         </Link>
       </nav>
 
-      {/* ── Hero ── */}
-      <section className="grid grid-cols-1 md:grid-cols-2 min-h-[520px]">
-        {/* Hero Left */}
+      {/* ── Hero (full-bleed) ── */}
+      <section className="relative overflow-hidden" style={{ minHeight: 580 }}>
+        {/* Background image — covers entire hero */}
+        <Image
+          src="/images/hero-cattle.jpg"
+          alt="Rebanho em pastagem ao por do sol"
+          fill
+          priority
+          className="object-cover"
+          style={{ objectPosition: "70% center" }}
+          sizes="100vw"
+        />
+
+        {/* Overlay — strong on left (text), fades to transparent on right (photo) */}
         <div
-          className="flex flex-col justify-center px-12 py-16 md:py-0"
+          className="absolute inset-0 pointer-events-none hidden dark:block"
           style={{
+            background: "linear-gradient(to right, #0F0E0B 0%, #0F0E0B 30%, rgba(15,14,11,0.85) 42%, rgba(15,14,11,0) 58%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none block dark:hidden"
+          style={{
+            background: "linear-gradient(to right, #EDE9E0 0%, #EDE9E0 30%, rgba(237,233,224,0.85) 42%, rgba(237,233,224,0) 58%)",
+          }}
+        />
+
+        {/* Bottom fade — blends into stats strip */}
+        <div
+          className="absolute inset-0 pointer-events-none hidden dark:block"
+          style={{
+            background: "linear-gradient(to top, #0F0E0B 0%, rgba(15,14,11,0) 20%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none block dark:hidden"
+          style={{
+            background: "linear-gradient(to top, #EDE9E0 0%, rgba(237,233,224,0) 20%)",
+          }}
+        />
+
+        {/* Text content — positioned on left half */}
+        <div
+          className="relative z-10 flex flex-col justify-center px-12 py-20"
+          style={{
+            maxWidth: "50%",
+            minHeight: 580,
             animation: "fadeInUp 0.6s ease-out both",
           }}
         >
@@ -131,78 +172,51 @@ export default function LandingPage() {
             <Link
               href="/mercado"
               className="text-[13px] px-5 py-2.5 rounded-[7px] transition-colors"
-              style={{ border: "0.5px solid var(--border-subtle)", color: "var(--text-tertiary)" }}
+              style={{ border: "0.5px solid rgba(255,255,255,0.2)", color: "var(--text-tertiary)" }}
             >
               Ver demonstracao
             </Link>
           </div>
         </div>
 
-        {/* Hero Right — photo with edge fade to blend into left panel */}
-        <div className="relative overflow-hidden" style={{ background: "var(--bg-deep)", minHeight: 400 }}>
-          <Image
-            src="/images/hero-cattle.jpg"
-            alt="Rebanho em pastagem ao por do sol"
-            fill
-            priority
-            className="object-cover"
-            style={{ objectPosition: "center" }}
-            sizes="(max-width: 768px) 100vw, 50vw"
-          />
+        {/* Data card — top right (arroba MS ao vivo) */}
+        <div
+          className="absolute top-8 right-8 px-4 py-3 rounded-[8px] backdrop-blur-md z-10 hidden dark:block"
+          style={{
+            background: "rgba(15,14,11,0.75)",
+            border: "0.5px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
+        </div>
+        <div
+          className="absolute top-8 right-8 px-4 py-3 rounded-[8px] backdrop-blur-md z-10 block dark:hidden"
+          style={{
+            background: "rgba(255,255,255,0.75)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
+        </div>
 
-          {/* Edge fade — blends photo left edge into page background */}
-          <div
-            className="absolute inset-0 pointer-events-none hidden dark:block"
-            style={{
-              background: "linear-gradient(to right, rgba(15,14,11,0.85) 0%, rgba(15,14,11,0.25) 20%, rgba(15,14,11,0) 40%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none block dark:hidden"
-            style={{
-              background: "linear-gradient(to right, rgba(237,233,224,0.85) 0%, rgba(237,233,224,0.25) 20%, rgba(237,233,224,0) 40%)",
-            }}
-          />
-
-          {/* Data card — top right (arroba MS ao vivo) */}
-          <div
-            className="absolute top-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm hidden dark:block"
-            style={{
-              background: "rgba(15,14,11,0.88)",
-              border: "0.5px solid var(--border-subtle)",
-            }}
-          >
-            <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
-          </div>
-          <div
-            className="absolute top-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm block dark:hidden"
-            style={{
-              background: "rgba(255,255,255,0.88)",
-              border: "0.5px solid var(--border-subtle)",
-            }}
-          >
-            <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
-          </div>
-
-          {/* Data card — bottom right (calcule seu lote) */}
-          <div
-            className="absolute bottom-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm hidden dark:block"
-            style={{
-              background: "rgba(15,14,11,0.88)",
-              border: "0.5px solid var(--border-subtle)",
-            }}
-          >
-            <MargemCard />
-          </div>
-          <div
-            className="absolute bottom-6 right-6 px-4 py-3 rounded-[8px] backdrop-blur-sm block dark:hidden"
-            style={{
-              background: "rgba(255,255,255,0.88)",
-              border: "0.5px solid var(--border-subtle)",
-            }}
-          >
-            <MargemCard />
-          </div>
+        {/* Data card — bottom right (calcule seu lote) */}
+        <div
+          className="absolute bottom-8 right-8 px-4 py-3 rounded-[8px] backdrop-blur-md z-10 hidden dark:block"
+          style={{
+            background: "rgba(15,14,11,0.75)",
+            border: "0.5px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <MargemCard />
+        </div>
+        <div
+          className="absolute bottom-8 right-8 px-4 py-3 rounded-[8px] backdrop-blur-md z-10 block dark:hidden"
+          style={{
+            background: "rgba(255,255,255,0.75)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <MargemCard />
         </div>
       </section>
 
