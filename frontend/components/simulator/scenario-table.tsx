@@ -31,9 +31,10 @@ function MargemBadge({ value }: { value: number }) {
 
   return (
     <span
-      className="inline-block px-2 py-0.5 rounded text-[11px]"
+      className="inline-block px-1.5 py-0.5 rounded"
       style={{
         fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 10,
         fontWeight: 500,
         background: bg,
         color: fg,
@@ -50,10 +51,8 @@ export function ScenarioTable({ cenarios, showHedge }: ScenarioTableProps) {
     "Arroba",
     "Milho",
     "Dolar",
-    "Receita",
-    "Custo",
-    "Margem",
-    "Margem %",
+    "Margem R$",
+    "%",
     ...(showHedge ? ["c/ Hedge"] : []),
   ];
 
@@ -62,25 +61,31 @@ export function ScenarioTable({ cenarios, showHedge }: ScenarioTableProps) {
       style={{
         background: "var(--surface)",
         border: "0.5px solid var(--border-subtle)",
-        borderRadius: 12,
+        borderRadius: 10,
         overflow: "hidden",
       }}
     >
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr style={{ background: "var(--surface-2)", borderBottom: "0.5px solid var(--border-subtle)" }}>
+            <tr
+              style={{
+                background: "var(--surface-2)",
+                borderBottom: "0.5px solid var(--border-subtle)",
+              }}
+            >
               {headers.map((h) => (
                 <th
                   key={h}
-                  className={`uppercase ${h === "Cenario" ? "text-left" : "text-right"}`}
+                  className={`${h === "Cenario" ? "text-left" : "text-right"}`}
                   style={{
                     fontFamily: "Inter, sans-serif",
                     fontSize: 9,
                     fontWeight: 500,
                     color: "var(--text-tertiary)",
-                    padding: "8px 12px",
+                    padding: "7px 12px",
                     letterSpacing: "0.04em",
+                    textTransform: "uppercase",
                   }}
                 >
                   {h}
@@ -97,26 +102,34 @@ export function ScenarioTable({ cenarios, showHedge }: ScenarioTableProps) {
               return (
                 <tr
                   key={i}
-                  className="group transition-colors"
+                  className="transition-colors"
                   style={{
                     background: isBase ? "var(--surface-2)" : "transparent",
-                    borderBottom: isLast ? "none" : "0.5px solid var(--border-subtle)",
+                    borderBottom: isLast
+                      ? "none"
+                      : "0.5px solid var(--border-subtle)",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isBase) (e.currentTarget as HTMLElement).style.background = "var(--surface-2)";
+                    if (!isBase)
+                      (e.currentTarget as HTMLElement).style.background =
+                        "var(--surface-2)";
                   }}
                   onMouseLeave={(e) => {
-                    if (!isBase) (e.currentTarget as HTMLElement).style.background = "transparent";
+                    if (!isBase)
+                      (e.currentTarget as HTMLElement).style.background =
+                        "transparent";
                   }}
                 >
-                  <td style={{ padding: "9px 12px" }}>
+                  {/* Cenario */}
+                  <td style={{ padding: "7px 12px" }}>
                     <span className="flex items-center gap-2">
                       <span
                         className="shrink-0 rounded-full"
                         style={{
                           width: 5,
                           height: 5,
-                          background: dotColors[c.nome] ?? "var(--text-tertiary)",
+                          background:
+                            dotColors[c.nome] ?? "var(--text-tertiary)",
                         }}
                       />
                       <span
@@ -132,45 +145,78 @@ export function ScenarioTable({ cenarios, showHedge }: ScenarioTableProps) {
                     </span>
                   </td>
 
-                  {[
-                    `${fmtBRL(c.preco_arroba_cenario, 0)}/@`,
-                    `${fmtBRL(c.preco_milho_cenario, 0)}/sc`,
-                    `R$ ${c.dolar_cenario.toFixed(2)}`,
-                    fmtBRL(c.receita_sem_hedge),
-                    fmtBRL(c.custo_cenario),
-                  ].map((val, j) => (
-                    <td key={j} className="text-right" style={{ padding: "9px 12px" }}>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--text-primary)" }}>
-                        {val}
-                      </span>
-                    </td>
-                  ))}
+                  {/* Arroba */}
+                  <td className="text-right" style={{ padding: "7px 12px" }}>
+                    <span
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 11,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {fmtBRL(c.preco_arroba_cenario, 0)}/@
+                    </span>
+                  </td>
 
-                  <td className="text-right" style={{ padding: "9px 12px" }}>
+                  {/* Milho */}
+                  <td className="text-right" style={{ padding: "7px 12px" }}>
+                    <span
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 11,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {fmtBRL(c.preco_milho_cenario, 0)}/sc
+                    </span>
+                  </td>
+
+                  {/* Dolar */}
+                  <td className="text-right" style={{ padding: "7px 12px" }}>
+                    <span
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 11,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      R$ {c.dolar_cenario.toFixed(2)}
+                    </span>
+                  </td>
+
+                  {/* Margem R$ */}
+                  <td className="text-right" style={{ padding: "7px 12px" }}>
                     <span
                       style={{
                         fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 11,
                         fontWeight: 500,
-                        color: margemPositive ? "var(--green-2)" : "var(--red-2)",
+                        color: margemPositive
+                          ? "var(--green-2)"
+                          : "var(--red-2)",
                       }}
                     >
                       {fmtBRL(c.margem_sem_hedge)}
                     </span>
                   </td>
 
-                  <td className="text-right" style={{ padding: "9px 12px" }}>
+                  {/* % */}
+                  <td className="text-right" style={{ padding: "7px 12px" }}>
                     <MargemBadge value={c.margem_pct_sem_hedge} />
                   </td>
 
+                  {/* Hedge column */}
                   {showHedge && (
-                    <td className="text-right" style={{ padding: "9px 12px" }}>
+                    <td className="text-right" style={{ padding: "7px 12px" }}>
                       <span
                         style={{
                           fontFamily: "'JetBrains Mono', monospace",
                           fontSize: 11,
                           fontWeight: 500,
-                          color: c.margem_com_hedge >= 0 ? "var(--green-2)" : "var(--red-2)",
+                          color:
+                            c.margem_com_hedge >= 0
+                              ? "var(--green-2)"
+                              : "var(--red-2)",
                         }}
                       >
                         {fmtBRL(c.margem_com_hedge)}

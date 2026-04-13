@@ -18,17 +18,22 @@ export function ScenarioSlider({
   step = 1,
 }: ScenarioSliderProps) {
   const color =
-    value > 0 ? "var(--green-2)" : value < 0 ? "var(--red-2)" : "var(--text-primary)";
+    value > 0
+      ? "var(--green-2)"
+      : value < 0
+        ? "var(--red-2)"
+        : "var(--text-tertiary)";
   const displayValue = value > 0 ? `+${value}%` : `${value}%`;
 
   return (
-    <div className="flex items-center gap-2" style={{ height: 22 }}>
+    <div className="flex items-center" style={{ gap: 7, height: 20 }}>
       <span
-        className="shrink-0 text-[9px]"
+        className="shrink-0"
         style={{
           fontFamily: "Inter, sans-serif",
+          fontSize: 9,
           color: "var(--text-tertiary)",
-          minWidth: 90,
+          minWidth: 74,
         }}
       >
         {label}
@@ -41,14 +46,15 @@ export function ScenarioSlider({
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="scenario-slider flex-1"
+        style={{ height: 3 }}
       />
       <span
         className="shrink-0 text-right"
         style={{
           fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11,
+          fontSize: 10,
           color,
-          minWidth: 38,
+          minWidth: 34,
         }}
       >
         {displayValue}

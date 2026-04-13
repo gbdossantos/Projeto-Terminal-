@@ -6,7 +6,11 @@ interface HedgeCheckboxProps {
   label: string;
 }
 
-export function HedgeCheckbox({ checked, onChange, label }: HedgeCheckboxProps) {
+export function HedgeCheckbox({
+  checked,
+  onChange,
+  label,
+}: HedgeCheckboxProps) {
   return (
     <label
       className="flex items-center gap-2 cursor-pointer select-none"
@@ -15,16 +19,16 @@ export function HedgeCheckbox({ checked, onChange, label }: HedgeCheckboxProps) 
       <div
         className="flex items-center justify-center shrink-0"
         style={{
-          width: 16,
-          height: 16,
-          borderRadius: 4,
-          border: `0.5px solid ${checked ? "var(--green)" : "var(--border-subtle)"}`,
-          background: checked ? "var(--success-bg)" : "transparent",
+          width: 13,
+          height: 13,
+          borderRadius: 3,
+          border: `0.5px solid ${checked ? "rgba(74, 93, 58, 0.27)" : "var(--border-subtle)"}`,
+          background: checked ? "rgba(74, 93, 58, 0.09)" : "transparent",
           transition: "all 150ms",
         }}
       >
         {checked && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
             <path
               d="M2 5L4.5 7.5L8 3"
               stroke="var(--green-2)"
