@@ -150,33 +150,17 @@ export default function LandingPage() {
             sizes="(max-width: 768px) 100vw, 50vw"
           />
 
-          {/* Gradient overlays — smooth blend from text to image */}
-          {/* Dark: horizontal fade */}
+          {/* Single overlay per mode — left fade for text readability, right side clean */}
           <div
             className="absolute inset-0 pointer-events-none hidden dark:block"
             style={{
-              background: "linear-gradient(to right, rgba(15,14,11,0.97) 0%, rgba(15,14,11,0.93) 30%, rgba(15,14,11,0.70) 50%, rgba(15,14,11,0.30) 68%, rgba(15,14,11,0.08) 82%, rgba(15,14,11,0.00) 100%)",
+              background: "linear-gradient(to right, rgba(15,14,11,1.00) 0%, rgba(15,14,11,0.95) 25%, rgba(15,14,11,0.60) 45%, rgba(15,14,11,0.00) 65%, rgba(15,14,11,0.00) 100%)",
             }}
           />
-          {/* Light: horizontal fade */}
           <div
             className="absolute inset-0 pointer-events-none block dark:hidden"
             style={{
-              background: "linear-gradient(to right, rgba(237,233,224,0.97) 0%, rgba(237,233,224,0.93) 30%, rgba(237,233,224,0.70) 50%, rgba(237,233,224,0.30) 68%, rgba(237,233,224,0.08) 82%, rgba(237,233,224,0.00) 100%)",
-            }}
-          />
-          {/* Dark: bottom fade */}
-          <div
-            className="absolute inset-0 pointer-events-none hidden dark:block"
-            style={{
-              background: "linear-gradient(to top, #0F0E0B 0%, transparent 40%)",
-            }}
-          />
-          {/* Light: bottom fade */}
-          <div
-            className="absolute inset-0 pointer-events-none block dark:hidden"
-            style={{
-              background: "linear-gradient(to top, #EDE9E0 0%, transparent 40%)",
+              background: "linear-gradient(to right, rgba(237,233,224,1.00) 0%, rgba(237,233,224,0.95) 25%, rgba(237,233,224,0.60) 45%, rgba(237,233,224,0.00) 65%, rgba(237,233,224,0.00) 100%)",
             }}
           />
 
