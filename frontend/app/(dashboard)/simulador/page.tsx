@@ -129,8 +129,6 @@ function buildFanData(
       base: baseVal,
       otimista: otVal,
       pessimista: pessVal,
-      fanMax: otVal,
-      fanMin: pessVal,
     };
   });
 }
@@ -339,16 +337,22 @@ export default function SimuladorPage() {
       style={{
         gridTemplateColumns: "220px 1fr 200px",
         minHeight: "calc(100vh - 56px)",
+        width: "100%",
+        minWidth: 0,
       }}
     >
       {/* ═══ PAINEL ESQUERDO ═══ */}
       <aside
-        className="flex flex-col overflow-y-auto"
+        className="flex flex-col"
         style={{
           background: "var(--bg-deep)",
           borderRight: "0.5px solid var(--border-subtle)",
           padding: "16px 14px",
           gap: 14,
+          minWidth: 220,
+          width: 220,
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
         {/* Secao 1: Parametros do lote */}
@@ -564,6 +568,7 @@ export default function SimuladorPage() {
           padding: "16px 20px",
           gap: 12,
           borderRight: "0.5px solid var(--border-subtle)",
+          minWidth: 0,
         }}
       >
         {error && (

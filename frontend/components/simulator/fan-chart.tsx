@@ -2,12 +2,12 @@
 
 import {
   ComposedChart,
-  Area,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
   ReferenceLine,
+  ReferenceArea,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
@@ -17,8 +17,6 @@ export interface FanDataPoint {
   base: number;
   otimista: number;
   pessimista: number;
-  fanMax: number;
-  fanMin: number;
 }
 
 interface FanChartProps {
@@ -59,17 +57,16 @@ export function FanChart({ data }: FanChartProps) {
         </span>
       </div>
 
-      <ResponsiveContainer width="100%" height={160}>
+      <ResponsiveContainer width="100%" height={180}>
         <ComposedChart
           data={data}
-          margin={{ top: 10, right: 10, left: 40, bottom: 20 }}
+          margin={{ top: 10, right: 10, left: 44, bottom: 20 }}
         >
           <CartesianGrid
             horizontal
             vertical={false}
-            stroke="var(--border-subtle)"
+            stroke="#2A2820"
             strokeWidth={0.5}
-            opacity={0.6}
           />
 
           <XAxis
@@ -78,7 +75,7 @@ export function FanChart({ data }: FanChartProps) {
             tick={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 8,
-              fill: "var(--text-tertiary)",
+              fill: "#6B6860",
             }}
             axisLine={false}
             tickLine={false}
@@ -91,84 +88,83 @@ export function FanChart({ data }: FanChartProps) {
             tick={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 8,
-              fill: "var(--text-tertiary)",
+              fill: "#6B6860",
             }}
             axisLine={false}
             tickLine={false}
-            width={38}
+            width={40}
+            domain={["auto", "auto"]}
           />
 
+          {/* Uncertainty band — ReferenceArea between consecutive points */}
+          {data.map((point, i) => {
+            if (i === data.length - 1) return null;
+            const next = data[i + 1];
+            return (
+              <ReferenceArea
+                key={i}
+                x1={point.dia}
+                x2={next.dia}
+                y1={Math.min(point.pessimista, next.pessimista)}
+                y2={Math.max(point.otimista, next.otimista)}
+                fill="#B8763E"
+                fillOpacity={0.07}
+                stroke="none"
+              />
+            );
+          })}
+
+          {/* Zero line */}
           <ReferenceLine
             y={0}
-            stroke="var(--border-subtle)"
+            stroke="#3A3628"
             strokeWidth={1}
             strokeDasharray="2 4"
           />
 
-          {/* Fan area — two stacked areas to create band effect */}
-          <Area
-            dataKey="fanMax"
-            stroke="none"
-            fill="var(--brand)"
-            fillOpacity={0.07}
-            legendType="none"
-            isAnimationActive={false}
-          />
-          <Area
-            dataKey="fanMin"
-            stroke="none"
-            fill="var(--bg-deep)"
-            fillOpacity={1}
-            legendType="none"
+          {/* Pessimista line */}
+          <Line
+            dataKey="pessimista"
+            stroke="#B54134"
+            strokeWidth={1.5}
+            strokeDasharray="4 3"
+            dot={false}
             isAnimationActive={false}
           />
 
-          {/* Scenario lines */}
+          {/* Otimista line */}
           <Line
             dataKey="otimista"
-            stroke="var(--green)"
+            stroke="#4A5D3A"
             strokeWidth={1.5}
             strokeDasharray="4 3"
             dot={false}
-            legendType="none"
+            isAnimationActive={false}
           />
-          <Line
-            dataKey="pessimista"
-            stroke="var(--red)"
-            strokeWidth={1.5}
-            strokeDasharray="4 3"
-            dot={false}
-            legendType="none"
-          />
+
+          {/* Base line — main */}
           <Line
             dataKey="base"
-            stroke="var(--brand)"
+            stroke="#B8763E"
             strokeWidth={2.5}
-            dot={{ fill: "var(--brand)", r: 3.5, strokeWidth: 0 }}
+            dot={{ fill: "#B8763E", r: 3.5, strokeWidth: 0 }}
             activeDot={{
-              fill: "var(--brand-fg)",
-              stroke: "var(--brand)",
+              fill: "#FAF0E0",
+              stroke: "#B8763E",
               strokeWidth: 2,
               r: 4.5,
             }}
-            legendType="none"
-          />
-
-          <ReferenceLine
-            x={data.length > 2 ? data[Math.floor(data.length / 2)].dia : undefined}
-            stroke="var(--brand)"
-            strokeWidth={0.5}
-            opacity={0.25}
+            isAnimationActive={false}
           />
 
           <Tooltip
             contentStyle={{
-              background: "var(--surface)",
-              border: "0.5px solid var(--border-subtle)",
+              background: "#1A1814",
+              border: "0.5px solid #2A2820",
               borderRadius: 6,
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              color: "var(--text-primary)",
+              color: "#F5F1E8",
             }}
             formatter={(value, name) => {
               const labels: Record<string, string> = {
@@ -177,7 +173,6 @@ export function FanChart({ data }: FanChartProps) {
                 pessimista: "Pesadelo",
               };
               const n = String(name);
-              if (n === "fanMax" || n === "fanMin") return ["", ""];
               return [
                 `R$ ${Number(value).toLocaleString("pt-BR")}`,
                 labels[n] ?? n,
@@ -204,7 +199,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 16,
               height: 2.5,
-              background: "var(--brand)",
+              background: "#B8763E",
               borderRadius: 1,
               display: "inline-block",
             }}
@@ -216,7 +211,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 16,
               height: 0,
-              borderTop: "1.5px dashed var(--green)",
+              borderTop: "1.5px dashed #4A5D3A",
               display: "inline-block",
             }}
           />
@@ -227,7 +222,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 16,
               height: 0,
-              borderTop: "1.5px dashed var(--red)",
+              borderTop: "1.5px dashed #B54134",
               display: "inline-block",
             }}
           />
@@ -238,7 +233,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 12,
               height: 8,
-              background: "var(--brand)",
+              background: "#B8763E",
               opacity: 0.12,
               borderRadius: 1,
               display: "inline-block",
