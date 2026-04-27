@@ -13,6 +13,7 @@ import { ScenarioTable } from "@/components/scenario-table";
 import { HedgeDecision } from "@/components/hedge-decision";
 import { classifyMargin } from "@/lib/margin-classification";
 import { DEFAULTS_TERMINACAO_PASTO as DEFAULTS } from "@/lib/defaults-sistema";
+import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaBlock";
 
 export default function FormPasto() {
   const [form, setForm] = useState<TerminacaoPastoRequest>(DEFAULTS);
@@ -204,15 +205,8 @@ export default function FormPasto() {
             <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
               <div>
                 <p className="font-display text-[13px] mb-2.5" style={{ color: "#F5F1E8" }}>Painel de impacto economico</p>
+                <PerguntaInvertidaBlock impacto={data.impacto} margemBruta={r.margem_bruta} />
                 <ScenarioTable cenarios={data.impacto.cenarios} />
-                <div className="mt-3 rounded-lg px-4 py-3 text-[12px] leading-relaxed"
-                  style={{
-                    background: data.impacto.cenarios.some(c => c.semaforo === "vermelho") ? "#C89B3C18" : "#4A5D3A18",
-                    border: `0.5px solid ${data.impacto.cenarios.some(c => c.semaforo === "vermelho") ? "#C89B3C33" : "#4A5D3A33"}`,
-                    color: data.impacto.cenarios.some(c => c.semaforo === "vermelho") ? "#C89B3C" : "#6B8F5A",
-                  }}>
-                  {data.impacto.pergunta_invertida}
-                </div>
               </div>
 
               <div>

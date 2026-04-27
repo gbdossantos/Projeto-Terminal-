@@ -8,7 +8,7 @@ import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
 import { Semaforo } from "@/components/decision/Semaforo";
 import { TabelaCenarios } from "@/components/decision/TabelaCenarios";
-import { PerguntaInvertida } from "@/components/decision/PerguntaInvertida";
+import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaBlock";
 import { PainelHedge } from "@/components/decision/PainelHedge";
 import { Field } from "@/components/lotes/Field";
 import { DEFAULTS_CONFINAMENTO as DEFAULTS } from "@/lib/defaults-sistema";
@@ -123,8 +123,8 @@ export default function FormConfinamento() {
 
           <div className="space-y-4">
             <h2 className="text-sm font-medium text-t-primary">Painel de impacto economico</h2>
+            <PerguntaInvertidaBlock impacto={data.impacto} margemBruta={r.margem_bruta} />
             <TabelaCenarios cenarios={data.impacto.cenarios} />
-            <PerguntaInvertida texto={data.impacto.pergunta_invertida} tipo={data.impacto.cenarios.some((c) => c.semaforo === "vermelho") ? "alerta" : "ok"} />
           </div>
 
           <div className="space-y-4">
