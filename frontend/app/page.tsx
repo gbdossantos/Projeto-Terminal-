@@ -222,7 +222,7 @@ export default function LandingPage() {
 
       {/* ── Stats Strip ── */}
       <div
-        className="grid grid-cols-1 md:grid-cols-3"
+        className="grid grid-cols-2 md:grid-cols-4"
         style={{ borderTop: "0.5px solid var(--border-subtle)" }}
       >
         {/* Stat 1 — Arroba boi gordo (SP) */}
@@ -248,7 +248,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Stat 2 — Lotes */}
+        {/* Stat 2 — Dolar PTAX */}
         <div
           className="px-7 py-5"
           style={{ borderRight: "0.5px solid var(--border-subtle)" }}
@@ -257,22 +257,39 @@ export default function LandingPage() {
             className="text-[10px] uppercase tracking-[0.06em] mb-1"
             style={{ color: "var(--text-tertiary)" }}
           >
-            Lotes em monitoramento
+            Dolar PTAX
           </p>
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-xl font-medium" style={{ color: "var(--text-primary)" }}>
-              3
-            </span>
-            <span
-              className="text-[10px] px-1.5 py-0.5 rounded"
-              style={{ color: "var(--brand)", background: "var(--brand-bg, rgba(184,118,62,0.12))" }}
-            >
-              ativo
+              {cotacoes?.dolar_ptax != null ? `R$ ${cotacoes.dolar_ptax.toFixed(2).replace(".", ",")}` : "—"}
             </span>
           </div>
         </div>
 
-        {/* Stat 3 — Prox vencimento BGI */}
+        {/* Stat 3 — Milho ESALQ */}
+        <div
+          className="px-7 py-5"
+          style={{ borderRight: "0.5px solid var(--border-subtle)" }}
+        >
+          <p
+            className="text-[10px] uppercase tracking-[0.06em] mb-1"
+            style={{ color: "var(--text-tertiary)" }}
+          >
+            Milho ESALQ
+          </p>
+          <div className="flex items-baseline gap-1">
+            <span className="font-mono text-xl font-medium" style={{ color: "var(--text-primary)" }}>
+              {cotacoes?.milho_esalq != null ? `R$ ${cotacoes.milho_esalq.toFixed(2).replace(".", ",")}` : "—"}
+            </span>
+            {cotacoes?.milho_esalq != null && (
+              <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                /sc
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Stat 4 — Prox vencimento BGI */}
         <div className="px-7 py-5">
           <p
             className="text-[10px] uppercase tracking-[0.06em] mb-1"
