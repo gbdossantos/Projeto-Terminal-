@@ -15,6 +15,8 @@ import { ContratosTable } from "@/components/mercado/contratos-table";
 import { AlertasFeed } from "@/components/mercado/alertas-feed";
 import { SparkLine } from "@/components/mercado/spark-line";
 import { BasisGrid } from "@/components/mercado/basis-grid";
+import { persistCotacoes, resolveCotacao } from "@/lib/cotacoes-cache";
+import { CotacaoStatusBadge } from "@/components/cotacoes/cotacao-status-badge";
 
 export default function MercadoPage() {
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
@@ -30,7 +32,10 @@ export default function MercadoPage() {
       fetchHistoricoArroba().catch(() => []),
       fetchHistoricoMilho().catch(() => []),
     ]).then(([c, f, ha, hm]) => {
-      if (c) setCotacoes(c);
+      if (c) {
+        setCotacoes(c);
+        persistCotacoes(c);
+      }
       if (f) setFuturos(f);
       if (Array.isArray(ha)) setHistArroba(ha);
       if (Array.isArray(hm)) setHistMilho(hm);
@@ -38,7 +43,12 @@ export default function MercadoPage() {
     });
   }, []);
 
-  const spotPrice = cotacoes?.arroba_boi_gordo ?? null;
+  const arrobaStatus = resolveCotacao("arroba_boi_gordo", cotacoes);
+  const dolarStatus = resolveCotacao("dolar_ptax", cotacoes);
+  const milhoStatus = resolveCotacao("milho_esalq", cotacoes);
+  const cdiStatus = resolveCotacao("cdi_anual", cotacoes);
+
+  const spotPrice = arrobaStatus.value;
   const contratos = futuros?.contratos ?? [];
 
   // Sparkline data (last 20 points)
@@ -46,14 +56,14 @@ export default function MercadoPage() {
   const milhoSparkData = histMilho.slice(-20).map((d) => d.valor);
 
   // Milho stats
-  const milhoAtual = cotacoes?.milho_esalq ?? (histMilho.length > 0 ? histMilho[histMilho.length - 1].valor : null);
+  const milhoAtual = milhoStatus.value ?? (histMilho.length > 0 ? histMilho[histMilho.length - 1].valor : null);
   const milhoMin = milhoSparkData.length > 0 ? Math.min(...milhoSparkData) : null;
   const milhoMax = milhoSparkData.length > 0 ? Math.max(...milhoSparkData) : null;
 
   // CDI sub line
   const cdiSub =
-    cotacoes?.cdi_anual != null && spotPrice != null
-      ? `${((cotacoes.cdi_anual / 12) * 100).toFixed(2)}% a.m. · R$${(spotPrice * cotacoes.cdi_anual * (90 / 365)).toFixed(2)}/@ 90d`
+    cdiStatus.value != null && spotPrice != null
+      ? `${((cdiStatus.value / 12) * 100).toFixed(2)}% a.m. · R$${(spotPrice * cdiStatus.value * (90 / 365)).toFixed(2)}/@ 90d`
       : undefined;
 
   // Backwardation check for interpretation banner
@@ -105,32 +115,52 @@ export default function MercadoPage() {
         className="grid grid-cols-4"
         style={{ borderBottom: "0.5px solid var(--border-subtle)" }}
       >
-        <CotacaoCard
-          label="Arroba CEPEA/SP"
-          value={spotPrice != null ? `R$ ${spotPrice.toFixed(2)}` : "—"}
-          suffix="/@"
-          large
-          sparkData={arrobaSparkData}
-          sparkColor={arrobaSparkData.length > 1 && arrobaSparkData[arrobaSparkData.length - 1] >= arrobaSparkData[0] ? "var(--green-2)" : "var(--red-2)"}
-        />
-        <CotacaoCard
-          label="Dolar PTAX"
-          value={cotacoes?.dolar_ptax != null ? `R$ ${cotacoes.dolar_ptax.toFixed(2)}` : "—"}
-        />
-        <CotacaoCard
-          label="Milho ESALQ"
-          value={cotacoes?.milho_esalq != null ? `R$ ${cotacoes.milho_esalq.toFixed(2)}` : "—"}
-          suffix="/sc"
-          sparkData={milhoSparkData}
-          sparkColor={milhoSparkData.length > 1 && milhoSparkData[milhoSparkData.length - 1] >= milhoSparkData[0] ? "var(--green-2)" : "var(--red-2)"}
-        />
-        <CotacaoCard
-          label="CDI"
-          value={cotacoes?.cdi_anual != null ? `${(cotacoes.cdi_anual * 100).toFixed(2)}%` : "—"}
-          suffix="a.a."
-          subLine={cdiSub}
-          isLast
-        />
+        <div className="relative">
+          <CotacaoCard
+            label="Arroba CEPEA/SP"
+            value={arrobaStatus.value != null ? `R$ ${arrobaStatus.value.toFixed(2)}` : "—"}
+            suffix="/@"
+            large
+            sparkData={arrobaSparkData}
+            sparkColor={arrobaSparkData.length > 1 && arrobaSparkData[arrobaSparkData.length - 1] >= arrobaSparkData[0] ? "var(--green-2)" : "var(--red-2)"}
+          />
+          <div className="absolute bottom-2 left-3">
+            <CotacaoStatusBadge status={arrobaStatus} size="xs" />
+          </div>
+        </div>
+        <div className="relative">
+          <CotacaoCard
+            label="Dolar PTAX"
+            value={dolarStatus.value != null ? `R$ ${dolarStatus.value.toFixed(2)}` : "—"}
+          />
+          <div className="absolute bottom-2 left-3">
+            <CotacaoStatusBadge status={dolarStatus} size="xs" />
+          </div>
+        </div>
+        <div className="relative">
+          <CotacaoCard
+            label="Milho ESALQ"
+            value={milhoStatus.value != null ? `R$ ${milhoStatus.value.toFixed(2)}` : "—"}
+            suffix="/sc"
+            sparkData={milhoSparkData}
+            sparkColor={milhoSparkData.length > 1 && milhoSparkData[milhoSparkData.length - 1] >= milhoSparkData[0] ? "var(--green-2)" : "var(--red-2)"}
+          />
+          <div className="absolute bottom-2 left-3">
+            <CotacaoStatusBadge status={milhoStatus} size="xs" />
+          </div>
+        </div>
+        <div className="relative">
+          <CotacaoCard
+            label="CDI"
+            value={cdiStatus.value != null ? `${(cdiStatus.value * 100).toFixed(2)}%` : "—"}
+            suffix="a.a."
+            subLine={cdiSub}
+            isLast
+          />
+          <div className="absolute bottom-2 left-3">
+            <CotacaoStatusBadge status={cdiStatus} size="xs" />
+          </div>
+        </div>
       </div>
 
       {/* ── MAIN 2-COL BLOCK ── */}

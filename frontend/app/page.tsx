@@ -5,13 +5,22 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { fetchCotacoes, fetchHistoricoArroba, fetchFuturos } from "@/lib/api";
 import type { CotacaoMercado, CurvaFuturos, HistoricoDolarEntry } from "@/lib/types";
+import {
+  persistCotacoes,
+  resolveCotacao,
+  type CotacaoFieldStatus,
+} from "@/lib/cotacoes-cache";
+import { CotacaoStatusBadge } from "@/components/cotacoes/cotacao-status-badge";
 
 const BASIS_MS = -5; // R$/@ desconto MS vs SP
+
+type FetchStatus = "loading" | "ready" | "error";
 
 export default function LandingPage() {
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
   const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
   const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
+  const [status, setStatus] = useState<FetchStatus>("loading");
 
   useEffect(() => {
     Promise.all([
@@ -19,19 +28,32 @@ export default function LandingPage() {
       fetchHistoricoArroba().catch(() => []),
       fetchFuturos().catch(() => null),
     ]).then(([c, ha, f]) => {
-      if (c) setCotacoes(c);
+      if (c) {
+        setCotacoes(c);
+        persistCotacoes(c);
+      }
       if (Array.isArray(ha)) setHistArroba(ha);
       if (f) setFuturos(f);
+      setStatus(c ? "ready" : "error");
     });
   }, []);
 
-  // Arroba MS = CEPEA/SP + basis
-  const spotSP = cotacoes?.arroba_boi_gordo ?? null;
-  const arrobaMS = spotSP != null ? spotSP + BASIS_MS : null;
+  // Resolucao por campo (fresh / stale / unavailable)
+  const arrobaStatus = resolveCotacao("arroba_boi_gordo", cotacoes);
+  const dolarStatus = resolveCotacao("dolar_ptax", cotacoes);
+  const milhoStatus = resolveCotacao("milho_esalq", cotacoes);
 
-  // Delta vs dia anterior
+  // Arroba MS = CEPEA/SP + basis (preserva o mesmo state do SP)
+  const arrobaMSStatus: CotacaoFieldStatus = {
+    value: arrobaStatus.value != null ? arrobaStatus.value + BASIS_MS : null,
+    state: arrobaStatus.state,
+    lastUpdateIso: arrobaStatus.lastUpdateIso,
+  };
+  const spotSP = arrobaStatus.value;
+
+  // Delta vs dia anterior — so faz sentido com cotacao fresca
   const arrobaDelta = (() => {
-    if (histArroba.length < 2 || spotSP == null) return null;
+    if (arrobaStatus.state !== "fresh" || histArroba.length < 2 || spotSP == null) return null;
     const prev = histArroba[histArroba.length - 2].valor;
     const prevMS = prev + BASIS_MS;
     const currentMS = spotSP + BASIS_MS;
@@ -187,7 +209,7 @@ export default function LandingPage() {
             border: "0.5px solid rgba(255,255,255,0.08)",
           }}
         >
-          <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
+          <HeroArrobaCard status={arrobaMSStatus} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} loading={status === "loading"} />
         </div>
         <div
           className="absolute top-8 right-8 px-4 py-3 rounded-[8px] backdrop-blur-md z-10 block dark:hidden"
@@ -196,7 +218,7 @@ export default function LandingPage() {
             border: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
-          <HeroArrobaCard arrobaMS={arrobaMS} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} />
+          <HeroArrobaCard status={arrobaMSStatus} arrobaDelta={arrobaDelta} fmtArrobaFull={fmtArrobaFull} fmtDelta={fmtDelta} loading={status === "loading"} />
         </div>
 
         {/* Data card — bottom right (calcule seu lote) */}
@@ -225,20 +247,10 @@ export default function LandingPage() {
         className="grid grid-cols-2 md:grid-cols-4"
         style={{ borderTop: "0.5px solid var(--border-subtle)" }}
       >
-        {/* Stat 1 — Arroba boi gordo (SP) */}
-        <div
-          className="px-7 py-5"
-          style={{ borderRight: "0.5px solid var(--border-subtle)" }}
-        >
-          <p
-            className="text-[10px] uppercase tracking-[0.06em] mb-1"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            Arroba boi gordo
-          </p>
+        <StatCell label="Arroba boi gordo" status={arrobaStatus} loading={status === "loading"}>
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-xl font-medium" style={{ color: "var(--text-primary)" }}>
-              {spotSP != null ? `R$ ${fmtArroba(spotSP)}` : "—"}
+              {arrobaStatus.value != null ? `R$ ${fmtArroba(arrobaStatus.value)}` : "—"}
             </span>
             {arrobaDelta != null && (
               <span className="font-mono text-[11px]" style={{ color: arrobaDelta >= 0 ? "var(--green-2)" : "var(--red-2)" }}>
@@ -246,50 +258,28 @@ export default function LandingPage() {
               </span>
             )}
           </div>
-        </div>
+        </StatCell>
 
-        {/* Stat 2 — Dolar PTAX */}
-        <div
-          className="px-7 py-5"
-          style={{ borderRight: "0.5px solid var(--border-subtle)" }}
-        >
-          <p
-            className="text-[10px] uppercase tracking-[0.06em] mb-1"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            Dolar PTAX
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono text-xl font-medium" style={{ color: "var(--text-primary)" }}>
-              {cotacoes?.dolar_ptax != null ? `R$ ${cotacoes.dolar_ptax.toFixed(2).replace(".", ",")}` : "—"}
-            </span>
-          </div>
-        </div>
+        <StatCell label="Dolar PTAX" status={dolarStatus} loading={status === "loading"}>
+          <span className="font-mono text-xl font-medium" style={{ color: "var(--text-primary)" }}>
+            {dolarStatus.value != null ? `R$ ${dolarStatus.value.toFixed(2).replace(".", ",")}` : "—"}
+          </span>
+        </StatCell>
 
-        {/* Stat 3 — Milho ESALQ */}
-        <div
-          className="px-7 py-5"
-          style={{ borderRight: "0.5px solid var(--border-subtle)" }}
-        >
-          <p
-            className="text-[10px] uppercase tracking-[0.06em] mb-1"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            Milho ESALQ
-          </p>
+        <StatCell label="Milho ESALQ" status={milhoStatus} loading={status === "loading"}>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-xl font-medium" style={{ color: "var(--text-primary)" }}>
-              {cotacoes?.milho_esalq != null ? `R$ ${cotacoes.milho_esalq.toFixed(2).replace(".", ",")}` : "—"}
+              {milhoStatus.value != null ? `R$ ${milhoStatus.value.toFixed(2).replace(".", ",")}` : "—"}
             </span>
-            {cotacoes?.milho_esalq != null && (
+            {milhoStatus.value != null && (
               <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
                 /sc
               </span>
             )}
           </div>
-        </div>
+        </StatCell>
 
-        {/* Stat 4 — Prox vencimento BGI */}
+        {/* Prox. vencimento BGI — sem status badge (vem de outra fonte, futuros) */}
         <div className="px-7 py-5">
           <p
             className="text-[10px] uppercase tracking-[0.06em] mb-1"
@@ -299,7 +289,7 @@ export default function LandingPage() {
           </p>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-xl font-medium" style={{ color: "var(--text-primary)" }}>
-              {proxVencimento != null ? proxVencimento : "—"}
+              {proxVencimento != null ? proxVencimento : status === "loading" ? "…" : "—"}
             </span>
             {proxVencimento != null && (
               <span className="text-[13px]" style={{ color: "var(--text-tertiary)" }}>
@@ -405,15 +395,17 @@ export default function LandingPage() {
 }
 
 function HeroArrobaCard({
-  arrobaMS,
+  status,
   arrobaDelta,
   fmtArrobaFull,
   fmtDelta,
+  loading,
 }: {
-  arrobaMS: number | null;
+  status: CotacaoFieldStatus;
   arrobaDelta: number | null;
   fmtArrobaFull: (v: number) => string;
   fmtDelta: (v: number) => string;
+  loading: boolean;
 }) {
   return (
     <>
@@ -421,14 +413,62 @@ function HeroArrobaCard({
         @ arroba MS
       </p>
       <p className="font-mono text-lg font-medium" style={{ color: "var(--text-primary)" }}>
-        {arrobaMS != null ? `R$ ${fmtArrobaFull(arrobaMS)}` : "—"}
+        {status.value != null
+          ? `R$ ${fmtArrobaFull(status.value)}`
+          : loading
+            ? "…"
+            : "—"}
       </p>
-      {arrobaDelta != null && (
+      {status.value != null && arrobaDelta != null && status.state === "fresh" && (
         <p className="font-mono text-[10px]" style={{ color: arrobaDelta >= 0 ? "var(--green-2)" : "var(--red-2)" }}>
           {arrobaDelta >= 0 ? "↑" : "↓"} {fmtDelta(arrobaDelta)} hoje
         </p>
       )}
+      {!loading && status.state !== "fresh" && (
+        <div className="mt-1.5">
+          <CotacaoStatusBadge status={status} size="xs" />
+        </div>
+      )}
     </>
+  );
+}
+
+function StatCell({
+  label,
+  status,
+  loading,
+  children,
+}: {
+  label: string;
+  status: CotacaoFieldStatus;
+  loading: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="px-7 py-5"
+      style={{ borderRight: "0.5px solid var(--border-subtle)" }}
+    >
+      <p
+        className="text-[10px] uppercase tracking-[0.06em] mb-1"
+        style={{ color: "var(--text-tertiary)" }}
+      >
+        {label}
+      </p>
+      {loading ? (
+        <div
+          className="animate-pulse"
+          style={{ height: 24, width: 100, background: "var(--surface-2)", borderRadius: 4 }}
+        />
+      ) : (
+        children
+      )}
+      {!loading && (
+        <div className="mt-1.5">
+          <CotacaoStatusBadge status={status} size="xs" />
+        </div>
+      )}
+    </div>
   );
 }
 

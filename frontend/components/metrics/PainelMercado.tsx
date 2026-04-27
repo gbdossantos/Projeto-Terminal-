@@ -1,4 +1,13 @@
+"use client";
+
+import { useEffect } from "react";
 import { MetricCard } from "./MetricCard";
+import { CotacaoStatusBadge } from "@/components/cotacoes/cotacao-status-badge";
+import {
+  persistCotacoes,
+  resolveCotacao,
+  type CotacaoFieldStatus,
+} from "@/lib/cotacoes-cache";
 
 interface CotacaoMercado {
   arroba_boi_gordo: number | null;
@@ -14,42 +23,68 @@ interface Props {
 }
 
 export function PainelMercado({ cotacoes, breakEven }: Props) {
+  // Persiste sempre que recebe um snapshot — campos nao-nulos viram cache.
+  useEffect(() => {
+    persistCotacoes(cotacoes);
+  }, [cotacoes]);
+
+  const arroba = resolveCotacao("arroba_boi_gordo", cotacoes);
+  const dolar = resolveCotacao("dolar_ptax", cotacoes);
+  const milho = resolveCotacao("milho_esalq", cotacoes);
+  const cdi = resolveCotacao("cdi_anual", cotacoes);
+
   return (
     <div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard
+        <MetricWithStatus
           label="Arroba CEPEA/SP"
-          value={cotacoes.arroba_boi_gordo?.toFixed(2) ?? "—"}
+          status={arroba}
+          format={(v) => v.toFixed(2)}
           unit="/@"
           delta={breakEven ? `BE: R$ ${breakEven.toFixed(0)}/@` : undefined}
-          compact
         />
-        <MetricCard
+        <MetricWithStatus
           label="Dolar PTAX"
-          value={cotacoes.dolar_ptax?.toFixed(2) ?? "—"}
-          compact
+          status={dolar}
+          format={(v) => v.toFixed(2)}
         />
-        <MetricCard
+        <MetricWithStatus
           label="Milho ESALQ"
-          value={cotacoes.milho_esalq?.toFixed(2) ?? "—"}
+          status={milho}
+          format={(v) => v.toFixed(2)}
           unit="/sc"
-          compact
         />
-        <MetricCard
+        <MetricWithStatus
           label="CDI"
-          value={cotacoes.cdi_anual ? `${(cotacoes.cdi_anual * 100).toFixed(2)}%` : "—"}
+          status={cdi}
+          format={(v) => `${(v * 100).toFixed(2)}%`}
           unit="a.a."
-          compact
         />
       </div>
-      {cotacoes.timestamp && (
-        <p
-          className="text-[11px] mt-2 text-right"
-          style={{ color: "#6B6860" }}
-        >
-          Atualizado: {new Date(cotacoes.timestamp).toLocaleString("pt-BR")} · CEPEA + BCB
-        </p>
-      )}
+    </div>
+  );
+}
+
+function MetricWithStatus({
+  label,
+  status,
+  format,
+  unit,
+  delta,
+}: {
+  label: string;
+  status: CotacaoFieldStatus;
+  format: (v: number) => string;
+  unit?: string;
+  delta?: string;
+}) {
+  const value = status.value != null ? format(status.value) : "—";
+  return (
+    <div>
+      <MetricCard label={label} value={value} unit={unit} delta={delta} compact />
+      <div className="mt-1.5">
+        <CotacaoStatusBadge status={status} size="xs" />
+      </div>
     </div>
   );
 }
