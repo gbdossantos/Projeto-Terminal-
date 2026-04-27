@@ -8,17 +8,17 @@ import {
   TrendingUp,
   FlaskConical,
   Clock,
-  User,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { getProfile } from "@/lib/profile";
 
+// /configuracoes intencionalmente fora do menu — pagina e placeholder.
+// Rota viva (deep link funciona) ate ter conteudo real, dai volta ao menu.
 const nav = [
   { href: "/lotes", label: "Lotes", icon: Layers },
   { href: "/simulador", label: "Simulador", icon: FlaskConical },
   { href: "/mercado", label: "Mercado", icon: TrendingUp },
   { href: "/historico", label: "Historico", icon: Clock },
-  { href: "/configuracoes", label: "Perfil", icon: User },
 ];
 
 export function Sidebar() {

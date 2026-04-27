@@ -6,12 +6,13 @@ import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/profile";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
+// /configuracoes intencionalmente fora do menu — pagina e placeholder.
+// Rota viva (deep link funciona) ate ter conteudo real, dai volta ao menu.
 const nav = [
   { href: "/lotes", label: "Lotes" },
   { href: "/simulador", label: "Simulador" },
   { href: "/mercado", label: "Mercado" },
   { href: "/historico", label: "Historico" },
-  { href: "/configuracoes", label: "Perfil" },
 ];
 
 export function TopNav() {
