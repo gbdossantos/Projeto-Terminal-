@@ -12,15 +12,7 @@ import { KpiCard } from "@/components/kpi-card";
 import { ScenarioTable } from "@/components/scenario-table";
 import { HedgeDecision } from "@/components/hedge-decision";
 import { classifyMargin } from "@/lib/margin-classification";
-
-const DEFAULTS: TerminacaoPastoRequest = {
-  num_animais: 120, peso_entrada_kg: 380, peso_saida_estimado_kg: 490,
-  dias_ciclo: 90, custo_reposicao_total: 264000,
-  custo_suplementacao_dia: 4.5, custo_sanidade_dia: 0.8,
-  custo_mao_obra_dia: 1.2, custo_arrendamento_dia: 2.0,
-  preco_venda: 315, rendimento_carcaca: 0.52,
-  custo_frete_saida: 5400, custo_mortalidade_estimada: 3700,
-};
+import { DEFAULTS_TERMINACAO_PASTO as DEFAULTS } from "@/lib/defaults-sistema";
 
 export default function FormPasto() {
   const [form, setForm] = useState<TerminacaoPastoRequest>(DEFAULTS);

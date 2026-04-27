@@ -11,22 +11,7 @@ import { TabelaCenarios } from "@/components/decision/TabelaCenarios";
 import { PerguntaInvertida } from "@/components/decision/PerguntaInvertida";
 import { PainelHedge } from "@/components/decision/PainelHedge";
 import { Field } from "@/components/lotes/Field";
-
-const DEFAULTS: SemiconfinamentoRequest = {
-  num_animais: 200,
-  peso_entrada_kg: 360,
-  peso_saida_estimado_kg: 490,
-  dias_ciclo: 110,
-  custo_reposicao_total: 390000,
-  custo_arrendamento_dia: 2.0,
-  custo_manutencao_pasto_dia: 0.8,
-  consumo_suplemento_kg_dia: 3.5,
-  custo_suplemento_kg: 0.95,
-  custo_sanidade_dia: 0.7,
-  custo_mao_obra_dia: 1.1,
-  preco_venda: 315,
-  rendimento_carcaca: 0.53,
-};
+import { DEFAULTS_SEMICONFINAMENTO as DEFAULTS } from "@/lib/defaults-sistema";
 
 export default function FormSemi() {
   const [form, setForm] = useState(DEFAULTS);

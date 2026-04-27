@@ -11,24 +11,7 @@ import { TabelaCenarios } from "@/components/decision/TabelaCenarios";
 import { PerguntaInvertida } from "@/components/decision/PerguntaInvertida";
 import { PainelHedge } from "@/components/decision/PainelHedge";
 import { Field } from "@/components/lotes/Field";
-
-const DEFAULTS: ConfinamentoRequest = {
-  num_animais: 500,
-  peso_entrada_kg: 380,
-  peso_saida_estimado_kg: 510,
-  dias_ciclo: 100,
-  custo_reposicao_total: 1050000,
-  consumo_ms_pct_pv: 0.024,
-  custo_dieta_kg_ms: 0.68,
-  custo_sanidade_dia: 0.9,
-  custo_mao_obra_dia: 1.5,
-  custo_instalacoes_dia: 0.8,
-  preco_venda: 315,
-  rendimento_carcaca: 0.54,
-  custo_frete_entrada: 18000,
-  custo_frete_saida: 20000,
-  custo_mortalidade_estimada: 8400,
-};
+import { DEFAULTS_CONFINAMENTO as DEFAULTS } from "@/lib/defaults-sistema";
 
 export default function FormConfinamento() {
   const [form, setForm] = useState(DEFAULTS);

@@ -7,18 +7,7 @@ import { fmtBRL } from "@/lib/utils/format";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
 import { Field } from "@/components/lotes/Field";
-
-const DEFAULTS: RecriaRequest = {
-  num_animais: 280,
-  peso_entrada_kg: 195,
-  peso_saida_estimado_kg: 370,
-  dias_ciclo: 210,
-  custo_aquisicao_total: 0,
-  custo_nutricao_dia: 3.2,
-  custo_sanidade_dia: 0.7,
-  custo_mao_obra_dia: 0.9,
-  custo_arrendamento_dia: 1.8,
-};
+import { DEFAULTS_RECRIA as DEFAULTS } from "@/lib/defaults-sistema";
 
 export default function FormRecria() {
   const [form, setForm] = useState(DEFAULTS);

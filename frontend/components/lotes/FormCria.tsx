@@ -7,20 +7,7 @@ import { fmtBRL } from "@/lib/utils/format";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
 import { Field } from "@/components/lotes/Field";
-
-const DEFAULTS: CriaRequest = {
-  num_matrizes: 400,
-  taxa_natalidade: 0.80,
-  taxa_desmama: 0.90,
-  peso_desmama_kg: 195,
-  custo_nutricao_ua_ano: 480,
-  custo_sanidade_ua_ano: 120,
-  custo_reproducao_ua_ano: 180,
-  custo_mao_obra_ua_ano: 200,
-  custo_arrendamento_ua_ano: 350,
-  valor_matriz: 4800,
-  outros_custos_ua_ano: 80,
-};
+import { DEFAULTS_CRIA as DEFAULTS } from "@/lib/defaults-sistema";
 
 export default function FormCria() {
   const [form, setForm] = useState(DEFAULTS);
