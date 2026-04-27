@@ -107,3 +107,45 @@ export const DEFAULTS_RECRIA: RecriaRequest = {
   custo_arrendamento_dia: 0.55,
   outros_custos_dia: 0.30,
 };
+
+// ── Lote-exemplo de Confinamento ───────────────────────────────────
+// Usado na PRIMEIRA visita ao /lotes para dar referencia ao usuario novo.
+// Numeros explicitamente didaticos (arredondados, rendimento padrao IMEA).
+// Ver Tarefa 8: substituido pelos defaults regulares apos primeiro Calcular.
+export const EXEMPLO_CONFINAMENTO: ConfinamentoRequest = {
+  num_animais: 1_000,
+  peso_entrada_kg: 380,
+  peso_saida_estimado_kg: 540,
+  dias_ciclo: 110,
+  rendimento_carcaca: 0.54,
+  custo_reposicao_total: 5_500_000, // 1.000 × R$ 5.500 (boi gordo + premio)
+  consumo_ms_pct_pv: 0.022,
+  custo_dieta_kg_ms: 1.20,          // ~R$ 12/cab/dia em PV medio
+  custo_sanidade_dia: 0.30,
+  custo_mao_obra_dia: 1.50,
+  custo_instalacoes_dia: 2.00,
+  preco_venda: 315,
+  custo_frete_entrada: 80_000,      // 1.000 × R$ 80
+  custo_frete_saida: 80_000,        // 1.000 × R$ 80
+  custo_mortalidade_estimada: 82_500, // 1.000 × R$ 5.500 × 1,5%
+};
+
+// Estado "vazio" do form de confinamento — usado quando usuario clica "comece do zero".
+// Todos os campos numericos zerados; usuario digita do zero.
+export const ZERO_CONFINAMENTO: ConfinamentoRequest = {
+  num_animais: 0,
+  peso_entrada_kg: 0,
+  peso_saida_estimado_kg: 0,
+  dias_ciclo: 0,
+  rendimento_carcaca: 0.54,
+  custo_reposicao_total: 0,
+  consumo_ms_pct_pv: 0.022,
+  custo_dieta_kg_ms: 0,
+  custo_sanidade_dia: 0,
+  custo_mao_obra_dia: 0,
+  custo_instalacoes_dia: 0,
+  preco_venda: 0,
+  custo_frete_entrada: 0,
+  custo_frete_saida: 0,
+  custo_mortalidade_estimada: 0,
+};

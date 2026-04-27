@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FormPasto from "@/components/lotes/FormPasto";
 import FormConfinamento from "@/components/lotes/FormConfinamento";
 import FormSemi from "@/components/lotes/FormSemi";
 import FormCria from "@/components/lotes/FormCria";
 import FormRecria from "@/components/lotes/FormRecria";
 import { SISTEMAS_PRODUTIVOS, type SistemaProdutivo } from "@/lib/sistemas";
+import { isFirstVisit } from "@/lib/first-visit";
 
 export default function LotesPage() {
   const [tab, setTab] = useState<SistemaProdutivo>("terminacao_pasto");
+
+  // Primeira visita: aterrissar em Confinamento (onde mora o lote-exemplo).
+  // Tarefa 8 — apos primeiro Calcular bem-sucedido a flag e marcada.
+  useEffect(() => {
+    if (isFirstVisit()) setTab("confinamento");
+  }, []);
 
   return (
     <div>

@@ -11,14 +11,28 @@ import { TabelaCenarios } from "@/components/decision/TabelaCenarios";
 import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaBlock";
 import { PainelHedge } from "@/components/decision/PainelHedge";
 import { Field } from "@/components/lotes/Field";
-import { DEFAULTS_CONFINAMENTO as DEFAULTS } from "@/lib/defaults-sistema";
+import {
+  DEFAULTS_CONFINAMENTO as DEFAULTS,
+  EXEMPLO_CONFINAMENTO,
+  ZERO_CONFINAMENTO,
+} from "@/lib/defaults-sistema";
+import { isFirstVisit, markFirstVisitDone } from "@/lib/first-visit";
 
 export default function FormConfinamento() {
   const [form, setForm] = useState(DEFAULTS);
   const [data, setData] = useState<ConfinamentoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showExemploBanner, setShowExemploBanner] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  // Detecta primeira visita pos-hidratacao (evita mismatch SSR/CSR).
+  useEffect(() => {
+    if (isFirstVisit()) {
+      setForm(EXEMPLO_CONFINAMENTO);
+      setShowExemploBanner(true);
+    }
+  }, []);
 
   useEffect(() => {
     fetchCotacoes()
@@ -46,13 +60,65 @@ export default function FormConfinamento() {
     return () => clearTimeout(debounceRef.current);
   }, [form, calculate]);
 
-  const set = (key: keyof ConfinamentoRequest, value: number) =>
+  const set = (key: keyof ConfinamentoRequest, value: number) => {
     setForm((f) => ({ ...f, [key]: value }));
+    // Primeira interacao do usuario apos lote-exemplo: marca flag e some banner.
+    if (showExemploBanner) {
+      markFirstVisitDone();
+      setShowExemploBanner(false);
+    }
+  };
+
+  const handleComeceDoZero = () => {
+    setForm(ZERO_CONFINAMENTO);
+    markFirstVisitDone();
+    setShowExemploBanner(false);
+  };
 
   const r = data?.resultado;
 
   return (
     <>
+      {/* Banner de lote-exemplo (apenas na primeira visita) */}
+      {showExemploBanner && (
+        <div
+          className="rounded-lg flex items-center justify-between"
+          style={{
+            background: "rgba(184, 118, 62, 0.07)",
+            border: "0.5px solid rgba(184, 118, 62, 0.25)",
+            padding: "10px 14px",
+            marginBottom: 12,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              color: "var(--text-secondary, #B5AFA0)",
+            }}
+          >
+            Exemplo de lote pre-preenchido. Edite os valores ou{" "}
+            <button
+              onClick={handleComeceDoZero}
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 12,
+                color: "var(--brand)",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                textDecoration: "underline",
+                textUnderlineOffset: 2,
+              }}
+            >
+              comece do zero
+            </button>
+            .
+          </span>
+        </div>
+      )}
+
       {/* Form */}
       <div className="border border-border rounded-lg bg-card p-5 space-y-5">
         <p className="text-xs font-medium text-t-secondary uppercase tracking-wider">Dados do lote</p>
