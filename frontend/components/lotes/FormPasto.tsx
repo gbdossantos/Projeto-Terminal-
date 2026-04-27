@@ -11,6 +11,7 @@ import { ScoreRing } from "@/components/score-ring";
 import { KpiCard } from "@/components/kpi-card";
 import { ScenarioTable } from "@/components/scenario-table";
 import { HedgeDecision } from "@/components/hedge-decision";
+import { classifyMargin } from "@/lib/margin-classification";
 
 const DEFAULTS: TerminacaoPastoRequest = {
   num_animais: 120, peso_entrada_kg: 380, peso_saida_estimado_kg: 490,
@@ -52,8 +53,10 @@ export default function FormPasto() {
 
   const r = data?.resultado;
   const margemPct = r?.margem_percentual;
-  // TODO: calcular score real
-  const score = r ? 78 : 0;
+  // Classificacao de margem (verde/amber/vermelho) — fonte unica em lib/margin-classification
+  const tier = r ? classifyMargin(r.margem_percentual).tier : null;
+  // TODO: substituir score 0-100 por metrica em linguagem do produtor (decisao de produto pendente)
+  const score = r ? 78 : null;
 
   return (
     <>
@@ -131,7 +134,7 @@ export default function FormPasto() {
               {/* Score preview */}
               <div className="rounded-xl p-5 flex flex-col items-center justify-center gap-3"
                 style={{ background: "#1A1814", border: "0.5px solid #2A2820", minHeight: 180 }}>
-                <ScoreRing score={0} size="md" />
+                <ScoreRing score={null} tier={null} size="md" />
                 <p className="text-[12px] text-center leading-relaxed" style={{ color: "#6B6860" }}>
                   Preencha os dados e calcule para ver o score de risco.
                 </p>
@@ -181,7 +184,7 @@ export default function FormPasto() {
                 sub={`vs ${((data.cotacoes.cdi_anual ?? 0.1415) * 100).toFixed(2)}% CDI`} />
               <div className="rounded-[10px] px-4 py-3 flex items-center"
                 style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}>
-                <ScoreRing score={score} size="md" showDetails
+                <ScoreRing score={score} tier={tier} size="md" showDetails
                   details={{ margem: fmtPct(r.margem_percentual), exposicao: fmtBRL(r.arrobas_totais * form.preco_venda), vencBGI: "12 dias" }} />
               </div>
             </div>
@@ -278,7 +281,7 @@ export default function FormPasto() {
                 </div>
               ))}
               <div className="px-3 py-2 flex items-center justify-center">
-                <ScoreRing score={score} size="sm" />
+                <ScoreRing score={score} tier={tier} size="sm" />
               </div>
             </div>
 

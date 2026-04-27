@@ -18,6 +18,7 @@ import { HedgeCheckbox } from "@/components/simulator/hedge-checkbox";
 import { ScoreRing } from "@/components/score-ring";
 import { RecommendationCard } from "@/components/simulator/recommendation-card";
 import { SensitivityBar } from "@/components/simulator/sensitivity-bar";
+import { classifyMargin } from "@/lib/margin-classification";
 
 // ── Scenario keys & labels ──
 
@@ -314,8 +315,7 @@ export default function SimuladorPage() {
     ? precoArroba * (1 + breakEvenQueda / 100)
     : null;
 
-  // Score (simplified)
-  // TODO: calcular score real
+  // Score 0-100 derivado da margem do cenario base — TODO: substituir por metrica em linguagem do produtor
   const score = result
     ? Math.min(
         100,
@@ -326,7 +326,11 @@ export default function SimuladorPage() {
           )
         )
       )
-    : 72;
+    : null;
+  // Classificacao de margem (verde/amber/vermelho) — fonte unica em lib/margin-classification
+  const tier = result
+    ? classifyMargin(result.cenario_base.margem_pct_sem_hedge).tier
+    : null;
 
   // Sensitivity
   const sensitivity = result ? calcSensitivity(result) : null;
@@ -689,7 +693,7 @@ export default function SimuladorPage() {
             Score de risco
           </span>
           <div className="flex items-center" style={{ gap: 10 }}>
-            <ScoreRing score={score} size="sm" />
+            <ScoreRing score={score} tier={tier} size="sm" />
             <div>
               <span
                 className="block"
@@ -700,11 +704,13 @@ export default function SimuladorPage() {
                   lineHeight: 1.5,
                 }}
               >
-                {score >= 70
-                  ? "risco baixo"
-                  : score >= 40
-                    ? "risco moderado"
-                    : "risco alto"}
+                {tier === null
+                  ? "aguardando calculo"
+                  : tier === "verde"
+                    ? "margem saudavel"
+                    : tier === "amber"
+                      ? "margem apertada"
+                      : "margem critica"}
               </span>
             </div>
           </div>

@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { MargemTier } from "@/lib/margin-classification";
 
 interface ScoreRingProps {
-  score: number;
+  /** Score numerico 0-100 ou null para estado pre-calculo. */
+  score: number | null;
+  /** Tier vindo de classifyMargin(). null = pre-calculo (sem cor). */
+  tier: MargemTier | null;
   size: "sm" | "md" | "lg";
   showDetails?: boolean;
   details?: { margem: string; exposicao: string; vencBGI: string };
@@ -13,32 +17,38 @@ const dims = { sm: 40, md: 88, lg: 88 };
 const radii = { sm: 15, md: 34, lg: 34 };
 const strokes = { sm: 4, md: 7, lg: 7 };
 
-function getColor(score: number) {
-  if (score >= 70) return "#4A5D3A";
-  if (score >= 40) return "#C89B3C";
+const NEUTRAL_COLOR = "#6B6860";
+const NEUTRAL_LABEL = { text: "aguardando calculo", bg: "#2A282018", color: "#6B6860" };
+
+function getColorByTier(tier: MargemTier): string {
+  if (tier === "verde") return "#4A5D3A";
+  if (tier === "amber") return "#C89B3C";
   return "#B54134";
 }
 
-function getLabel(score: number) {
-  if (score >= 70) return { text: "risco baixo", bg: "#4A5D3A18", color: "#6B8F5A" };
-  if (score >= 40) return { text: "risco moderado", bg: "#C89B3C18", color: "#C89B3C" };
-  return { text: "risco alto", bg: "#B5413418", color: "#D4614A" };
+function getLabelByTier(tier: MargemTier) {
+  if (tier === "verde") return { text: "margem saudavel", bg: "#4A5D3A18", color: "#6B8F5A" };
+  if (tier === "amber") return { text: "margem apertada", bg: "#C89B3C18", color: "#C89B3C" };
+  return { text: "margem critica", bg: "#B5413418", color: "#D4614A" };
 }
 
-export function ScoreRing({ score, size, showDetails, details }: ScoreRingProps) {
+export function ScoreRing({ score, tier, size, showDetails, details }: ScoreRingProps) {
+  const isAwaiting = tier === null || score === null;
+  const safeScore = score ?? 0;
   const [animatedScore, setAnimatedScore] = useState(0);
   const s = dims[size];
   const r = radii[size];
   const sw = strokes[size];
   const circ = 2 * Math.PI * r;
-  const progress = (animatedScore / 100) * circ;
-  const color = getColor(score);
-  const label = getLabel(score);
+  const progress = isAwaiting ? 0 : (animatedScore / 100) * circ;
+  const color = isAwaiting ? NEUTRAL_COLOR : getColorByTier(tier);
+  const label = isAwaiting ? NEUTRAL_LABEL : getLabelByTier(tier);
   const isSmall = size === "sm";
 
   useEffect(() => {
+    if (isAwaiting) { setAnimatedScore(0); return; }
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) { setAnimatedScore(score); return; }
+    if (prefersReduced) { setAnimatedScore(safeScore); return; }
     let start: number | null = null;
     const duration = 600;
     function animate(ts: number) {
@@ -46,11 +56,11 @@ export function ScoreRing({ score, size, showDetails, details }: ScoreRingProps)
       const elapsed = ts - start;
       const pct = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - pct, 3);
-      setAnimatedScore(Math.round(eased * score));
+      setAnimatedScore(Math.round(eased * safeScore));
       if (pct < 1) requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
-  }, [score]);
+  }, [safeScore, isAwaiting]);
 
   return (
     <div className={`flex ${isSmall ? "items-center gap-2" : "items-start gap-3.5"}`}>
@@ -63,10 +73,10 @@ export function ScoreRing({ score, size, showDetails, details }: ScoreRingProps)
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={`font-mono font-medium ${isSmall ? "text-[11px]" : "text-xl"}`}
-            style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>
-            {animatedScore}
+            style={{ color: isAwaiting ? "#6B6860" : "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>
+            {isAwaiting ? "—" : animatedScore}
           </span>
-          {!isSmall && <span className="font-mono text-[9px]" style={{ color: "#6B6860" }}>/100</span>}
+          {!isSmall && !isAwaiting && <span className="font-mono text-[9px]" style={{ color: "#6B6860" }}>/100</span>}
         </div>
       </div>
 
@@ -76,7 +86,7 @@ export function ScoreRing({ score, size, showDetails, details }: ScoreRingProps)
             style={{ background: label.bg, color: label.color }}>
             {label.text}
           </span>
-          {showDetails && details && (
+          {showDetails && details && !isAwaiting && (
             <div className="space-y-1 mt-1">
               {[
                 { l: "Margem", v: details.margem, c: "#6B8F5A" },
