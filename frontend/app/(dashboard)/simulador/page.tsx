@@ -19,6 +19,9 @@ import { ScoreRing } from "@/components/score-ring";
 import { RecommendationCard } from "@/components/simulator/recommendation-card";
 import { SensitivityBar } from "@/components/simulator/sensitivity-bar";
 import { classifyMargin } from "@/lib/margin-classification";
+import { SISTEMAS_SIMULADOR, type SistemaProdutivo } from "@/lib/sistemas";
+
+type SistemaSimulador = Extract<SistemaProdutivo, "terminacao_pasto" | "confinamento" | "semiconfinamento">;
 
 // ── Scenario keys & labels ──
 
@@ -191,10 +194,8 @@ export default function SimuladorPage() {
   const [custoDieta, setCustoDieta] = useState(280000);
   const [diasCiclo, setDiasCiclo] = useState(100);
 
-  // Sistema produtivo
-  const [sistema, setSistema] = useState<
-    "terminacao_pasto" | "confinamento" | "semiconfinamento"
-  >("terminacao_pasto");
+  // Sistema produtivo (subset que faz sentido no simulador — Cria/Recria fora)
+  const [sistema, setSistema] = useState<SistemaSimulador>("terminacao_pasto");
 
   // Hedge
   const [hedgeArroba, setHedgeArroba] = useState(false);
@@ -420,25 +421,12 @@ export default function SimuladorPage() {
             Sistema produtivo
           </span>
           <div className="flex flex-col" style={{ gap: 6 }}>
-            {(
-              [
-                ["terminacao_pasto", "Terminacao pasto"],
-                ["confinamento", "Confinamento"],
-                ["semiconfinamento", "Semiconfinamento"],
-              ] as const
-            ).map(([value, label]) => (
+            {SISTEMAS_SIMULADOR.map((s) => (
               <RadioOption
-                key={value}
-                selected={sistema === value}
-                label={label}
-                onClick={() =>
-                  setSistema(
-                    value as
-                      | "terminacao_pasto"
-                      | "confinamento"
-                      | "semiconfinamento"
-                  )
-                }
+                key={s.id}
+                selected={sistema === s.id}
+                label={s.label}
+                onClick={() => setSistema(s.id as SistemaSimulador)}
               />
             ))}
           </div>
