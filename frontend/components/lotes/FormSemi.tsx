@@ -12,6 +12,8 @@ import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaB
 import { PainelHedge } from "@/components/decision/PainelHedge";
 import { Field } from "@/components/lotes/Field";
 import { DEFAULTS_SEMICONFINAMENTO as DEFAULTS } from "@/lib/defaults-sistema";
+import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
+import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
 export default function FormSemi() {
   const [form, setForm] = useState(DEFAULTS);
@@ -21,12 +23,26 @@ export default function FormSemi() {
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
+    const pending = consumePendingLoad<SemiconfinamentoRequest>("semiconfinamento");
+    if (pending) setForm(pending);
+
     fetchCotacoes()
       .then((c) => {
         if (c.arroba_boi_gordo) setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! }));
       })
       .catch(() => {});
   }, []);
+
+  const handleSave = (nome: string) => {
+    if (!data) return;
+    saveLote({
+      sistema: "semiconfinamento",
+      nome,
+      inputs: form,
+      resultadoCache: data,
+      margemPct: data.resultado.margem_percentual,
+    });
+  };
 
   const calculate = useCallback(async (req: SemiconfinamentoRequest) => {
     setLoading(true);
@@ -120,6 +136,11 @@ export default function FormSemi() {
           <div className="space-y-4">
             <h2 className="text-sm font-medium text-t-primary">Protecao com futuros B3</h2>
             <PainelHedge hedge={data.hedge} />
+          </div>
+
+          {/* Salvar lote */}
+          <div className="flex justify-end pt-2">
+            <SaveLoteButton onSave={handleSave} defaultName={`Semi · ${form.num_animais} cab`} />
           </div>
         </>
       )}

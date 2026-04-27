@@ -17,6 +17,8 @@ import {
   ZERO_CONFINAMENTO,
 } from "@/lib/defaults-sistema";
 import { isFirstVisit, markFirstVisitDone } from "@/lib/first-visit";
+import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
+import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
 export default function FormConfinamento() {
   const [form, setForm] = useState(DEFAULTS);
@@ -27,12 +29,29 @@ export default function FormConfinamento() {
   const debounceRef = useRef<NodeJS.Timeout>();
 
   // Detecta primeira visita pos-hidratacao (evita mismatch SSR/CSR).
+  // Pending load (lote salvo a ser carregado) tem prioridade sobre o exemplo.
   useEffect(() => {
+    const pending = consumePendingLoad<ConfinamentoRequest>("confinamento");
+    if (pending) {
+      setForm(pending);
+      return;
+    }
     if (isFirstVisit()) {
       setForm(EXEMPLO_CONFINAMENTO);
       setShowExemploBanner(true);
     }
   }, []);
+
+  const handleSave = (nome: string) => {
+    if (!data) return;
+    saveLote({
+      sistema: "confinamento",
+      nome,
+      inputs: form,
+      resultadoCache: data,
+      margemPct: data.resultado.margem_percentual,
+    });
+  };
 
   useEffect(() => {
     fetchCotacoes()
@@ -196,6 +215,11 @@ export default function FormConfinamento() {
           <div className="space-y-4">
             <h2 className="text-sm font-medium text-t-primary">Protecao com futuros B3</h2>
             <PainelHedge hedge={data.hedge} />
+          </div>
+
+          {/* Salvar lote */}
+          <div className="flex justify-end pt-2">
+            <SaveLoteButton onSave={handleSave} defaultName={`Confinamento · ${form.num_animais} cab`} />
           </div>
         </>
       )}

@@ -14,6 +14,8 @@ import { HedgeDecision } from "@/components/hedge-decision";
 import { classifyMargin } from "@/lib/margin-classification";
 import { DEFAULTS_TERMINACAO_PASTO as DEFAULTS } from "@/lib/defaults-sistema";
 import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaBlock";
+import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
+import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
 export default function FormPasto() {
   const [form, setForm] = useState<TerminacaoPastoRequest>(DEFAULTS);
@@ -24,11 +26,26 @@ export default function FormPasto() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
+    // Se houver lote salvo pendente para esta tab, carrega seus inputs.
+    const pending = consumePendingLoad<TerminacaoPastoRequest>("terminacao_pasto");
+    if (pending) setForm(pending);
+
     fetchCotacoes().then((c) => {
       setCotacoes(c);
       if (c.arroba_boi_gordo) setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! }));
     }).catch(() => {});
   }, []);
+
+  const handleSave = (nome: string) => {
+    if (!data) return;
+    saveLote({
+      sistema: "terminacao_pasto",
+      nome,
+      inputs: form,
+      resultadoCache: data,
+      margemPct: data.resultado.margem_percentual,
+    });
+  };
 
   const set = (key: keyof TerminacaoPastoRequest, value: number) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -234,17 +251,20 @@ export default function FormPasto() {
             </div>
 
             {/* Nav buttons */}
-            <div className="flex justify-between pt-2">
+            <div className="flex justify-between items-center pt-2">
               <button onClick={() => setStep(1)}
                 className="text-[12px] px-4 py-2 rounded-lg transition-colors"
                 style={{ border: "0.5px solid #2A2820", color: "#6B6860" }}>
                 &larr; Editar dados
               </button>
-              <button onClick={() => setStep(3)}
-                className="text-[12px] font-medium px-4 py-2 rounded-lg"
-                style={{ background: "#B8763E", color: "#FAF0E0" }}>
-                Ver decisao de hedge &rarr;
-              </button>
+              <div className="flex items-center gap-3">
+                <SaveLoteButton onSave={handleSave} defaultName={`Pasto · ${form.num_animais} cab`} />
+                <button onClick={() => setStep(3)}
+                  className="text-[12px] font-medium px-4 py-2 rounded-lg"
+                  style={{ background: "#B8763E", color: "#FAF0E0" }}>
+                  Ver decisao de hedge &rarr;
+                </button>
+              </div>
             </div>
           </>
         )}

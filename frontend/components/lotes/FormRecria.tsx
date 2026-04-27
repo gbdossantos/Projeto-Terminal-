@@ -8,6 +8,8 @@ import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
 import { Field } from "@/components/lotes/Field";
 import { DEFAULTS_RECRIA as DEFAULTS } from "@/lib/defaults-sistema";
+import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
+import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
 export default function FormRecria() {
   const [form, setForm] = useState(DEFAULTS);
@@ -17,8 +19,22 @@ export default function FormRecria() {
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
+    const pending = consumePendingLoad<RecriaRequest>("recria");
+    if (pending) setForm(pending);
+
     fetchCotacoes().catch(() => {});
   }, []);
+
+  const handleSave = (nome: string) => {
+    if (!data) return;
+    saveLote({
+      sistema: "recria",
+      nome,
+      inputs: form,
+      resultadoCache: data,
+      margemPct: null, // Recria nao tem margem percentual (custo/kg ganho)
+    });
+  };
 
   const calculate = useCallback(async (req: RecriaRequest) => {
     setLoading(true);
@@ -89,6 +105,11 @@ export default function FormRecria() {
           </div>
 
           <MetricCard label="Custo total da fase" value={fmtBRL(r.custo_total)} compact />
+
+          {/* Salvar lote */}
+          <div className="flex justify-end pt-2">
+            <SaveLoteButton onSave={handleSave} defaultName={`Recria · ${form.num_animais} cab`} />
+          </div>
         </>
       )}
     </>

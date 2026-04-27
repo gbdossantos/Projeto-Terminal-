@@ -8,6 +8,8 @@ import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
 import { Field } from "@/components/lotes/Field";
 import { DEFAULTS_CRIA as DEFAULTS } from "@/lib/defaults-sistema";
+import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
+import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
 export default function FormCria() {
   const [form, setForm] = useState(DEFAULTS);
@@ -17,8 +19,22 @@ export default function FormCria() {
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
+    const pending = consumePendingLoad<CriaRequest>("cria");
+    if (pending) setForm(pending);
+
     fetchCotacoes().catch(() => {});
   }, []);
+
+  const handleSave = (nome: string) => {
+    if (!data) return;
+    saveLote({
+      sistema: "cria",
+      nome,
+      inputs: form,
+      resultadoCache: data,
+      margemPct: null, // Cria nao tem margem percentual (custo/bezerro)
+    });
+  };
 
   const calculate = useCallback(async (req: CriaRequest) => {
     setLoading(true);
@@ -95,6 +111,11 @@ export default function FormCria() {
             <MetricCard label="Kg produzido por matriz" value={`${r.kg_produzido_por_matriz}`} unit="kg" compact />
             <MetricCard label="Custo total anual" value={fmtBRL(r.custo_total_ano)} compact />
             <MetricCard label="Custo de oportunidade" value={fmtBRL(r.custo_oportunidade)} compact />
+          </div>
+
+          {/* Salvar lote */}
+          <div className="flex justify-end pt-2">
+            <SaveLoteButton onSave={handleSave} defaultName={`Cria · ${form.num_matrizes} matrizes`} />
           </div>
         </>
       )}
