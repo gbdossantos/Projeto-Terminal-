@@ -4,154 +4,95 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Inter + JetBrains Mono via next/font handled in layout.tsx ── */
+/* ── DM Sans + DM Mono via next/font (layout.tsx) ── */
+/* ── Identidade fechada: light terroso unico, sem dark mode ── */
 
 @layer base {
-  /* ── Light mode — Terra Premium ── */
   :root {
-    --background: #FAF8F3;
-    --foreground: #1A1814;
-    --card: #FFFFFF;
-    --card-foreground: #1A1814;
-    --popover: #FFFFFF;
-    --popover-foreground: #1A1814;
-    --primary: #B8763E;
-    --primary-foreground: #FAF8F3;
-    --secondary: #F2EEE5;
-    --secondary-foreground: #1A1814;
-    --muted: #F2EEE5;
-    --muted-foreground: #6B6359;
-    --accent: #F2EEE5;
-    --accent-foreground: #1A1814;
-    --destructive: #B54134;
-    --border: #E8E2D4;
-    --input: #E8E2D4;
-    --ring: #B8763E;
-    --radius: 0.5rem;
+    /* Papel quente — base terrosa */
+    --paper:           #F5F2EA;   /* fundo principal */
+    --paper-2:         #EDE9DF;   /* surface 1 (cards, faixas) */
+    --paper-3:         #E3DED1;   /* surface 2 (separadores, hover) */
+    --ink:             #1A1814;   /* tinta quase-preta — texto principal */
+    --ink-2:           #4D4A42;   /* texto secundario */
+    --ink-3:           #8C8678;   /* texto terciario, eixos */
+    --rule:            #D8D2C2;   /* linhas, bordas */
+    --rule-strong:     #C4BCA8;   /* bordas marcadas */
 
-    /* Terminal semantic */
-    --success: #5C8A3A;
-    --success-bg: rgba(92, 138, 58, 0.12);
-    --warning: #C89B3C;
-    --warning-bg: rgba(200, 155, 60, 0.12);
-    --danger: #B54134;
-    --danger-bg: rgba(181, 65, 52, 0.12);
+    /* Azul-grafite — acento tecnico (eixos, chips de referencia, mono labels) */
+    --grafite:         #3A4A5C;
+    --grafite-2:       #54657A;
+    --grafite-soft:    rgba(58, 74, 92, 0.08);
 
-    /* Terminal brand */
-    --terra: #B8763E;
-    --terra-bg: rgba(184, 118, 62, 0.08);
-    --pasto: #4A5D3A;
-    --couro: #8B4513;
+    /* Deltas */
+    --gain:            #3D7A2A;   /* ganho */
+    --gain-2:          #2D6A1A;
+    --loss:            #B54134;   /* perda / tijolo */
+    --loss-2:          #A33828;
+    --neutral:         var(--ink-2);
 
-    /* Text levels */
-    --text-primary: #1A1814;
-    --text-secondary: #6B6359;
-    --text-tertiary: #9B9388;
+    /* Brand (ambar/couro residual — usar com parcimonia) */
+    --brand:           #B8763E;
+    --brand-fg:        #F5F2EA;
 
-    /* Sidebar */
-    --sidebar: #FFFFFF;
-    --sidebar-foreground: #1A1814;
-    --sidebar-primary: #B8763E;
-    --sidebar-primary-foreground: #FAF8F3;
-    --sidebar-accent: #F2EEE5;
-    --sidebar-accent-foreground: #1A1814;
-    --sidebar-border: #E8E2D4;
-    --sidebar-ring: #B8763E;
+    /* Compat shadcn (mapeia paleta nova nos slots antigos) */
+    --background:      var(--paper);
+    --foreground:      var(--ink);
+    --card:            var(--paper-2);
+    --card-foreground: var(--ink);
+    --popover:         var(--paper);
+    --popover-foreground: var(--ink);
+    --primary:         var(--ink);
+    --primary-foreground: var(--paper);
+    --secondary:       var(--paper-3);
+    --secondary-foreground: var(--ink);
+    --muted:           var(--paper-3);
+    --muted-foreground: var(--ink-2);
+    --accent:          var(--grafite-soft);
+    --accent-foreground: var(--grafite);
+    --destructive:     var(--loss);
+    --border:          var(--rule);
+    --input:           var(--rule);
+    --ring:            var(--grafite);
+    --radius:          0.5rem;
 
-    /* Terminal surfaces — layout panels */
-    --bg-deep: #EDE9E0;
-    --surface: #FFFFFF;
-    --surface-2: #F5F2EA;
-    --border-subtle: #DDD8CC;
+    /* Compat tokens antigos usados em telas que ainda nao foram revisadas */
+    --bg-deep:         var(--paper);
+    --surface:         var(--paper-2);
+    --surface-2:       var(--paper-3);
+    --border-subtle:   var(--rule);
+    --text-primary:    var(--ink);
+    --text-secondary:  var(--ink-2);
+    --text-tertiary:   var(--ink-3);
+    --success:         var(--gain);
+    --success-bg:      rgba(61, 122, 42, 0.12);
+    --warning:         #B88A2C;
+    --warning-bg:      rgba(184, 138, 44, 0.12);
+    --danger:          var(--loss);
+    --danger-bg:       rgba(181, 65, 52, 0.12);
+    --terra:           var(--brand);
+    --terra-bg:        rgba(184, 118, 62, 0.08);
+    --green:           var(--gain);
+    --green-2:         var(--gain-2);
+    --amber:           #B88A2C;
+    --red:             var(--loss);
+    --red-2:           var(--loss-2);
+    --pasto:           #4A5D3A;
+    --couro:           #8B4513;
+    --chart-1:         var(--ink);
+    --chart-2:         var(--grafite);
+    --chart-3:         var(--brand);
+    --chart-4:         var(--gain);
+    --chart-5:         var(--loss);
 
-    /* Terminal accents — delta colors */
-    --green: #3D7A2A;
-    --green-2: #2D6A1A;
-    --amber: #B88A2C;
-    --red: #B54134;
-    --red-2: #A33828;
-    --brand: #B8763E;
-    --brand-fg: #FFFFFF;
-
-    /* Charts */
-    --chart-1: #B8763E;
-    --chart-2: #4A5D3A;
-    --chart-3: #C89B3C;
-    --chart-4: #8B4513;
-    --chart-5: #5C8A3A;
+    /* Aliases legados — outras 8 telas usam estes ate revisao da identidade */
+    --font-inter:      var(--font-sans);
+    --font-jetbrains:  var(--font-mono);
   }
 
-  /* ── Dark mode — Terra Premium ── */
+  /* Reset hard de dark mode — identidade unica */
   .dark {
-    --background: #0F0E0B;
-    --foreground: #F5F1E8;
-    --card: #1A1814;
-    --card-foreground: #F5F1E8;
-    --popover: #1A1814;
-    --popover-foreground: #F5F1E8;
-    --primary: #B8763E;
-    --primary-foreground: #F5F1E8;
-    --secondary: #252320;
-    --secondary-foreground: #F5F1E8;
-    --muted: #252320;
-    --muted-foreground: #A39B8C;
-    --accent: #252320;
-    --accent-foreground: #F5F1E8;
-    --destructive: #B54134;
-    --border: #2E2A24;
-    --input: #2E2A24;
-    --ring: #B8763E;
-
-    /* Terminal semantic */
-    --success: #5C8A3A;
-    --success-bg: rgba(92, 138, 58, 0.18);
-    --warning: #C89B3C;
-    --warning-bg: rgba(200, 155, 60, 0.18);
-    --danger: #B54134;
-    --danger-bg: rgba(181, 65, 52, 0.18);
-
-    /* Terminal brand */
-    --terra: #B8763E;
-    --terra-bg: rgba(184, 118, 62, 0.12);
-    --pasto: #6B8F54;
-    --couro: #A0642A;
-
-    /* Text levels */
-    --text-primary: #F5F1E8;
-    --text-secondary: #A39B8C;
-    --text-tertiary: #6B6359;
-
-    /* Sidebar */
-    --sidebar: #1A1814;
-    --sidebar-foreground: #F5F1E8;
-    --sidebar-primary: #B8763E;
-    --sidebar-primary-foreground: #F5F1E8;
-    --sidebar-accent: #252320;
-    --sidebar-accent-foreground: #F5F1E8;
-    --sidebar-border: #2E2A24;
-    --sidebar-ring: #B8763E;
-
-    /* Terminal surfaces — layout panels */
-    --bg-deep: #0A0908;
-    --surface: #1A1814;
-    --surface-2: #221F18;
-    --border-subtle: #2A2820;
-
-    /* Terminal accents — delta colors */
-    --green: #4A5D3A;
-    --green-2: #6B8F5A;
-    --amber: #C89B3C;
-    --red: #B54134;
-    --red-2: #D4614A;
-    --brand: #B8763E;
-    --brand-fg: #FAF0E0;
-
-    /* Charts */
-    --chart-1: #C89B3C;
-    --chart-2: #6B8F54;
-    --chart-3: #B8763E;
-    --chart-4: #A0642A;
-    --chart-5: #5C8A3A;
+    color-scheme: light;
   }
 
   * {
@@ -159,14 +100,16 @@
     outline-color: var(--ring);
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-feature-settings: "ss01", "cv11";
+    @apply antialiased;
   }
   html {
     @apply font-sans;
   }
 }
 
-/* ── Utility classes ── */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -174,18 +117,16 @@
   .font-mono-nums {
     font-variant-numeric: tabular-nums;
   }
+  .mono-num {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /* ── Landing page animation ── */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Ticker tape ── */
@@ -193,55 +134,43 @@
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+.ticker-scroll { animation: ticker 28s linear infinite; }
+.ticker-scroll:hover { animation-play-state: paused; }
 
-.ticker-scroll {
-  animation: ticker 28s linear infinite;
-}
-
-.ticker-scroll:hover {
-  animation-play-state: paused;
-}
-
-/* ── Scenario sliders ── */
+/* ── Scenario sliders (Simulador) ── */
 input[type="range"].scenario-slider {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
   cursor: pointer;
 }
-
 input[type="range"].scenario-slider::-webkit-slider-track {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--border-subtle);
+  height: 1px;
+  background: var(--rule-strong);
 }
-
 input[type="range"].scenario-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--brand);
-  margin-top: -3px;
-  border: none;
+  background: var(--ink);
+  margin-top: -6px;
+  border: 2px solid var(--paper);
 }
-
 input[type="range"].scenario-slider::-moz-range-track {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--border-subtle);
+  height: 1px;
+  background: var(--rule-strong);
   border: none;
 }
-
 input[type="range"].scenario-slider::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--brand);
-  border: none;
+  background: var(--ink);
+  border: 2px solid var(--paper);
 }
 
-/* Number input spinner removal for simulator */
+/* Number input spinner removal */
 input[type="number"].sim-input::-webkit-inner-spin-button,
 input[type="number"].sim-input::-webkit-outer-spin-button {
   -webkit-appearance: none;

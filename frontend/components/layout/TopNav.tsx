@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/profile";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 // /configuracoes intencionalmente fora do menu — pagina e placeholder.
 // Rota viva (deep link funciona) ate ter conteudo real, dai volta ao menu.
@@ -67,10 +66,8 @@ export function TopNav() {
         })}
       </div>
 
-      {/* Right */}
-      <div className="flex items-center gap-3">
-        <ThemeToggle />
-      </div>
+      {/* Right — fica vazio por enquanto. Slot reservado para perfil/notif quando auth entrar. */}
+      <div className="flex items-center gap-3" />
     </nav>
   );
 }
