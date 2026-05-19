@@ -17,7 +17,12 @@ import {
 
 const SIGMA_FALLBACK = 0.18; // ~18% anualizado — típico boi gordo, fallback se endpoint falhar
 
-export function HomeDashboard() {
+interface Props {
+  /** Sem lote cadastrado: gráfico só mercado, cards 'R$ —', microcopy honesta. */
+  empty?: boolean;
+}
+
+export function HomeDashboard({ empty = false }: Props = {}) {
   const [sigma, setSigma] = useState<number | null>(null);
   const [exposicaoPorLote, setExposicaoPorLote] = useState(false);
 
@@ -69,13 +74,15 @@ export function HomeDashboard() {
                   lineHeight: 1.2,
                 }}
               >
-                Do que aconteceu hoje até a saída do último lote.
+                {empty
+                  ? "Você ainda não tem lote cadastrado."
+                  : "Do que aconteceu hoje até a saída do último lote."}
               </h1>
             </div>
             <MarketChips />
           </div>
 
-          <LinhaDoRebanho sigmaAnualizado={sigma} />
+          <LinhaDoRebanho sigmaAnualizado={sigma} empty={empty} />
         </section>
 
         {/* Cards resumo */}
@@ -113,30 +120,40 @@ export function HomeDashboard() {
           {/* Card 2 — Rebanho exposto (centro, hero) */}
           <CardResumo
             titulo={
-              <span className="flex items-center justify-between" style={{ width: "100%" }}>
-                <span>REBANHO EXPOSTO · NO FECHAMENTO DE HOJE</span>
-                <button
-                  onClick={() => setExposicaoPorLote(!exposicaoPorLote)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    color: "var(--ink-3)",
-                  }}
-                >
-                  {exposicaoPorLote ? "↓ AGREGADO" : "↓ POR LOTE"}
-                </button>
-              </span>
+              empty ? (
+                "REBANHO EXPOSTO · NO FECHAMENTO DE HOJE"
+              ) : (
+                <span className="flex items-center justify-between" style={{ width: "100%" }}>
+                  <span>REBANHO EXPOSTO · NO FECHAMENTO DE HOJE</span>
+                  <button
+                    onClick={() => setExposicaoPorLote(!exposicaoPorLote)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      color: "var(--ink-3)",
+                    }}
+                  >
+                    {exposicaoPorLote ? "↓ AGREGADO" : "↓ POR LOTE"}
+                  </button>
+                </span>
+              )
             }
             valor={
-              <span style={{ fontSize: 38 }}>
-                R$ <span className="mono-num">{fmtBRL(rebanhoExposto / 1_000_000, 2)}</span> mi
-              </span>
+              empty ? (
+                <span style={{ fontSize: 38, color: "var(--ink-3)" }}>R$ — mi</span>
+              ) : (
+                <span style={{ fontSize: 38 }}>
+                  R$ <span className="mono-num">{fmtBRL(rebanhoExposto / 1_000_000, 2)}</span> mi
+                </span>
+              )
             }
             sub={
-              exposicaoPorLote ? (
+              empty ? (
+                <span>cadastre um lote para projetar sua exposição</span>
+              ) : exposicaoPorLote ? (
                 <div className="flex flex-col" style={{ gap: 2, marginTop: 4 }}>
                   {MOCK_LOTES.map((l) => (
                     <span key={l.id} style={{ fontSize: 10 }}>
@@ -161,16 +178,26 @@ export function HomeDashboard() {
           <CardResumo
             titulo="MARGEM SOBRE BREAK-EVEN · NO FECHAMENTO DE HOJE"
             valor={
-              <span style={{ color: "var(--gain)" }}>
-                +R$ <span className="mono-num">{fmtBRL(margemSobreBE)}</span>
-                <span style={{ fontSize: 14, color: "var(--ink-3)", marginLeft: 2 }}>/@</span>
-              </span>
+              empty ? (
+                <span style={{ color: "var(--ink-3)" }}>
+                  —<span style={{ fontSize: 14, color: "var(--ink-3)", marginLeft: 2 }}>/@</span>
+                </span>
+              ) : (
+                <span style={{ color: "var(--gain)" }}>
+                  +R$ <span className="mono-num">{fmtBRL(margemSobreBE)}</span>
+                  <span style={{ fontSize: 14, color: "var(--ink-3)", marginLeft: 2 }}>/@</span>
+                </span>
+              )
             }
             sub={
-              <span>
-                +R$ <span className="mono-num">{fmtBRL(margemTotal / 1_000_000)}</span> mi no rebanho ·{" "}
-                BE R$ <span className="mono-num">{fmtBRL(MOCK_MERCADO.break_even)}</span>/@
-              </span>
+              empty ? (
+                <span>break-even depende dos seus custos cadastrados</span>
+              ) : (
+                <span>
+                  +R$ <span className="mono-num">{fmtBRL(margemTotal / 1_000_000)}</span> mi no rebanho ·{" "}
+                  BE R$ <span className="mono-num">{fmtBRL(MOCK_MERCADO.break_even)}</span>/@
+                </span>
+              )
             }
           />
         </section>
@@ -184,8 +211,8 @@ export function HomeDashboard() {
             gap: 24,
           }}
         >
-          <EventosDia />
-          <CaminhosCard />
+          {empty ? <EventosDiaVazio /> : <EventosDia />}
+          <CaminhosCard empty={empty} />
         </section>
 
         <RodapePlaceholder />
@@ -505,7 +532,7 @@ function EventosDia() {
 }
 
 // ─── Caminhos (4 quadrantes) ─────────────────────────────────────
-function CaminhosCard() {
+function CaminhosCard({ empty }: { empty?: boolean }) {
   return (
     <div>
       <div
@@ -523,20 +550,24 @@ function CaminhosCard() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--rule)", border: "0.5px solid var(--rule)" }}>
         <CaminhoQuadrante
           titulo="Simulador"
-          subtitulo="travar parte do rebanho?"
-          cta="ABRIR SIMULADOR →"
-          href="/simulador"
+          subtitulo={empty ? "cadastre um lote para liberar" : "travar parte do rebanho?"}
+          cta={empty ? "CADASTRAR LOTE →" : "ABRIR SIMULADOR →"}
+          href={empty ? "/lotes" : "/simulador"}
           destaque
         />
         <CaminhoQuadrante
           titulo="Lotes"
-          subtitulo={`${MOCK_LOTES.length} ativos · ${MOCK_TOTAL_CABECAS.toLocaleString("pt-BR")} cab`}
+          subtitulo={
+            empty
+              ? "0 cadastrados"
+              : `${MOCK_LOTES.length} ativos · ${MOCK_TOTAL_CABECAS.toLocaleString("pt-BR")} cab`
+          }
           cta="VER LOTES →"
           href="/lotes"
         />
         <CaminhoQuadrante
           titulo="Histórico"
-          subtitulo="decisões registradas e cenários salvos"
+          subtitulo={empty ? "sem decisões registradas" : "decisões registradas e cenários salvos"}
           cta="VER HISTÓRICO →"
           href="/historico"
         />
@@ -546,6 +577,42 @@ function CaminhosCard() {
           cta="ABRIR MERCADO →"
           href="/mercado"
         />
+      </div>
+    </div>
+  );
+}
+
+// ─── Eventos vazio ───────────────────────────────────────────────
+function EventosDiaVazio() {
+  return (
+    <div>
+      <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+        <span
+          className="uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.06em",
+            color: "var(--ink-3)",
+          }}
+        >
+          O QUE MOVEU A LINHA HOJE
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-3)" }}>—</span>
+      </div>
+      <div
+        style={{
+          border: "0.5px dashed var(--rule-strong)",
+          borderRadius: 6,
+          padding: "14px 16px",
+          fontFamily: "var(--font-sans)",
+          fontSize: 12,
+          color: "var(--ink-2)",
+          lineHeight: 1.55,
+        }}
+      >
+        Sem lote cadastrado, mostramos só os números do mercado.<br />
+        Quando você cadastrar, cada evento aqui traz o impacto em R$ sobre os @ seus.
       </div>
     </div>
   );

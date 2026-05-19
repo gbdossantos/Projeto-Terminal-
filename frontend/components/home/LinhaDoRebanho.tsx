@@ -25,6 +25,8 @@ import {
 
 interface Props {
   sigmaAnualizado: number | null;
+  /** Sem markers de lote (estado sem cadastro). */
+  empty?: boolean;
 }
 
 // Mapeia ISO yyyy-mm-dd → timestamp (ms) para o eixo X numérico
@@ -39,7 +41,7 @@ function fmtTickEixoX(ts: number): string {
   return `${meses[m]}/26`;
 }
 
-export function LinhaDoRebanho({ sigmaAnualizado }: Props) {
+export function LinhaDoRebanho({ sigmaAnualizado, empty = false }: Props) {
   const pontos = useMemo(() => gerarLinhaRebanho(sigmaAnualizado), [sigmaAnualizado]);
 
   // Cursor: padrao em "hoje". Hover muda; mouseleave volta.
@@ -195,8 +197,8 @@ export function LinhaDoRebanho({ sigmaAnualizado }: Props) {
             }}
           />
 
-          {/* Marcadores de saída por lote */}
-          {MOCK_LOTES.map((lote) => {
+          {/* Marcadores de saída por lote (escondidos em estado vazio) */}
+          {!empty && MOCK_LOTES.map((lote) => {
             const ts = isoToTs(lote.data_saida);
             // Acha o valor projetado nesse ponto pra posicionar o dot
             const ponto = data.find((d) => d.ts === ts);
