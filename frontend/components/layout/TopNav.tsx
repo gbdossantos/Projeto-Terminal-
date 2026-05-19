@@ -19,10 +19,17 @@ import { MOCK_USUARIO, MOCK_FAZENDA } from "@/lib/mock-data";
 export function TopNav() {
   const pathname = usePathname();
   const [farmName, setFarmName] = useState<string>(MOCK_FAZENDA.nome);
+  const [hojeStr, setHojeStr] = useState<string>("");
 
   useEffect(() => {
     const p = getProfile();
     if (p.nome_fazenda) setFarmName(p.nome_fazenda);
+    // Data atual em pt-BR (ex: "19 mai/26"). useEffect evita mismatch SSR.
+    const hoje = new Date();
+    const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+    setHojeStr(
+      `${hoje.getDate()} ${meses[hoje.getMonth()]}/${String(hoje.getFullYear()).slice(2)}`,
+    );
   }, [pathname]);
 
   const tabs = [
@@ -86,7 +93,7 @@ export function TopNav() {
           <span style={{ color: "var(--ink-3)" }}>·</span>
           <span>{MOCK_FAZENDA.municipio} / {MOCK_FAZENDA.estado}</span>
           <span style={{ color: "var(--ink-3)" }}>·</span>
-          <span>19 mai/26</span>
+          <span>{hojeStr || "—"}</span>
         </div>
       </div>
 

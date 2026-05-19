@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { fetchVolatilidadeArroba } from "@/lib/api";
+import { useEffect, useMemo, useState } from "react";
+import {
+  fetchVolatilidadeArroba,
+  fetchCotacoes,
+  fetchFuturos,
+  fetchHistoricoArroba,
+} from "@/lib/api";
+import type { CotacaoMercado, CurvaFuturos, HistoricoDolarEntry } from "@/lib/types";
 import { LinhaDoRebanho } from "./LinhaDoRebanho";
 import { TopNav } from "@/components/layout/TopNav";
 import {
@@ -16,6 +22,11 @@ import {
 
 const SIGMA_FALLBACK = 0.18; // ~18% anualizado — típico boi gordo, fallback se endpoint falhar
 
+// Basis MS continua mock — depende da regiao da fazenda, vira config do user com auth
+const BASIS_MS = MOCK_MERCADO.basis_ms; // -5
+// Break-even continua mock — depende dos custos do lote, vira calculado com auth/banco
+const BREAK_EVEN = MOCK_MERCADO.break_even; // 286.50
+
 interface Props {
   /** Sem lote cadastrado: gráfico só mercado, cards 'R$ —', microcopy honesta. */
   empty?: boolean;
@@ -24,20 +35,47 @@ interface Props {
 export function HomeDashboard({ empty = false }: Props = {}) {
   const [sigma, setSigma] = useState<number | null>(null);
   const [exposicaoPorLote, setExposicaoPorLote] = useState(false);
+  const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
+  const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
+  const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
 
   useEffect(() => {
     fetchVolatilidadeArroba(90)
       .then((v) => setSigma(v.sigma_anualizado ?? SIGMA_FALLBACK))
       .catch(() => setSigma(SIGMA_FALLBACK));
+    fetchCotacoes().then(setCotacoes).catch(() => {});
+    fetchFuturos().then(setFuturos).catch(() => {});
+    fetchHistoricoArroba().then((h) => Array.isArray(h) && setHistArroba(h)).catch(() => {});
   }, []);
 
-  // Cálculos derivados — fonte única (todos a partir do MOCK_*)
-  // SPOT_FECHAMENTO é o valor de fechamento do dia exibido no mockup.
-  // MOCK_MERCADO.arroba_ms_spot (318) é a abertura; delta_dia (-2.10) já está aplicado aqui.
-  const SPOT_FECHAMENTO = 317.60;
-  const rebanhoExposto = MOCK_TOTAL_ARROBAS * SPOT_FECHAMENTO;
-  const margemSobreBE = SPOT_FECHAMENTO - MOCK_MERCADO.break_even;
-  const margemTotal = margemSobreBE * MOCK_TOTAL_ARROBAS;
+  // ── Cotações derivadas: dados reais quando disponíveis, fallback claro quando não ──
+  // Spot CEPEA/SP → spot MS = spot + basis (basis MS = -5)
+  const spotSP = cotacoes?.arroba_boi_gordo ?? null;
+  const spotMS = spotSP != null ? spotSP + BASIS_MS : null;
+
+  // Delta do dia: último vs penúltimo do histórico
+  const deltaDia = useMemo(() => {
+    if (histArroba.length < 2) return null;
+    const ultimo = histArroba[histArroba.length - 1].valor;
+    const penultimo = histArroba[histArroba.length - 2].valor;
+    return ultimo - penultimo;
+  }, [histArroba]);
+
+  // BGI próximo: primeiro contrato BGI com vencimento futuro
+  const bgiProximo = useMemo(() => {
+    if (!futuros?.contratos?.length) return null;
+    const hoje = new Date();
+    const futuros_validos = futuros.contratos
+      .filter((c) => new Date(c.vencimento) > hoje)
+      .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime());
+    return futuros_validos[0] ?? null;
+  }, [futuros]);
+
+  // Cálculos do rebanho (ainda dependem de cotação real)
+  const spotEfetivo = spotMS; // null quando API indisponível
+  const rebanhoExposto = spotEfetivo != null ? MOCK_TOTAL_ARROBAS * spotEfetivo : null;
+  const margemSobreBE = spotEfetivo != null ? spotEfetivo - BREAK_EVEN : null;
+  const margemTotal = margemSobreBE != null ? margemSobreBE * MOCK_TOTAL_ARROBAS : null;
 
   return (
     <div style={{ background: "var(--paper)", minHeight: "100vh" }}>
@@ -75,7 +113,12 @@ export function HomeDashboard({ empty = false }: Props = {}) {
                   : "Do que aconteceu hoje até a saída do último lote."}
               </h1>
             </div>
-            <MarketChips />
+            <MarketChips
+              spotSP={spotSP}
+              spotMS={spotMS}
+              deltaDia={deltaDia}
+              bgiProximo={bgiProximo}
+            />
           </div>
 
           <LinhaDoRebanho sigmaAnualizado={sigma} empty={empty} />
@@ -97,17 +140,25 @@ export function HomeDashboard({ empty = false }: Props = {}) {
           <CardResumo
             titulo="ARROBA DO BOI · NO FECHAMENTO DE HOJE"
             valor={
-              <span>
-                R$ <span className="mono-num">{fmtBRL(SPOT_FECHAMENTO)}</span>
-                <span style={{ fontSize: 14, color: "var(--ink-3)", marginLeft: 2 }}>/@</span>
-              </span>
+              spotMS != null ? (
+                <span>
+                  R$ <span className="mono-num">{fmtBRL(spotMS)}</span>
+                  <span style={{ fontSize: 14, color: "var(--ink-3)", marginLeft: 2 }}>/@</span>
+                </span>
+              ) : (
+                <span style={{ color: "var(--ink-3)" }}>—<span style={{ fontSize: 14, marginLeft: 2 }}>/@</span></span>
+              )
             }
             sub={
               <span>
                 <ChipMono variant="grafite">spot MS</ChipMono>{" "}
-                <span style={{ color: "var(--loss)" }}>
-                  -R$ <span className="mono-num">{fmtBRL(Math.abs(MOCK_MERCADO.delta_dia))}</span>/@ no dia
-                </span>
+                {deltaDia != null ? (
+                  <span style={{ color: deltaDia < 0 ? "var(--loss)" : "var(--gain)" }}>
+                    {deltaDia >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(deltaDia))}</span>/@ no dia
+                  </span>
+                ) : (
+                  <span style={{ color: "var(--ink-3)" }}>histórico indisponível</span>
+                )}
               </span>
             }
             border="right"
@@ -138,7 +189,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
               )
             }
             valor={
-              empty ? (
+              empty || rebanhoExposto == null ? (
                 <span style={{ fontSize: 38, color: "var(--ink-3)" }}>R$ — mi</span>
               ) : (
                 <span style={{ fontSize: 38 }}>
@@ -149,12 +200,14 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             sub={
               empty ? (
                 <span>cadastre um lote para projetar sua exposição</span>
-              ) : exposicaoPorLote ? (
+              ) : rebanhoExposto == null ? (
+                <span style={{ color: "var(--ink-3)" }}>cotação indisponível</span>
+              ) : exposicaoPorLote && spotEfetivo != null ? (
                 <div className="flex flex-col" style={{ gap: 2, marginTop: 4 }}>
                   {MOCK_LOTES.map((l) => (
                     <span key={l.id} style={{ fontSize: 10 }}>
                       {l.nome} · <span className="mono-num">{l.arrobas_totais.toLocaleString("pt-BR")}</span> @ ·
-                      R$ <span className="mono-num">{fmtBRL((l.arrobas_totais * SPOT_FECHAMENTO) / 1_000_000)}</span> mi
+                      R$ <span className="mono-num">{fmtBRL((l.arrobas_totais * spotEfetivo) / 1_000_000)}</span> mi
                     </span>
                   ))}
                 </div>
@@ -174,13 +227,13 @@ export function HomeDashboard({ empty = false }: Props = {}) {
           <CardResumo
             titulo="MARGEM SOBRE BREAK-EVEN · NO FECHAMENTO DE HOJE"
             valor={
-              empty ? (
+              empty || margemSobreBE == null ? (
                 <span style={{ color: "var(--ink-3)" }}>
                   —<span style={{ fontSize: 14, color: "var(--ink-3)", marginLeft: 2 }}>/@</span>
                 </span>
               ) : (
-                <span style={{ color: "var(--gain)" }}>
-                  +R$ <span className="mono-num">{fmtBRL(margemSobreBE)}</span>
+                <span style={{ color: margemSobreBE >= 0 ? "var(--gain)" : "var(--loss)" }}>
+                  {margemSobreBE >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(margemSobreBE))}</span>
                   <span style={{ fontSize: 14, color: "var(--ink-3)", marginLeft: 2 }}>/@</span>
                 </span>
               )
@@ -188,10 +241,12 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             sub={
               empty ? (
                 <span>break-even depende dos seus custos cadastrados</span>
+              ) : margemTotal == null ? (
+                <span style={{ color: "var(--ink-3)" }}>cotação indisponível</span>
               ) : (
                 <span>
-                  +R$ <span className="mono-num">{fmtBRL(margemTotal / 1_000_000)}</span> mi no rebanho ·{" "}
-                  BE R$ <span className="mono-num">{fmtBRL(MOCK_MERCADO.break_even)}</span>/@
+                  {margemTotal >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(margemTotal) / 1_000_000)}</span> mi no rebanho ·{" "}
+                  BE R$ <span className="mono-num">{fmtBRL(BREAK_EVEN)}</span>/@
                 </span>
               )
             }
@@ -217,25 +272,67 @@ export function HomeDashboard({ empty = false }: Props = {}) {
   );
 }
 
-// ─── Chips de mercado (BGIQ26, spot, delta) ─────────────────────
-function MarketChips() {
+// ─── Chips de mercado (BGI próximo, spot, delta) ────────────────
+function MarketChips({
+  spotSP,
+  spotMS,
+  deltaDia,
+  bgiProximo,
+}: {
+  spotSP: number | null;
+  spotMS: number | null;
+  deltaDia: number | null;
+  bgiProximo: { codigo: string; vencimento: string; preco_ajuste: number } | null;
+}) {
+  // Formata vencimento "2026-08-30" → "ago/26"
+  const fmtVenc = (iso: string) => {
+    const d = new Date(iso);
+    const m = d.getUTCMonth();
+    const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+    return `${meses[m]}/${String(d.getUTCFullYear()).slice(2)}`;
+  };
+
   return (
-    <div className="flex items-center" style={{ gap: 6, flexShrink: 0 }}>
-      <ChipMono variant="grafite" mono>
-        BGIQ26
-      </ChipMono>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-2)" }}>
-        boi gordo ago/26 · R$ <span className="mono-num">{fmtBRL(MOCK_MERCADO.bgi_q26_ago)}</span>
-      </span>
+    <div className="flex items-center" style={{ gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
+      {bgiProximo ? (
+        <>
+          <ChipMono variant="grafite">{bgiProximo.codigo}</ChipMono>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-2)" }}>
+            boi gordo {fmtVenc(bgiProximo.vencimento)} · R$ <span className="mono-num">{fmtBRL(bgiProximo.preco_ajuste)}</span>
+          </span>
+        </>
+      ) : (
+        <>
+          <ChipMono variant="grafite">BGI</ChipMono>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
+            curva indisponível
+          </span>
+        </>
+      )}
       <span style={{ color: "var(--ink-3)", margin: "0 4px" }}>·</span>
+
       <ChipMono variant="grafite">spot MS</ChipMono>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-2)" }}>
-        R$ <span className="mono-num">{fmtBRL(MOCK_MERCADO.arroba_ms_spot)}</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: spotMS != null ? "var(--ink-2)" : "var(--ink-3)" }}>
+        {spotMS != null ? (
+          <>R$ <span className="mono-num">{fmtBRL(spotMS)}</span></>
+        ) : (
+          "—"
+        )}
       </span>
+      {spotSP != null && (
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
+          (SP {fmtBRL(spotSP)})
+        </span>
+      )}
       <span style={{ color: "var(--ink-3)", margin: "0 4px" }}>·</span>
-      <ChipMono variant="loss">Δ dia</ChipMono>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--loss)" }}>
-        -R$ <span className="mono-num">{fmtBRL(Math.abs(MOCK_MERCADO.delta_dia))}</span>/@
+
+      <ChipMono variant={deltaDia != null && deltaDia < 0 ? "loss" : "grafite"}>Δ dia</ChipMono>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: deltaDia == null ? "var(--ink-3)" : deltaDia < 0 ? "var(--loss)" : "var(--gain)" }}>
+        {deltaDia != null ? (
+          <>{deltaDia >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(deltaDia))}</span>/@</>
+        ) : (
+          "—"
+        )}
       </span>
     </div>
   );
