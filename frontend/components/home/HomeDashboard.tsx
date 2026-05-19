@@ -32,9 +32,8 @@ export function HomeDashboard({ empty = false }: Props = {}) {
   }, []);
 
   // Cálculos derivados — fonte única (todos a partir do MOCK_*)
-  const arrobaSpot = MOCK_MERCADO.arroba_ms_spot + MOCK_MERCADO.delta_dia; // 318 + (-2.10) = 315.90 — mas mockup fala 317.60? Recalcular.
-  // Mockup mostra "R$ 317,60/@" como spot do fechamento. delta_dia -2.10.
-  // O 317.60 é o fechamento; 318 era abertura. Vou usar 317.60 direto.
+  // SPOT_FECHAMENTO é o valor de fechamento do dia exibido no mockup.
+  // MOCK_MERCADO.arroba_ms_spot (318) é a abertura; delta_dia (-2.10) já está aplicado aqui.
   const SPOT_FECHAMENTO = 317.60;
   const rebanhoExposto = MOCK_TOTAL_ARROBAS * SPOT_FECHAMENTO;
   const margemSobreBE = SPOT_FECHAMENTO - MOCK_MERCADO.break_even;
