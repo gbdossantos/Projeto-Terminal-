@@ -147,3 +147,109 @@ export function fmtData(iso: string): string {
   const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   return `${parseInt(d, 10)} ${meses[parseInt(m, 10) - 1]}/26`;
 }
+
+// ── Linha do tempo do rebanho ───────────────────────────────────
+// Serie temporal para o grafico "A LINHA": passado realizado (sólido)
+// + projetado curva BGI (tracejado) + bandas ±1σ e ±2σ.
+//
+// Datas em ISO; valores em R$/@.
+// Passado: mock determinístico (mesmos valores a cada render, sem random).
+// Projetado: interpolação linear entre spot e BGIQ26 (Q4 do plano: interpolar contratos).
+// Bandas σ: expansão temporal proporcional a √(t_dias / 252) × σ_anualizado × preço.
+export interface PontoLinha {
+  data: string;       // ISO yyyy-mm-dd
+  realizado: number | null;   // serie sólida (passado)
+  esperado: number | null;    // serie tracejada (projetado)
+  sigma1_low: number | null;  // banda ±1σ baixo
+  sigma1_high: number | null; // banda ±1σ alto
+  sigma2_low: number | null;  // banda ±2σ baixo
+  sigma2_high: number | null; // banda ±2σ alto
+}
+
+export const HOJE_ISO = "2026-05-19";
+
+/**
+ * Gera serie deterministica para o grafico A LINHA.
+ *
+ * @param sigmaAnualizado σ anualizado (decimal, ex: 0.18 = 18%). Se null,
+ *   o caller decide nao renderizar bandas.
+ */
+export function gerarLinhaRebanho(sigmaAnualizado: number | null): PontoLinha[] {
+  const pontos: PontoLinha[] = [];
+
+  // ── Passado realizado: 19/abr/26 → 19/mai/26 (30 dias, pontos semanais) ──
+  // Mock deterministico de oscilacao em torno do spot atual (R$ 318)
+  const passadoOffsets: Array<[string, number]> = [
+    ["2026-04-19", 312.40],
+    ["2026-04-26", 316.10],
+    ["2026-05-03", 319.80],
+    ["2026-05-10", 320.10],
+    ["2026-05-17", 320.10],
+    [HOJE_ISO, 317.60], // -2.10 do dia
+  ];
+  for (const [data, valor] of passadoOffsets) {
+    pontos.push({
+      data,
+      realizado: valor,
+      esperado: null,
+      sigma1_low: null,
+      sigma1_high: null,
+      sigma2_low: null,
+      sigma2_high: null,
+    });
+  }
+
+  // ── Projetado curva BGI: 19/mai/26 → 30/set/26 (semanal) ──
+  // Interpola linearmente do spot atual (318) ate BGIQ26 ago/26 (322)
+  // e mantem ~322 ate set/26 (limite visual do grafico)
+  const dataHoje = new Date(HOJE_ISO);
+  const dataFim = new Date("2026-09-30");
+  const dataBGIAgo = new Date("2026-08-22");
+
+  const precoInicio = MOCK_MERCADO.arroba_ms_spot; // 318
+  const precoBGI = MOCK_MERCADO.bgi_q26_ago;       // 322
+
+  // Marca o ponto "hoje" tambem como esperado (continua a curva)
+  const ultimoRealizado = pontos[pontos.length - 1];
+  if (ultimoRealizado.realizado != null) {
+    ultimoRealizado.esperado = ultimoRealizado.realizado;
+  }
+
+  // Pontos projetados semanais
+  const passoMs = 7 * 24 * 60 * 60 * 1000;
+  for (let t = dataHoje.getTime() + passoMs; t <= dataFim.getTime(); t += passoMs) {
+    const data = new Date(t).toISOString().slice(0, 10);
+    const dias = (t - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
+    const diasAteBGI = (dataBGIAgo.getTime() - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
+
+    // Interpolacao linear ate o vencimento do BGI Q26 ago; depois mantem
+    const frac = Math.min(1, dias / diasAteBGI);
+    const esperado = precoInicio + (precoBGI - precoInicio) * frac;
+
+    // Bandas σ — apenas se temos sigma valido
+    let sigma1_low = null;
+    let sigma1_high = null;
+    let sigma2_low = null;
+    let sigma2_high = null;
+    if (sigmaAnualizado != null && sigmaAnualizado > 0) {
+      const sigmaT = sigmaAnualizado * Math.sqrt(dias / 252) * esperado;
+      sigma1_low = esperado - sigmaT;
+      sigma1_high = esperado + sigmaT;
+      sigma2_low = esperado - 2 * sigmaT;
+      sigma2_high = esperado + 2 * sigmaT;
+    }
+
+    pontos.push({
+      data,
+      realizado: null,
+      esperado,
+      sigma1_low,
+      sigma1_high,
+      sigma2_low,
+      sigma2_high,
+    });
+  }
+
+  return pontos;
+}
+
