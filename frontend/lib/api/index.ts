@@ -9,6 +9,7 @@ import type {
   HistoricoDolarEntry,
   SimulatorRequest,
   SimulatorResponse,
+  VolatilidadeArroba,
 } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -40,6 +41,12 @@ export async function fetchHistoricoMilho(): Promise<HistoricoDolarEntry[]> {
 export async function fetchCotacoes(): Promise<CotacaoMercado> {
   const res = await fetch(`${BASE}/cotacoes`);
   if (!res.ok) throw new Error(`Cotacoes: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchVolatilidadeArroba(janelaDias = 90): Promise<VolatilidadeArroba> {
+  const res = await fetch(`${BASE}/volatilidade-arroba?janela_dias=${janelaDias}`);
+  if (!res.ok) throw new Error(`Volatilidade arroba: ${res.status}`);
   return res.json();
 }
 

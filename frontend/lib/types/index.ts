@@ -26,6 +26,21 @@ export interface CotacaoMercado {
   timestamp: string | null;
 }
 
+export interface VolatilidadeArroba {
+  /** Desvio padrao dos retornos log diarios. */
+  sigma_diario: number | null;
+  /** sigma_diario * sqrt(252) — volatilidade anualizada. */
+  sigma_anualizado: number | null;
+  /** Retorno medio diario (drift). */
+  media_diaria: number | null;
+  /** Numero de retornos usados no calculo. */
+  n_observations: number;
+  /** Janela em dias uteis usada. */
+  period_days: number;
+  /** Fonte do historico (CEPEA, etc) ou null se indisponivel. */
+  source: string | null;
+}
+
 export interface TerminacaoPastoRequest {
   num_animais: number;
   peso_entrada_kg: number;
