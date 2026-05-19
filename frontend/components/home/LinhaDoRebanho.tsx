@@ -103,6 +103,21 @@ export function LinhaDoRebanho({ sigmaAnualizado, empty = false }: Props) {
             type="number"
             domain={["dataMin", "dataMax"]}
             scale="time"
+            // 1 tick por mês — evita repetir "mai/26 mai/26 mai/26..." quando
+            // pontos da série caem dentro do mesmo mês.
+            ticks={(() => {
+              if (!data.length) return [];
+              const ts0 = data[0].ts;
+              const tsN = data[data.length - 1].ts;
+              const ticks: number[] = [];
+              const cur = new Date(ts0);
+              cur.setUTCDate(1); // primeiro dia do mês
+              while (cur.getTime() <= tsN) {
+                ticks.push(cur.getTime());
+                cur.setUTCMonth(cur.getUTCMonth() + 1);
+              }
+              return ticks;
+            })()}
             tickFormatter={fmtTickEixoX}
             tick={{
               fontFamily: "var(--font-mono)",
@@ -111,6 +126,7 @@ export function LinhaDoRebanho({ sigmaAnualizado, empty = false }: Props) {
             }}
             axisLine={false}
             tickLine={false}
+            interval={0}
           />
           <YAxis
             tickFormatter={(v) => `R$ ${v}`}
@@ -197,33 +213,64 @@ export function LinhaDoRebanho({ sigmaAnualizado, empty = false }: Props) {
             }}
           />
 
-          {/* Marcadores de saída por lote (escondidos em estado vazio) */}
-          {!empty && MOCK_LOTES.map((lote) => {
-            const ts = isoToTs(lote.data_saida);
-            // Acha o valor projetado nesse ponto pra posicionar o dot
-            const ponto = data.find((d) => d.ts === ts);
-            const y = ponto?.esperado ?? MOCK_MERCADO.bgi_q26_ago;
-            return (
-              <ReferenceDot
-                key={lote.id}
-                x={ts}
-                y={y}
-                r={4}
-                fill="var(--paper)"
-                stroke="var(--ink)"
-                strokeWidth={1.5}
-                ifOverflow="extendDomain"
-                label={{
-                  value: `${fmtData(lote.data_saida)}\n${lote.nome} · ${lote.num_animais.toLocaleString("pt-BR")} cab`,
-                  position: "top",
-                  fontSize: 9,
-                  fontFamily: "var(--font-mono)",
-                  fill: "var(--ink-2)",
-                  offset: 8,
-                }}
-              />
-            );
-          })}
+          {/* Marcadores de saída por lote (escondidos em estado vazio).
+              Ordenados por data → offset vertical alterna pra evitar sobreposição
+              quando 3 lotes caem no mesmo trimestre. */}
+          {!empty && [...MOCK_LOTES]
+            .sort((a, b) => isoToTs(a.data_saida) - isoToTs(b.data_saida))
+            .map((lote, i) => {
+              const ts = isoToTs(lote.data_saida);
+              const ponto = data.find((d) => d.ts === ts);
+              const y = ponto?.esperado ?? MOCK_MERCADO.bgi_q26_ago;
+              // Offset alternado por ordem: 0 = alto, 1 = mais alto, 2 = topo
+              const offsetY = -12 - i * 18;
+              return (
+                <ReferenceDot
+                  key={lote.id}
+                  x={ts}
+                  y={y}
+                  r={4}
+                  fill="var(--paper)"
+                  stroke="var(--ink)"
+                  strokeWidth={1.5}
+                  ifOverflow="extendDomain"
+                  label={({ viewBox }: { viewBox?: { cx?: number; cy?: number } }) => {
+                    const cx = viewBox?.cx ?? 0;
+                    const cy = viewBox?.cy ?? 0;
+                    return (
+                      <g>
+                        {/* Linha guia vertical pequena conectando o ponto ao label */}
+                        <line
+                          x1={cx}
+                          y1={cy}
+                          x2={cx}
+                          y2={cy + offsetY + 14}
+                          stroke="var(--rule-strong)"
+                          strokeWidth={0.5}
+                          strokeDasharray="1 2"
+                        />
+                        <text
+                          x={cx}
+                          y={cy + offsetY}
+                          textAnchor="middle"
+                          fontFamily="var(--font-mono)"
+                          fontSize={9}
+                          fill="var(--ink-2)"
+                        >
+                          <tspan x={cx} dy={0}>{fmtData(lote.data_saida)}</tspan>
+                          <tspan x={cx} dy={11} fill="var(--ink)">
+                            {lote.nome}
+                          </tspan>
+                          <tspan x={cx} dy={11} fill="var(--ink-3)">
+                            {lote.num_animais.toLocaleString("pt-BR")} cab
+                          </tspan>
+                        </text>
+                      </g>
+                    );
+                  }}
+                />
+              );
+            })}
 
           {/* Linha "realizado" (sólida, passado) */}
           <Line
