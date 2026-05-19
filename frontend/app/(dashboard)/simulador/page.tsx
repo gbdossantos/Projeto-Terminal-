@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { fetchVolatilidadeArroba } from "@/lib/api";
 import {
@@ -10,6 +11,8 @@ import {
   fmtData,
   type MockLote,
 } from "@/lib/mock-data";
+import { listLotes } from "@/lib/lotes-storage";
+import { saveDecisao, type IntencaoHedge } from "@/lib/decisoes-storage";
 
 // σ anualizado fallback (caso endpoint falhe). Boi gordo histórico típico.
 const SIGMA_FALLBACK = 0.18;
@@ -70,6 +73,16 @@ function calcularMedos(
 }
 
 export default function SimuladorPage() {
+  // Estado vazio: usuario nao tem lote salvo (mesma logica da Home).
+  // No prototipo, MOCK_LOTES sempre tem 3, mas o gating cross-tela vem
+  // de listLotes() — quando 0 → empty state, quando >0 → state normal.
+  const [hydrated, setHydrated] = useState(false);
+  const [hasLote, setHasLote] = useState(true);
+  useEffect(() => {
+    setHasLote(listLotes().length > 0);
+    setHydrated(true);
+  }, []);
+
   const [loteId, setLoteId] = useState<string>(MOCK_LOTES[0].id);
   const [sigmaAnual, setSigmaAnual] = useState<number>(SIGMA_FALLBACK);
 
@@ -377,7 +390,267 @@ export default function SimuladorPage() {
             arrobasLote={lote.arrobas_totais}
             hedgePct={HEDGE_PCT_DEFAULT}
           />
+
+          <RegistrarDecisao
+            lote={lote}
+            hedgePct={HEDGE_PCT_DEFAULT}
+            cenario={cenario}
+            precoTravado={precoTravado}
+          />
         </section>
+
+        {hydrated && !hasLote && <SimuladorVazioOverlay />}
+    </div>
+  );
+}
+
+// ─── Estado vazio (overlay nao-bloqueante) ─────────────────────
+// Mostra mensagem honesta acima das alavancas mockadas quando nao ha lote salvo.
+// (Em produçao com auth, o gating sera completo — protótipo mostra os dados mock
+// pra demonstrar a tela, mas a faixa de empty deixa explícito.)
+function SimuladorVazioOverlay() {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 24,
+        right: 24,
+        background: "var(--paper)",
+        border: "0.5px solid var(--rule-strong)",
+        borderRadius: 6,
+        padding: "12px 16px",
+        maxWidth: 320,
+        fontFamily: "var(--font-sans)",
+        fontSize: 12,
+        color: "var(--ink-2)",
+        lineHeight: 1.55,
+        boxShadow: "0 4px 16px rgba(26, 24, 20, 0.08)",
+      }}
+    >
+      <div
+        className="uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          letterSpacing: "0.06em",
+          color: "var(--ink-3)",
+          marginBottom: 4,
+        }}
+      >
+        SEM LOTE CADASTRADO
+      </div>
+      Sem lote, os dois medos não têm magnitude. Os números acima são exemplo —
+      <Link
+        href="/lotes"
+        style={{ color: "var(--ink)", textDecoration: "underline", textUnderlineOffset: 2, marginLeft: 4 }}
+      >
+        cadastre um lote
+      </Link>{" "}
+      para simular sobre @ suas.
+    </div>
+  );
+}
+
+// ─── CTA Registrar essa decisão ────────────────────────────────
+function RegistrarDecisao({
+  lote,
+  hedgePct,
+  cenario,
+  precoTravado,
+}: {
+  lote: MockLote;
+  hedgePct: number;
+  cenario: number;
+  precoTravado: number;
+}) {
+  const [estado, setEstado] = useState<"closed" | "open" | "saved">("closed");
+  const [intencao, setIntencao] = useState<IntencaoHedge>(null);
+
+  const handleSalvar = () => {
+    saveDecisao({
+      lote_id: lote.id,
+      lote_nome: lote.nome,
+      hedge_pct: hedgePct,
+      cenario_arroba: cenario,
+      preco_travado: precoTravado,
+      intencao,
+    });
+    setEstado("saved");
+    setTimeout(() => {
+      setEstado("closed");
+      setIntencao(null);
+    }, 2800);
+  };
+
+  if (estado === "saved") {
+    return (
+      <div
+        style={{
+          marginTop: 20,
+          padding: "12px 16px",
+          background: "rgba(61, 122, 42, 0.08)",
+          border: "0.5px solid rgba(61, 122, 42, 0.35)",
+          borderRadius: 4,
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--gain)",
+        }}
+      >
+        ✓ Decisão registrada — disponível no Histórico.
+      </div>
+    );
+  }
+
+  if (estado === "open") {
+    return (
+      <div
+        style={{
+          marginTop: 20,
+          padding: "16px 20px",
+          background: "var(--paper-2)",
+          border: "0.5px solid var(--rule)",
+          borderRadius: 6,
+        }}
+      >
+        <div
+          className="uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            letterSpacing: "0.06em",
+            color: "var(--ink-3)",
+            marginBottom: 10,
+          }}
+        >
+          REGISTRAR ESTA SIMULAÇÃO
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            color: "var(--ink)",
+            marginBottom: 14,
+            lineHeight: 1.5,
+          }}
+        >
+          {lote.nome} · cenário R$ <span className="mono-num">{fmtBRL(cenario)}</span>/@ · {(hedgePct * 100).toFixed(0)}% travada.<br />
+          <span style={{ color: "var(--ink-2)", fontSize: 12 }}>
+            Se você tivesse que decidir hoje, o que faria?
+          </span>
+        </div>
+        <div className="flex" style={{ gap: 8, marginBottom: 14 }}>
+          <button
+            onClick={() => setIntencao("travaria")}
+            style={{
+              flex: 1,
+              padding: "8px 12px",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              background: intencao === "travaria" ? "var(--ink)" : "var(--paper)",
+              color: intencao === "travaria" ? "var(--paper)" : "var(--ink)",
+              border: "0.5px solid",
+              borderColor: intencao === "travaria" ? "var(--ink)" : "var(--rule)",
+              borderRadius: 4,
+              cursor: "pointer",
+              textAlign: "center",
+            }}
+          >
+            Eu travaria
+          </button>
+          <button
+            onClick={() => setIntencao("nao_travaria")}
+            style={{
+              flex: 1,
+              padding: "8px 12px",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              background: intencao === "nao_travaria" ? "var(--ink)" : "var(--paper)",
+              color: intencao === "nao_travaria" ? "var(--paper)" : "var(--ink)",
+              border: "0.5px solid",
+              borderColor: intencao === "nao_travaria" ? "var(--ink)" : "var(--rule)",
+              borderRadius: 4,
+              cursor: "pointer",
+              textAlign: "center",
+            }}
+          >
+            Eu NÃO travaria
+          </button>
+          <button
+            onClick={() => setIntencao(null)}
+            style={{
+              padding: "8px 12px",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              background: "var(--paper)",
+              color: intencao === null ? "var(--ink)" : "var(--ink-3)",
+              border: "0.5px solid",
+              borderColor: intencao === null ? "var(--ink)" : "var(--rule)",
+              borderRadius: 4,
+              cursor: "pointer",
+              textAlign: "center",
+              fontStyle: "italic",
+            }}
+          >
+            só salvar cenário
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setEstado("closed"); setIntencao(null); }}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              color: "var(--ink-3)",
+            }}
+          >
+            cancelar
+          </button>
+          <button
+            onClick={handleSalvar}
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              background: "var(--ink)",
+              color: "var(--paper)",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 18px",
+              cursor: "pointer",
+              fontWeight: 500,
+            }}
+          >
+            Registrar →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between" style={{ marginTop: 22 }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
+        o Terminal não executa — esse registro vira histórico de cenários.
+      </span>
+      <button
+        onClick={() => setEstado("open")}
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+          background: "var(--ink)",
+          color: "var(--paper)",
+          border: "none",
+          borderRadius: 4,
+          padding: "10px 20px",
+          cursor: "pointer",
+          fontWeight: 500,
+        }}
+      >
+        Registrar essa decisão →
+      </button>
     </div>
   );
 }
