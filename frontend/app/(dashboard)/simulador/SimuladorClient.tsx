@@ -241,7 +241,7 @@ export default function SimuladorClient() {
             </p>
             <AlavancaSecundaria
               titulo="Milho · saca 60kg"
-              ref={milhoRef}
+              valorRef={milhoRef}
               valor={milhoCenario}
               setValor={setMilhoCenario}
               codigo="CCMK26 · milho jul/26"
@@ -251,7 +251,7 @@ export default function SimuladorClient() {
             <div style={{ height: 14 }} />
             <AlavancaSecundaria
               titulo="Dólar · PTAX"
-              ref={dolarRef}
+              valorRef={dolarRef}
               valor={dolarCenario}
               setValor={setDolarCenario}
               codigo="USDBRL · dólar comercial"
@@ -865,7 +865,7 @@ function StepperInput({
 // ─── Alavanca secundária (milho/dólar) ──────────────────────────
 function AlavancaSecundaria({
   titulo,
-  ref: refValor,
+  valorRef,
   valor,
   setValor,
   codigo,
@@ -873,14 +873,16 @@ function AlavancaSecundaria({
   step,
 }: {
   titulo: string;
-  ref: number;
+  // NOTA: nome 'valorRef' (nao 'ref') — 'ref' e palavra reservada do React,
+  // vira forwardRef e nao chega no componente.
+  valorRef: number;
   valor: number;
   setValor: (v: number) => void;
   codigo: string;
   papel: string;
   step: number;
 }) {
-  const variacaoPct = refValor > 0 ? ((valor - refValor) / refValor) * 100 : 0;
+  const variacaoPct = valorRef > 0 ? ((valor - valorRef) / valorRef) * 100 : 0;
   return (
     <div>
       <div className="flex items-baseline justify-between" style={{ marginBottom: 4 }}>
@@ -908,8 +910,8 @@ function AlavancaSecundaria({
         <input
           type="range"
           className="scenario-slider"
-          min={refValor * 0.7}
-          max={refValor * 1.3}
+          min={valorRef * 0.7}
+          max={valorRef * 1.3}
           step={step}
           value={valor}
           onChange={(e) => setValor(parseFloat(e.target.value))}
@@ -919,7 +921,7 @@ function AlavancaSecundaria({
       </div>
       <div className="flex items-center" style={{ gap: 8, marginTop: 4 }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--grafite)" }}>
-          ref <span className="mono-num">{fmtBRL(refValor, step < 1 ? 2 : 0)}</span>
+          ref <span className="mono-num">{fmtBRL(valorRef, step < 1 ? 2 : 0)}</span>
         </span>
         <span
           style={{

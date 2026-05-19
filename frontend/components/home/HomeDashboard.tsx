@@ -333,22 +333,49 @@ function CardResumo({
 function EventosDia() {
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-        <span
-          className="uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.06em",
-            color: "var(--ink-3)",
-          }}
-        >
-          O QUE MOVEU A LINHA HOJE
-        </span>
+      <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+        <div className="flex items-center" style={{ gap: 8 }}>
+          <span
+            className="uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.06em",
+              color: "var(--ink-3)",
+            }}
+          >
+            O QUE MOVEU A LINHA HOJE
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              padding: "1px 6px",
+              background: "var(--paper-3)",
+              color: "var(--ink-3)",
+              borderRadius: 2,
+              letterSpacing: "0.04em",
+            }}
+            title="Motor de atribuição (parsing de notícia + correlação com variação do dia + propagação por lote) está em escopo futuro. Estes 3 eventos são amostra didática."
+          >
+            AMOSTRA
+          </span>
+        </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
           top 3 · <a href="#" style={{ color: "var(--ink-2)" }}>ver tudo →</a>
         </span>
       </div>
+      <p
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 10.5,
+          color: "var(--ink-3)",
+          marginBottom: 10,
+          fontStyle: "italic",
+        }}
+      >
+        Eventos de exemplo — motor de atribuição em desenvolvimento.
+      </p>
       <div className="flex flex-col" style={{ gap: 2 }}>
         {MOCK_EVENTOS_DIA.map((ev, i) => (
           <div
