@@ -121,7 +121,13 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             />
           </div>
 
-          <LinhaDoRebanho sigmaAnualizado={sigma} empty={empty} />
+          <LinhaDoRebanho
+            sigmaAnualizado={sigma}
+            empty={empty}
+            historico={histArroba}
+            spotAtual={spotMS}
+            bgi={bgiProximo}
+          />
         </section>
 
         {/* Cards resumo */}

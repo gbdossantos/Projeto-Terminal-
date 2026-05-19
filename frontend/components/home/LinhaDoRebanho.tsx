@@ -16,7 +16,6 @@ import {
 import {
   MOCK_LOTES,
   MOCK_MERCADO,
-  HOJE_ISO,
   gerarLinhaRebanho,
   fmtBRL,
   fmtData,
@@ -27,6 +26,12 @@ interface Props {
   sigmaAnualizado: number | null;
   /** Sem markers de lote (estado sem cadastro). */
   empty?: boolean;
+  /** Histórico real de arroba (CEPEA). Se vazio/null, gráfico cai no mock. */
+  historico?: Array<{ data: string; valor: number }>;
+  /** Spot MS atual em R$/@ (CEPEA SP + basis MS). */
+  spotAtual?: number | null;
+  /** BGI próximo contrato (do /api/futuros). */
+  bgi?: { vencimento: string; preco_ajuste: number } | null;
 }
 
 // Mapeia ISO yyyy-mm-dd → timestamp (ms) para o eixo X numérico
@@ -41,12 +46,22 @@ function fmtTickEixoX(ts: number): string {
   return `${meses[m]}/26`;
 }
 
-export function LinhaDoRebanho({ sigmaAnualizado, empty = false }: Props) {
-  const pontos = useMemo(() => gerarLinhaRebanho(sigmaAnualizado), [sigmaAnualizado]);
+export function LinhaDoRebanho({
+  sigmaAnualizado,
+  empty = false,
+  historico,
+  spotAtual,
+  bgi,
+}: Props) {
+  const pontos = useMemo(
+    () => gerarLinhaRebanho({ sigmaAnualizado, historico, spotAtual, bgi }),
+    [sigmaAnualizado, historico, spotAtual, bgi],
+  );
 
-  // Cursor: padrao em "hoje". Hover muda; mouseleave volta.
-  // (Posicao "ao soltar fica" — sessao apenas, nao localStorage.)
-  const [cursorTs, setCursorTs] = useState<number>(isoToTs(HOJE_ISO));
+  // Cursor: padrao em "hoje" (data real). Hover muda; mouseleave volta.
+  const hojeReal = new Date();
+  hojeReal.setHours(0, 0, 0, 0);
+  const [cursorTs, setCursorTs] = useState<number>(hojeReal.getTime());
 
   // Converte pontos para shape do Recharts (ts numerico no eixo X)
   const data = useMemo(
@@ -89,7 +104,7 @@ export function LinhaDoRebanho({ sigmaAnualizado, empty = false }: Props) {
               setCursorTs(Number(state.activeLabel));
             }
           }}
-          onMouseLeave={() => setCursorTs(isoToTs(HOJE_ISO))}
+          onMouseLeave={() => setCursorTs(hojeReal.getTime())}
         >
           <CartesianGrid
             horizontal
@@ -198,9 +213,9 @@ export function LinhaDoRebanho({ sigmaAnualizado, empty = false }: Props) {
             }}
           />
 
-          {/* Linha "hoje" — vertical fina */}
+          {/* Linha "hoje" — vertical fina (data real) */}
           <ReferenceLine
-            x={isoToTs(HOJE_ISO)}
+            x={hojeReal.getTime()}
             stroke="var(--ink)"
             strokeWidth={0.5}
             strokeDasharray="2 3"

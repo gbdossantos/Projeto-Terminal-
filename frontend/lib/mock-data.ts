@@ -169,64 +169,129 @@ export interface PontoLinha {
 export const HOJE_ISO = "2026-05-19";
 
 /**
- * Gera serie deterministica para o grafico A LINHA.
+ * Gera serie para o grafico A LINHA.
  *
- * @param sigmaAnualizado σ anualizado (decimal, ex: 0.18 = 18%). Se null,
- *   o caller decide nao renderizar bandas.
+ * Modo REAL: passe historico, spotAtual e bgiProximo vindos da API.
+ *   - Passado: pontos do historico CEPEA real
+ *   - Projetado: interpola linear do spot ate o vencimento do BGI proximo
+ *   - "hoje" pega a data REAL (new Date()), nao a fixa do mock
+ *
+ * Modo FALLBACK: sem args, usa MOCK_MERCADO (snapshot do designer 19/mai/26).
+ *   Mantido pra Home conseguir renderizar quando API indisponivel.
+ *
+ * @param sigmaAnualizado σ anualizado (decimal). Null → sem bandas.
+ * @param historico pontos {data, valor} reais. Se vazio, usa passado mock.
+ * @param spotAtual spot MS atual em R$/@. Se null, usa MOCK.
+ * @param bgi { codigo, vencimento, preco_ajuste } do contrato BGI proximo.
+ *   Se null, usa MOCK_MERCADO.bgi_q26_ago em 2026-08-22.
  */
-export function gerarLinhaRebanho(sigmaAnualizado: number | null): PontoLinha[] {
+export interface LinhaInputs {
+  sigmaAnualizado: number | null;
+  historico?: Array<{ data: string; valor: number }>;
+  spotAtual?: number | null;
+  bgi?: { vencimento: string; preco_ajuste: number } | null;
+}
+
+export function gerarLinhaRebanho({
+  sigmaAnualizado,
+  historico,
+  spotAtual,
+  bgi,
+}: LinhaInputs): PontoLinha[] {
   const pontos: PontoLinha[] = [];
 
-  // ── Passado realizado: 19/abr/26 → 19/mai/26 (30 dias, pontos semanais) ──
-  // Mock deterministico de oscilacao em torno do spot atual (R$ 318)
-  const passadoOffsets: Array<[string, number]> = [
-    ["2026-04-19", 312.40],
-    ["2026-04-26", 316.10],
-    ["2026-05-03", 319.80],
-    ["2026-05-10", 320.10],
-    ["2026-05-17", 320.10],
-    [HOJE_ISO, 317.60], // -2.10 do dia
-  ];
-  for (const [data, valor] of passadoOffsets) {
-    pontos.push({
-      data,
-      realizado: valor,
-      esperado: null,
-      sigma1_low: null,
-      sigma1_high: null,
-      sigma2_low: null,
-      sigma2_high: null,
-    });
+  // ── 1. PASSADO realizado ──
+  const usaHistoricoReal = historico && historico.length >= 2;
+  const hojeReal = new Date().toISOString().slice(0, 10);
+  const hojeISO = usaHistoricoReal ? hojeReal : HOJE_ISO;
+
+  if (usaHistoricoReal) {
+    // Pega últimos ~30 dias do histórico real (pontos semanais → reduzir densidade)
+    const slice = historico!.slice(-30);
+    // Reduz para 1 ponto a cada ~5 dias pra não poluir o gráfico
+    const step = Math.max(1, Math.floor(slice.length / 6));
+    for (let i = 0; i < slice.length; i += step) {
+      const p = slice[i];
+      // data vem do CEPEA como "DD/MM/YYYY" — converte pra ISO
+      const iso = parseDataCepea(p.data);
+      if (iso) {
+        pontos.push({
+          data: iso,
+          realizado: p.valor,
+          esperado: null,
+          sigma1_low: null,
+          sigma1_high: null,
+          sigma2_low: null,
+          sigma2_high: null,
+        });
+      }
+    }
+    // Garante que o último ponto é hoje (mesmo que o histórico não tenha a data exata)
+    const ultimoPasso = slice[slice.length - 1];
+    if (ultimoPasso) {
+      const ultimoIso = parseDataCepea(ultimoPasso.data);
+      if (ultimoIso !== hojeReal) {
+        pontos.push({
+          data: hojeReal,
+          realizado: spotAtual ?? ultimoPasso.valor,
+          esperado: null,
+          sigma1_low: null,
+          sigma1_high: null,
+          sigma2_low: null,
+          sigma2_high: null,
+        });
+      }
+    }
+  } else {
+    // Fallback: passado mock determinístico
+    const passadoOffsets: Array<[string, number]> = [
+      ["2026-04-19", 312.40],
+      ["2026-04-26", 316.10],
+      ["2026-05-03", 319.80],
+      ["2026-05-10", 320.10],
+      ["2026-05-17", 320.10],
+      [HOJE_ISO, 317.60],
+    ];
+    for (const [data, valor] of passadoOffsets) {
+      pontos.push({
+        data,
+        realizado: valor,
+        esperado: null,
+        sigma1_low: null,
+        sigma1_high: null,
+        sigma2_low: null,
+        sigma2_high: null,
+      });
+    }
   }
 
-  // ── Projetado curva BGI: 19/mai/26 → 30/set/26 (semanal) ──
-  // Interpola linearmente do spot atual (318) ate BGIQ26 ago/26 (322)
-  // e mantem ~322 ate set/26 (limite visual do grafico)
-  const dataHoje = new Date(HOJE_ISO);
-  const dataFim = new Date("2026-09-30");
-  const dataBGIAgo = new Date("2026-08-22");
+  // ── 2. PROJETADO curva BGI ──
+  const dataHoje = new Date(hojeISO);
+  // Data do BGI: real (do contrato) ou mock (22 ago/26)
+  const dataBGI = bgi ? new Date(bgi.vencimento) : new Date("2026-08-22");
+  // Estende ~30 dias depois do BGI pra dar respiro visual
+  const dataFim = new Date(dataBGI.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-  const precoInicio = MOCK_MERCADO.arroba_ms_spot; // 318
-  const precoBGI = MOCK_MERCADO.bgi_q26_ago;       // 322
+  // Preços de início (hoje) e fim (BGI)
+  const precoInicio = spotAtual ?? MOCK_MERCADO.arroba_ms_spot;
+  const precoBGI = bgi?.preco_ajuste ?? MOCK_MERCADO.bgi_q26_ago;
 
-  // Marca o ponto "hoje" tambem como esperado (continua a curva)
+  // Marca o último ponto realizado também como esperado (junção)
   const ultimoRealizado = pontos[pontos.length - 1];
-  if (ultimoRealizado.realizado != null) {
+  if (ultimoRealizado?.realizado != null) {
     ultimoRealizado.esperado = ultimoRealizado.realizado;
   }
 
-  // Pontos projetados semanais
   const passoMs = 7 * 24 * 60 * 60 * 1000;
   for (let t = dataHoje.getTime() + passoMs; t <= dataFim.getTime(); t += passoMs) {
     const data = new Date(t).toISOString().slice(0, 10);
     const dias = (t - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
-    const diasAteBGI = (dataBGIAgo.getTime() - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
+    const diasAteBGI = (dataBGI.getTime() - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
 
-    // Interpolacao linear ate o vencimento do BGI Q26 ago; depois mantem
-    const frac = Math.min(1, dias / diasAteBGI);
+    // Interpolação linear até vencimento do BGI, depois mantém o preço
+    const frac = diasAteBGI > 0 ? Math.min(1, dias / diasAteBGI) : 1;
     const esperado = precoInicio + (precoBGI - precoInicio) * frac;
 
-    // Bandas σ — apenas se temos sigma valido
     let sigma1_low = null;
     let sigma1_high = null;
     let sigma2_low = null;
@@ -251,5 +316,20 @@ export function gerarLinhaRebanho(sigmaAnualizado: number | null): PontoLinha[] 
   }
 
   return pontos;
+}
+
+/**
+ * CEPEA devolve datas no formato "DD/MM/YYYY". Converte pra ISO (YYYY-MM-DD).
+ * Retorna null se formato inesperado.
+ */
+function parseDataCepea(s: string): string | null {
+  if (!s) return null;
+  // Tenta DD/MM/YYYY primeiro
+  const m1 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m1) return `${m1[3]}-${m1[2]}-${m1[1]}`;
+  // Já vem ISO?
+  const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) return s;
+  return null;
 }
 
