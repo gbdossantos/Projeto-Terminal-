@@ -46,6 +46,11 @@ export function HomeDashboard({ empty = false }: Props = {}) {
   const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [noticiasUltimaAtualizacao, setNoticiasUltimaAtualizacao] = useState<string | null>(null);
+  const [noticiasDeltaDia, setNoticiasDeltaDia] = useState<{
+    arroba_pct: number | null;
+    dolar_pct: number | null;
+    milho_pct: number | null;
+  } | null>(null);
 
   useEffect(() => {
     fetchVolatilidadeArroba(90)
@@ -60,6 +65,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
         .then((r) => {
           setNoticias(r.noticias ?? []);
           setNoticiasUltimaAtualizacao(r.ultima_atualizacao);
+          setNoticiasDeltaDia(r.delta_dia ?? null);
         })
         .catch(() => {});
     };
@@ -288,7 +294,17 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             gap: 24,
           }}
         >
-          {empty ? <EventosDiaVazio /> : <EventosDia noticias={noticias} ultimaAtualizacao={noticiasUltimaAtualizacao} />}
+          {empty ? (
+            <EventosDiaVazio />
+          ) : (
+            <EventosDia
+              noticias={noticias}
+              ultimaAtualizacao={noticiasUltimaAtualizacao}
+              deltaDia={noticiasDeltaDia}
+              dolarPtax={cotacoes?.dolar_ptax ?? null}
+              spotMS={spotMS}
+            />
+          )}
           <CaminhosCard empty={empty} />
         </section>
 
@@ -456,9 +472,15 @@ function CardResumo({
 function EventosDia({
   noticias,
   ultimaAtualizacao,
+  deltaDia,
+  dolarPtax,
+  spotMS,
 }: {
   noticias: Noticia[];
   ultimaAtualizacao: string | null;
+  deltaDia: { arroba_pct: number | null; dolar_pct: number | null; milho_pct: number | null } | null;
+  dolarPtax: number | null;
+  spotMS: number | null;
 }) {
   // Detecta notícias novas (que não estavam na lista do render anterior)
   // pra disparar slide-in. Não anima no primeiro carregamento (refresh manual).
@@ -507,32 +529,35 @@ function EventosDia({
           top 3 · <a href="#" style={{ color: "var(--ink-2)" }}>ver tudo →</a>
         </span>
       </div>
-      {noticias.length === 0 ? (
-        <div
-          style={{
-            border: "0.5px dashed var(--rule-strong)",
-            borderRadius: 6,
-            padding: "14px 16px",
-            fontFamily: "var(--font-sans)",
-            fontSize: 12,
-            color: "var(--ink-3)",
-            lineHeight: 1.55,
-          }}
-        >
-          Sem novidade relevante no boi gordo nas últimas 24h.
-        </div>
-      ) : (
-        <div className="flex flex-col" style={{ gap: 2 }}>
-          {noticias.map((n, i) => (
-            <NoticiaCard
-              key={n.id}
-              n={n}
-              isFirst={i === 0}
-              entrando={entrandoIds.has(n.id)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col" style={{ gap: 2 }}>
+        {/*
+          Slots fixos. Quando notícia real existe pra slot N → mostra ela.
+          Quando não existe e é slot 0 → fallback sintético da variação do dia.
+          Slots 1 e 2 sem notícia → "Sem novidade relevante" discreto.
+          Princípio: nunca preencher com notícia irrelevante pra completar 3.
+        */}
+        {[0, 1, 2].map((slot) => {
+          const n = noticias[slot];
+          if (n) {
+            return (
+              <NoticiaCard
+                key={n.id}
+                n={n}
+                isFirst={slot === 0}
+                entrando={entrandoIds.has(n.id)}
+              />
+            );
+          }
+          if (slot === 0) {
+            // Fallback do brief: card 1 sempre cheio, gerado da variação do dia
+            const fb = construirFallbackCard1({ deltaDia, dolarPtax, spotMS });
+            if (fb) {
+              return <NoticiaCardSintetico key="fallback-0" card={fb} />;
+            }
+          }
+          return <SlotVazio key={`slot-${slot}`} isFirst={slot === 0} />;
+        })}
+      </div>
       {ultimaAtualizacao && (
         <div
           style={{
@@ -678,6 +703,129 @@ function DeltaCorrelato({ delta }: { delta: Noticia["delta_correlato"] }) {
         </span>
       ))}
     </>
+  );
+}
+
+// ─── Card sintético do fallback (brief: "card 1 sempre cheio") ──
+interface FallbackCard {
+  titulo: string;
+  categoria: NoticiaCategoria;
+  delta_correlato: Noticia["delta_correlato"];
+}
+
+function construirFallbackCard1({
+  deltaDia,
+  dolarPtax,
+  spotMS,
+}: {
+  deltaDia: { arroba_pct: number | null; dolar_pct: number | null; milho_pct: number | null } | null;
+  dolarPtax: number | null;
+  spotMS: number | null;
+}): FallbackCard | null {
+  if (!deltaDia) return null;
+
+  // Prioridade: dolar movendo > arroba movendo > nada
+  if (deltaDia.dolar_pct !== null && Math.abs(deltaDia.dolar_pct) > 0.05 && dolarPtax !== null) {
+    const valor = dolarPtax.toFixed(2).replace(".", ",");
+    return {
+      titulo: `Dólar fechou em R$ ${valor}`,
+      categoria: "cambio",
+      delta_correlato: {
+        arroba_pct: deltaDia.arroba_pct,
+        dolar_pct: deltaDia.dolar_pct,
+        milho_pct: null,
+      },
+    };
+  }
+  if (deltaDia.arroba_pct !== null && Math.abs(deltaDia.arroba_pct) > 0.05 && spotMS !== null) {
+    const valor = spotMS.toFixed(2).replace(".", ",");
+    return {
+      titulo: `Arroba MS fechou em R$ ${valor}`,
+      categoria: "oferta_interna",
+      delta_correlato: {
+        arroba_pct: deltaDia.arroba_pct,
+        dolar_pct: null,
+        milho_pct: null,
+      },
+    };
+  }
+  return null;
+}
+
+function NoticiaCardSintetico({ card }: { card: FallbackCard }) {
+  return (
+    <div
+      className="flex items-stretch"
+      style={{
+        padding: "10px 0",
+        borderTop: "0.5px solid var(--rule)",
+        borderBottom: "0.5px solid var(--rule)",
+        gap: 12,
+      }}
+    >
+      <div style={{ flexShrink: 0, width: 48, height: 48 }}>
+        <IconeCategoria categoria={card.categoria} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            color: "var(--ink)",
+            fontWeight: 500,
+            lineHeight: 1.35,
+          }}
+        >
+          {card.titulo}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ink-3)",
+            marginTop: 4,
+          }}
+        >
+          Mercado · hoje ·{" "}
+          <Link href="/mercado" style={{ color: "var(--grafite)", textDecoration: "none" }}>
+            ver mercado →
+          </Link>
+        </div>
+      </div>
+      <div
+        className="flex flex-col"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--grafite)",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          gap: 2,
+          minWidth: 96,
+        }}
+      >
+        <DeltaCorrelato delta={card.delta_correlato} />
+      </div>
+    </div>
+  );
+}
+
+function SlotVazio({ isFirst }: { isFirst: boolean }) {
+  return (
+    <div
+      className="flex items-center"
+      style={{
+        padding: "14px 0",
+        borderTop: isFirst ? "0.5px solid var(--rule)" : "none",
+        borderBottom: "0.5px solid var(--rule)",
+        fontFamily: "var(--font-sans)",
+        fontSize: 12,
+        color: "var(--ink-3)",
+        fontStyle: "italic",
+      }}
+    >
+      Sem novidade relevante no boi gordo nas últimas 24h.
+    </div>
   );
 }
 
