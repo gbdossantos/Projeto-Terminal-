@@ -23,7 +23,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import cotacoes, terminacao, simulator
+from api.routes import cotacoes, terminacao, simulator, noticias as noticias_route
 from api.services.noticias import ingestar_feed
 from api.db.noticias import init_schema
 
@@ -93,6 +93,7 @@ app.add_middleware(
 app.include_router(cotacoes.router, prefix="/api", tags=["Cotações"])
 app.include_router(terminacao.router, prefix="/api", tags=["Terminação"])
 app.include_router(simulator.router, prefix="/api", tags=["Simulador"])
+app.include_router(noticias_route.router, prefix="/api", tags=["Notícias"])
 
 
 @app.get("/api/health")
