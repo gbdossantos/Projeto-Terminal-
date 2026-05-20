@@ -26,6 +26,44 @@ export interface CotacaoMercado {
   timestamp: string | null;
 }
 
+// ── Notícias da Home ("O que moveu a linha hoje") ──────────────
+export type NoticiaCategoria =
+  | "cambio"
+  | "demanda_externa"
+  | "oferta_interna"
+  | "insumos";
+
+export interface NoticiaDeltaCorrelato {
+  /** Variação % do dia da arroba CEPEA. Null = não relevante para a categoria. */
+  arroba_pct: number | null;
+  dolar_pct: number | null;
+  milho_pct: number | null;
+}
+
+export interface Noticia {
+  id: string;
+  titulo: string;
+  fonte: string;
+  url: string;
+  imagem: string | null;
+  categoria: NoticiaCategoria;
+  /** ISO 8601 com timezone. */
+  publicado_em: string;
+  delta_correlato: NoticiaDeltaCorrelato;
+}
+
+export interface NoticiasDoDiaResponse {
+  /** Maior ingerido_em do banco (ISO). Null se DB vazio. */
+  ultima_atualizacao: string | null;
+  noticias: Noticia[];
+  /** Variações do dia globais — frontend usa pra fallback do card 1. */
+  delta_dia: {
+    arroba_pct: number | null;
+    dolar_pct: number | null;
+    milho_pct: number | null;
+  };
+}
+
 export interface VolatilidadeArroba {
   /** Desvio padrao dos retornos log diarios. */
   sigma_diario: number | null;

@@ -10,6 +10,7 @@ import type {
   SimulatorRequest,
   SimulatorResponse,
   VolatilidadeArroba,
+  NoticiasDoDiaResponse,
 } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -47,6 +48,12 @@ export async function fetchCotacoes(): Promise<CotacaoMercado> {
 export async function fetchVolatilidadeArroba(janelaDias = 90): Promise<VolatilidadeArroba> {
   const res = await fetch(`${BASE}/volatilidade-arroba?janela_dias=${janelaDias}`);
   if (!res.ok) throw new Error(`Volatilidade arroba: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchNoticiasDoDia(): Promise<NoticiasDoDiaResponse> {
+  const res = await fetch(`${BASE}/noticias-do-dia`);
+  if (!res.ok) throw new Error(`Noticias do dia: ${res.status}`);
   return res.json();
 }
 

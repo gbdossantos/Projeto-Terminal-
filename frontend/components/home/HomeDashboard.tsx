@@ -7,8 +7,15 @@ import {
   fetchCotacoes,
   fetchFuturos,
   fetchHistoricoArroba,
+  fetchNoticiasDoDia,
 } from "@/lib/api";
-import type { CotacaoMercado, CurvaFuturos, HistoricoDolarEntry } from "@/lib/types";
+import type {
+  CotacaoMercado,
+  CurvaFuturos,
+  HistoricoDolarEntry,
+  Noticia,
+  NoticiaCategoria,
+} from "@/lib/types";
 import { LinhaDoRebanho } from "./LinhaDoRebanho";
 import { TopNav } from "@/components/layout/TopNav";
 import {
@@ -16,7 +23,6 @@ import {
   MOCK_TOTAL_ARROBAS,
   MOCK_TOTAL_CABECAS,
   MOCK_MERCADO,
-  MOCK_EVENTOS_DIA,
   fmtBRL,
 } from "@/lib/mock-data";
 
@@ -38,6 +44,8 @@ export function HomeDashboard({ empty = false }: Props = {}) {
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
   const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
   const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
+  const [noticias, setNoticias] = useState<Noticia[]>([]);
+  const [noticiasUltimaAtualizacao, setNoticiasUltimaAtualizacao] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVolatilidadeArroba(90)
@@ -46,6 +54,12 @@ export function HomeDashboard({ empty = false }: Props = {}) {
     fetchCotacoes().then(setCotacoes).catch(() => {});
     fetchFuturos().then(setFuturos).catch(() => {});
     fetchHistoricoArroba().then((h) => Array.isArray(h) && setHistArroba(h)).catch(() => {});
+    fetchNoticiasDoDia()
+      .then((r) => {
+        setNoticias(r.noticias ?? []);
+        setNoticiasUltimaAtualizacao(r.ultima_atualizacao);
+      })
+      .catch(() => {});
   }, []);
 
   // ── Cotações derivadas: dados reais quando disponíveis, fallback claro quando não ──
@@ -268,7 +282,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             gap: 24,
           }}
         >
-          {empty ? <EventosDiaVazio /> : <EventosDia />}
+          {empty ? <EventosDiaVazio /> : <EventosDia noticias={noticias} ultimaAtualizacao={noticiasUltimaAtualizacao} />}
           <CaminhosCard empty={empty} />
         </section>
 
@@ -433,128 +447,247 @@ function CardResumo({
 }
 
 // ─── O que moveu a linha hoje ────────────────────────────────────
-function EventosDia() {
+function EventosDia({
+  noticias,
+  ultimaAtualizacao,
+}: {
+  noticias: Noticia[];
+  ultimaAtualizacao: string | null;
+}) {
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-        <div className="flex items-center" style={{ gap: 8 }}>
-          <span
-            className="uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.06em",
-              color: "var(--ink-3)",
-            }}
-          >
-            O QUE MOVEU A LINHA HOJE
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              padding: "1px 6px",
-              background: "var(--paper-3)",
-              color: "var(--ink-3)",
-              borderRadius: 2,
-              letterSpacing: "0.04em",
-            }}
-            title="Motor de atribuição (parsing de notícia + correlação com variação do dia + propagação por lote) está em escopo futuro. Estes 3 eventos são amostra didática."
-          >
-            AMOSTRA
-          </span>
-        </div>
+      <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+        <span
+          className="uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.06em",
+            color: "var(--ink-3)",
+          }}
+        >
+          O QUE MOVEU A LINHA HOJE
+        </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
           top 3 · <a href="#" style={{ color: "var(--ink-2)" }}>ver tudo →</a>
         </span>
       </div>
-      <p
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: 10.5,
-          color: "var(--ink-3)",
-          marginBottom: 10,
-          fontStyle: "italic",
-        }}
-      >
-        Eventos de exemplo — motor de atribuição em desenvolvimento.
-      </p>
-      <div className="flex flex-col" style={{ gap: 2 }}>
-        {MOCK_EVENTOS_DIA.map((ev, i) => (
-          <div
-            key={i}
-            className="flex items-start justify-between"
-            style={{
-              padding: "10px 0",
-              borderTop: i === 0 ? "0.5px solid var(--rule)" : "none",
-              borderBottom: "0.5px solid var(--rule)",
-              gap: 16,
-            }}
-          >
-            <div className="flex items-start" style={{ gap: 10, flex: 1 }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 12,
-                  color: ev.tipo === "negativo"
-                    ? "var(--loss)"
-                    : ev.tipo === "positivo"
-                      ? "var(--gain)"
-                      : "var(--ink-3)",
-                  marginTop: 1,
-                }}
-              >
-                {ev.tipo === "negativo" ? "↓" : ev.tipo === "positivo" ? "↑" : "·"}
-              </span>
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 13,
-                    color: "var(--ink)",
-                    fontWeight: 500,
-                  }}
-                >
-                  {ev.titulo}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 11,
-                    color: "var(--ink-2)",
-                    marginTop: 2,
-                  }}
-                >
-                  {ev.detalhe} · {ev.fonte}
-                </div>
-              </div>
-            </div>
-            <div
-              className="flex flex-col items-end"
-              style={{ fontFamily: "var(--font-mono)", fontSize: 11, gap: 2 }}
-            >
-              <span style={{ color: ev.impacto_arroba < 0 ? "var(--loss)" : ev.impacto_arroba > 0 ? "var(--gain)" : "var(--ink-3)" }}>
-                {ev.impacto_arroba === 0
-                  ? "0,00/@"
-                  : `${ev.impacto_arroba > 0 ? "+" : "-"}R$ ${fmtBRL(Math.abs(ev.impacto_arroba))}/@`}
-              </span>
-              <span style={{
-                color: ev.impacto_total < 0
-                  ? "var(--loss)"
-                  : ev.impacto_total > 0
-                    ? "var(--gain)"
-                    : "var(--ink-3)",
-              }}>
-                {ev.impacto_total === 0
-                  ? "R$ 0"
-                  : `${ev.impacto_total > 0 ? "+" : "-"}R$ ${Math.abs(ev.impacto_total).toLocaleString("pt-BR")}`}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+      {noticias.length === 0 ? (
+        <div
+          style={{
+            border: "0.5px dashed var(--rule-strong)",
+            borderRadius: 6,
+            padding: "14px 16px",
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
+            color: "var(--ink-3)",
+            lineHeight: 1.55,
+          }}
+        >
+          Sem novidade relevante no boi gordo nas últimas 24h.
+        </div>
+      ) : (
+        <div className="flex flex-col" style={{ gap: 2 }}>
+          {noticias.map((n, i) => (
+            <NoticiaCard key={n.id} n={n} isFirst={i === 0} />
+          ))}
+        </div>
+      )}
+      {ultimaAtualizacao && (
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ink-3)",
+            marginTop: 8,
+          }}
+        >
+          atualizado {formatarHaQuanto(ultimaAtualizacao)}
+        </div>
+      )}
     </div>
   );
+}
+
+// ─── Card individual de notícia ──────────────────────────────────
+// Layout: [imagem|ícone categórico] título manchete         @  -0,7%
+//                                    Fonte · 19/mai 11:32  USD +0,8%
+//                                    link →
+// Sem coluna de R$. Decisão de produto: notícia + Δ correlato lado a lado,
+// produtor faz a conexão.
+function NoticiaCard({ n, isFirst }: { n: Noticia; isFirst: boolean }) {
+  const [imagemFalhou, setImagemFalhou] = useState(false);
+  return (
+    <a
+      href={n.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-stretch"
+      style={{
+        padding: "10px 0",
+        borderTop: isFirst ? "0.5px solid var(--rule)" : "none",
+        borderBottom: "0.5px solid var(--rule)",
+        gap: 12,
+        textDecoration: "none",
+        color: "inherit",
+      }}
+    >
+      <div style={{ flexShrink: 0, width: 48, height: 48 }}>
+        {n.imagem && !imagemFalhou ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={n.imagem}
+            alt=""
+            onError={() => setImagemFalhou(true)}
+            style={{
+              width: 48,
+              height: 48,
+              objectFit: "cover",
+              borderRadius: 3,
+              background: "var(--paper-3)",
+            }}
+          />
+        ) : (
+          <IconeCategoria categoria={n.categoria} />
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            color: "var(--ink)",
+            fontWeight: 500,
+            lineHeight: 1.35,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+          }}
+        >
+          {n.titulo}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ink-3)",
+            marginTop: 4,
+          }}
+        >
+          {n.fonte} · {formatarPublicado(n.publicado_em)} ·{" "}
+          <span style={{ color: "var(--grafite)" }}>link →</span>
+        </div>
+      </div>
+      <div
+        className="flex flex-col"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--grafite)",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          gap: 2,
+          minWidth: 96,
+        }}
+      >
+        <DeltaCorrelato delta={n.delta_correlato} />
+      </div>
+    </a>
+  );
+}
+
+// ─── Δ correlato (não causal) ────────────────────────────────────
+function DeltaCorrelato({ delta }: { delta: Noticia["delta_correlato"] }) {
+  const partes: { rotulo: string; pct: number | null }[] = [];
+  if (delta.arroba_pct !== null) partes.push({ rotulo: "@", pct: delta.arroba_pct });
+  if (delta.dolar_pct !== null) partes.push({ rotulo: "USD", pct: delta.dolar_pct });
+  if (delta.milho_pct !== null) partes.push({ rotulo: "milho", pct: delta.milho_pct });
+  if (partes.length === 0) return <span style={{ color: "var(--ink-3)" }}>—</span>;
+  return (
+    <>
+      {partes.map((p) => (
+        <span key={p.rotulo} className="flex items-baseline" style={{ gap: 4 }}>
+          <span style={{ color: "var(--grafite-2)" }}>{p.rotulo}</span>
+          <span
+            style={{
+              color:
+                p.pct === null
+                  ? "var(--ink-3)"
+                  : p.pct < 0
+                    ? "var(--loss)"
+                    : p.pct > 0
+                      ? "var(--gain)"
+                      : "var(--ink-3)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {p.pct === null
+              ? "—"
+              : `${p.pct >= 0 ? "+" : ""}${p.pct.toFixed(1).replace(".", ",")}%`}
+          </span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+function IconeCategoria({ categoria }: { categoria: NoticiaCategoria }) {
+  const map: Record<NoticiaCategoria, string> = {
+    cambio: "USD",
+    demanda_externa: "EXP",
+    oferta_interna: "OFR",
+    insumos: "MLH",
+  };
+  return (
+    <div
+      style={{
+        width: 48,
+        height: 48,
+        background: "var(--grafite-soft)",
+        borderRadius: 3,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--grafite)",
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        fontWeight: 500,
+        letterSpacing: "0.04em",
+      }}
+    >
+      {map[categoria]}
+    </div>
+  );
+}
+
+function formatarPublicado(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${d.getDate()}/${meses[d.getMonth()]} ${hh}:${mm}`;
+  } catch {
+    return iso;
+  }
+}
+
+function formatarHaQuanto(iso: string): string {
+  try {
+    const ms = Date.now() - new Date(iso).getTime();
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return "agora";
+    if (min < 60) return `há ${min} min`;
+    const h = Math.floor(min / 60);
+    const restoMin = min % 60;
+    if (h < 24) return restoMin > 0 ? `há ${h} h ${restoMin} min` : `há ${h} h`;
+    const d = Math.floor(h / 24);
+    return `há ${d} d`;
+  } catch {
+    return "";
+  }
 }
 
 // ─── Caminhos (4 quadrantes) ─────────────────────────────────────
