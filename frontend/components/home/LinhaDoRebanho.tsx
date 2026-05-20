@@ -93,6 +93,32 @@ export function LinhaDoRebanho({
 
   const cursorValor = cursorPonto?.realizado ?? cursorPonto?.esperado ?? null;
 
+  // Domínio Y dinâmico baseado nos dados + break-even + padding
+  const yDomain = useMemo<[number, number]>(() => {
+    const vals: number[] = [MOCK_MERCADO.break_even];
+    for (const p of pontos) {
+      if (p.realizado != null) vals.push(p.realizado);
+      if (p.esperado != null) vals.push(p.esperado);
+      if (p.sigma2_low != null) vals.push(p.sigma2_low);
+      if (p.sigma2_high != null) vals.push(p.sigma2_high);
+    }
+    if (!vals.length) return [280, 380];
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const pad = Math.max(8, (max - min) * 0.08);
+    // Arredonda pra múltiplos de 10 pra ticks limpos
+    return [Math.floor((min - pad) / 10) * 10, Math.ceil((max + pad) / 10) * 10];
+  }, [pontos]);
+
+  const yTicks = useMemo(() => {
+    const [lo, hi] = yDomain;
+    const span = hi - lo;
+    const step = span <= 60 ? 10 : span <= 120 ? 20 : 40;
+    const ticks: number[] = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
+    return ticks;
+  }, [yDomain]);
+
   return (
     <div style={{ width: "100%" }}>
       <ResponsiveContainer width="100%" height={360}>
@@ -152,8 +178,8 @@ export function LinhaDoRebanho({
             }}
             axisLine={false}
             tickLine={false}
-            domain={[280, 380]}
-            ticks={[280, 300, 320, 340, 360, 380]}
+            domain={yDomain}
+            ticks={yTicks}
             width={48}
           />
 

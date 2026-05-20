@@ -206,13 +206,15 @@ export function gerarLinhaRebanho({
   const hojeISO = usaHistoricoReal ? hojeReal : HOJE_ISO;
 
   if (usaHistoricoReal) {
-    // Pega últimos ~30 dias do histórico real (pontos semanais → reduzir densidade)
-    const slice = historico!.slice(-30);
-    // Reduz para 1 ponto a cada ~5 dias pra não poluir o gráfico
-    const step = Math.max(1, Math.floor(slice.length / 6));
+    // Janela: últimos ~90 dias do histórico real. Pontos densos no recente
+    // (1/semana) e mais esparsos no inicial pra dar perspectiva sem poluir.
+    const slice = historico!.slice(-90);
+
+    // Sampling: cobre o range com ~18-22 pontos (pontos a cada ~4-5 dias)
+    const desired = 20;
+    const step = Math.max(1, Math.floor(slice.length / desired));
     for (let i = 0; i < slice.length; i += step) {
       const p = slice[i];
-      // data vem do CEPEA como "DD/MM/YYYY" — converte pra ISO
       const iso = parseDataCepea(p.data);
       if (iso) {
         pontos.push({
@@ -226,7 +228,7 @@ export function gerarLinhaRebanho({
         });
       }
     }
-    // Garante que o último ponto é hoje (mesmo que o histórico não tenha a data exata)
+    // Garante que o último ponto é hoje (mesmo que histórico não tenha a data exata)
     const ultimoPasso = slice[slice.length - 1];
     if (ultimoPasso) {
       const ultimoIso = parseDataCepea(ultimoPasso.data);
@@ -269,8 +271,17 @@ export function gerarLinhaRebanho({
   const dataHoje = new Date(hojeISO);
   // Data do BGI: real (do contrato) ou mock (22 ago/26)
   const dataBGI = bgi ? new Date(bgi.vencimento) : new Date("2026-08-22");
-  // Estende ~30 dias depois do BGI pra dar respiro visual
-  const dataFim = new Date(dataBGI.getTime() + 30 * 24 * 60 * 60 * 1000);
+  // Estende até o lote mais distante + 14 dias, OU 30d depois do BGI — o que for maior.
+  // Sem isso, quando o BGI próximo é em mês corrente, a projeção fica curtíssima.
+  const dataLoteMaisDistante = new Date(
+    Math.max(...MOCK_LOTES.map((l) => new Date(l.data_saida).getTime())),
+  );
+  const dataFim = new Date(
+    Math.max(
+      dataBGI.getTime() + 30 * 24 * 60 * 60 * 1000,
+      dataLoteMaisDistante.getTime() + 14 * 24 * 60 * 60 * 1000,
+    ),
+  );
 
   // Preços de início (hoje) e fim (BGI)
   const precoInicio = spotAtual ?? MOCK_MERCADO.arroba_ms_spot;
