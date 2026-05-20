@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchVolatilidadeArroba,
   fetchCotacoes,
@@ -54,12 +54,18 @@ export function HomeDashboard({ empty = false }: Props = {}) {
     fetchCotacoes().then(setCotacoes).catch(() => {});
     fetchFuturos().then(setFuturos).catch(() => {});
     fetchHistoricoArroba().then((h) => Array.isArray(h) && setHistArroba(h)).catch(() => {});
-    fetchNoticiasDoDia()
-      .then((r) => {
-        setNoticias(r.noticias ?? []);
-        setNoticiasUltimaAtualizacao(r.ultima_atualizacao);
-      })
-      .catch(() => {});
+    // Fetch inicial + polling a cada 60s pra capturar batch novo do cron
+    const refetchNoticias = () => {
+      fetchNoticiasDoDia()
+        .then((r) => {
+          setNoticias(r.noticias ?? []);
+          setNoticiasUltimaAtualizacao(r.ultima_atualizacao);
+        })
+        .catch(() => {});
+    };
+    refetchNoticias();
+    const intervalNoticias = setInterval(refetchNoticias, 60_000);
+    return () => clearInterval(intervalNoticias);
   }, []);
 
   // ── Cotações derivadas: dados reais quando disponíveis, fallback claro quando não ──
@@ -454,6 +460,35 @@ function EventosDia({
   noticias: Noticia[];
   ultimaAtualizacao: string | null;
 }) {
+  // Detecta notícias novas (que não estavam na lista do render anterior)
+  // pra disparar slide-in. Não anima no primeiro carregamento (refresh manual).
+  const idsAnterioresRef = useRef<Set<string> | null>(null);
+  const [entrandoIds, setEntrandoIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const idsAtuais = new Set(noticias.map((n) => n.id));
+    if (idsAnterioresRef.current !== null) {
+      const novos = noticias
+        .filter((n) => !idsAnterioresRef.current!.has(n.id))
+        .map((n) => n.id);
+      if (novos.length > 0) {
+        setEntrandoIds(new Set(novos));
+        const t = setTimeout(() => setEntrandoIds(new Set()), 600);
+        idsAnterioresRef.current = idsAtuais;
+        return () => clearTimeout(t);
+      }
+    }
+    idsAnterioresRef.current = idsAtuais;
+  }, [noticias]);
+
+  // Tick de 1s pra atualizar "atualizado há X" em tempo real
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!ultimaAtualizacao) return;
+    const i = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(i);
+  }, [ultimaAtualizacao]);
+
   return (
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
@@ -489,7 +524,12 @@ function EventosDia({
       ) : (
         <div className="flex flex-col" style={{ gap: 2 }}>
           {noticias.map((n, i) => (
-            <NoticiaCard key={n.id} n={n} isFirst={i === 0} />
+            <NoticiaCard
+              key={n.id}
+              n={n}
+              isFirst={i === 0}
+              entrando={entrandoIds.has(n.id)}
+            />
           ))}
         </div>
       )}
@@ -515,14 +555,22 @@ function EventosDia({
 //                                    link →
 // Sem coluna de R$. Decisão de produto: notícia + Δ correlato lado a lado,
 // produtor faz a conexão.
-function NoticiaCard({ n, isFirst }: { n: Noticia; isFirst: boolean }) {
+function NoticiaCard({
+  n,
+  isFirst,
+  entrando,
+}: {
+  n: Noticia;
+  isFirst: boolean;
+  entrando: boolean;
+}) {
   const [imagemFalhou, setImagemFalhou] = useState(false);
   return (
     <a
       href={n.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-stretch"
+      className={`flex items-stretch ${entrando ? "noticia-slide-in" : ""}`}
       style={{
         padding: "10px 0",
         borderTop: isFirst ? "0.5px solid var(--rule)" : "none",
