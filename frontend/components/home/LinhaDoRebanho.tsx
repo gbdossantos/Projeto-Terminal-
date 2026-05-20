@@ -206,7 +206,7 @@ export function LinhaDoRebanho({
             />
           )}
 
-          {/* Break-even horizontal (tracejado) */}
+          {/* Break-even horizontal (tracejado) — label inline na esquerda pra não cortar */}
           <ReferenceLine
             y={MOCK_MERCADO.break_even}
             stroke="var(--loss)"
@@ -214,11 +214,12 @@ export function LinhaDoRebanho({
             strokeDasharray="3 4"
             ifOverflow="extendDomain"
             label={{
-              value: `break-even · R$ ${fmtBRL(MOCK_MERCADO.break_even)}/@`,
-              position: "right",
+              value: `BE  R$ ${fmtBRL(MOCK_MERCADO.break_even, 0)}`,
+              position: "insideBottomLeft",
               fontSize: 10,
               fontFamily: "var(--font-mono)",
               fill: "var(--loss)",
+              offset: 8,
             }}
           />
 
@@ -255,63 +256,25 @@ export function LinhaDoRebanho({
           />
 
           {/* Marcadores de saída por lote (escondidos em estado vazio).
-              Ordenados por data → offset vertical alterna pra evitar sobreposição
-              quando 3 lotes caem no mesmo trimestre. */}
-          {!empty && [...MOCK_LOTES]
-            .sort((a, b) => isoToTs(a.data_saida) - isoToTs(b.data_saida))
-            .map((lote, i) => {
-              const ts = isoToTs(lote.data_saida);
-              const ponto = data.find((d) => d.ts === ts);
-              const y = ponto?.esperado ?? MOCK_MERCADO.bgi_q26_ago;
-              // Offset alternado por ordem: 0 = alto, 1 = mais alto, 2 = topo
-              const offsetY = -12 - i * 18;
-              return (
-                <ReferenceDot
-                  key={lote.id}
-                  x={ts}
-                  y={y}
-                  r={4}
-                  fill="var(--paper)"
-                  stroke="var(--ink)"
-                  strokeWidth={1.5}
-                  ifOverflow="extendDomain"
-                  label={({ viewBox }: { viewBox?: { cx?: number; cy?: number } }) => {
-                    const cx = viewBox?.cx ?? 0;
-                    const cy = viewBox?.cy ?? 0;
-                    return (
-                      <g>
-                        {/* Linha guia vertical pequena conectando o ponto ao label */}
-                        <line
-                          x1={cx}
-                          y1={cy}
-                          x2={cx}
-                          y2={cy + offsetY + 14}
-                          stroke="var(--rule-strong)"
-                          strokeWidth={0.5}
-                          strokeDasharray="1 2"
-                        />
-                        <text
-                          x={cx}
-                          y={cy + offsetY}
-                          textAnchor="middle"
-                          fontFamily="var(--font-mono)"
-                          fontSize={9}
-                          fill="var(--ink-2)"
-                        >
-                          <tspan x={cx} dy={0}>{fmtData(lote.data_saida)}</tspan>
-                          <tspan x={cx} dy={11} fill="var(--ink)">
-                            {lote.nome}
-                          </tspan>
-                          <tspan x={cx} dy={11} fill="var(--ink-3)">
-                            {lote.num_animais.toLocaleString("pt-BR")} cab
-                          </tspan>
-                        </text>
-                      </g>
-                    );
-                  }}
-                />
-              );
-            })}
+              Apenas círculos — identificação fica na legenda abaixo do gráfico
+              pra evitar sobreposição de labels e labels órfãos no canto. */}
+          {!empty && MOCK_LOTES.map((lote) => {
+            const ts = isoToTs(lote.data_saida);
+            const ponto = data.find((d) => d.ts === ts);
+            const y = ponto?.esperado ?? MOCK_MERCADO.bgi_q26_ago;
+            return (
+              <ReferenceDot
+                key={lote.id}
+                x={ts}
+                y={y}
+                r={4}
+                fill="var(--paper)"
+                stroke="var(--ink)"
+                strokeWidth={1.5}
+                ifOverflow="extendDomain"
+              />
+            );
+          })}
 
           {/* Linha "realizado" (sólida, passado) */}
           <Line
@@ -351,6 +314,7 @@ export function LinhaDoRebanho({
           fontFamily: "var(--font-mono)",
           fontSize: 10,
           color: "var(--ink-3)",
+          flexWrap: "wrap",
         }}
       >
         <LegendaItem swatch={<span style={{ display: "inline-block", width: 16, height: 1.5, background: "var(--ink)" }} />}>
@@ -366,6 +330,44 @@ export function LinhaDoRebanho({
           ±2σ · 95%
         </LegendaItem>
       </div>
+
+      {/* Legenda dos lotes (saídas) — referência aos círculos no gráfico */}
+      {!empty && MOCK_LOTES.length > 0 && (
+        <div
+          className="flex items-center"
+          style={{
+            gap: 18,
+            marginTop: 8,
+            paddingLeft: 56,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ink-2)",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ color: "var(--ink-3)" }}>saídas:</span>
+          {[...MOCK_LOTES]
+            .sort((a, b) => isoToTs(a.data_saida) - isoToTs(b.data_saida))
+            .map((lote) => (
+              <span key={lote.id} className="flex items-center" style={{ gap: 6 }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "var(--paper)",
+                    border: "1.5px solid var(--ink)",
+                  }}
+                />
+                <span style={{ color: "var(--ink)" }}>{lote.nome}</span>
+                <span style={{ color: "var(--ink-3)" }}>
+                  {fmtData(lote.data_saida)} · {lote.num_animais.toLocaleString("pt-BR")} cab
+                </span>
+              </span>
+            ))}
+        </div>
+      )}
     </div>
   );
 }
