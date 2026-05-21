@@ -210,8 +210,9 @@ export function gerarLinhaRebanho({
     // (1/semana) e mais esparsos no inicial pra dar perspectiva sem poluir.
     const slice = historico!.slice(-90);
 
-    // Sampling: cobre o range com ~18-22 pontos (pontos a cada ~4-5 dias)
-    const desired = 20;
+    // Sampling: alvo ~30 pontos (pontos a cada ~3 dias) — mais denso pra
+    // linha do realizado ficar suave sem dentes visíveis entre amostras.
+    const desired = 30;
     const step = Math.max(1, Math.floor(slice.length / desired));
     for (let i = 0; i < slice.length; i += step) {
       const p = slice[i];
@@ -287,26 +288,31 @@ export function gerarLinhaRebanho({
   const precoInicio = spotAtual ?? MOCK_MERCADO.arroba_ms_spot;
   const precoBGI = bgi?.preco_ajuste ?? MOCK_MERCADO.bgi_q26_ago;
 
-  // Marca o último ponto realizado também como esperado (junção)
+  // FIX gap σ ↔ D0: o último ponto realizado vira também o ponto-zero da projeção.
+  // Esperado = realizado; bandas σ começam FINAS (sigmaT = 0) e abrem com o tempo.
+  // Sem isso, a banda nascia 7 dias adiante deixando lacuna visual em "hoje".
   const ultimoRealizado = pontos[pontos.length - 1];
   if (ultimoRealizado?.realizado != null) {
     ultimoRealizado.esperado = ultimoRealizado.realizado;
+    ultimoRealizado.sigma1_low = ultimoRealizado.realizado;
+    ultimoRealizado.sigma1_high = ultimoRealizado.realizado;
+    ultimoRealizado.sigma2_low = ultimoRealizado.realizado;
+    ultimoRealizado.sigma2_high = ultimoRealizado.realizado;
   }
 
-  const passoMs = 7 * 24 * 60 * 60 * 1000;
-  for (let t = dataHoje.getTime() + passoMs; t <= dataFim.getTime(); t += passoMs) {
-    const data = new Date(t).toISOString().slice(0, 10);
-    const dias = (t - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
+  /**
+   * Calcula (esperado, σ1, σ2) num dado timestamp futuro.
+   * Helper local pra reusar tanto no loop semanal quanto nas datas de lote.
+   */
+  const calcProjetado = (ts: number) => {
+    const dias = (ts - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
     const diasAteBGI = (dataBGI.getTime() - dataHoje.getTime()) / (24 * 60 * 60 * 1000);
-
-    // Interpolação linear até vencimento do BGI, depois mantém o preço
     const frac = diasAteBGI > 0 ? Math.min(1, dias / diasAteBGI) : 1;
     const esperado = precoInicio + (precoBGI - precoInicio) * frac;
-
-    let sigma1_low = null;
-    let sigma1_high = null;
-    let sigma2_low = null;
-    let sigma2_high = null;
+    let sigma1_low: number | null = null;
+    let sigma1_high: number | null = null;
+    let sigma2_low: number | null = null;
+    let sigma2_high: number | null = null;
     if (sigmaAnualizado != null && sigmaAnualizado > 0) {
       const sigmaT = sigmaAnualizado * Math.sqrt(dias / 252) * esperado;
       sigma1_low = esperado - sigmaT;
@@ -314,15 +320,33 @@ export function gerarLinhaRebanho({
       sigma2_low = esperado - 2 * sigmaT;
       sigma2_high = esperado + 2 * sigmaT;
     }
+    return { esperado, sigma1_low, sigma1_high, sigma2_low, sigma2_high };
+  };
 
+  // Pontos projetados: semanal + uma entrada extra em cada data de lote.
+  // Isso garante que os ReferenceDot dos lotes encontrem o `esperado` exato
+  // do dia da saída, em vez de cair no fallback mock R$ 322 (bug do círculo solto).
+  const tsProjetados = new Set<number>();
+  const passoMs = 7 * 24 * 60 * 60 * 1000;
+  for (let t = dataHoje.getTime() + passoMs; t <= dataFim.getTime(); t += passoMs) {
+    tsProjetados.add(t);
+  }
+  for (const l of MOCK_LOTES) {
+    const ts = new Date(l.data_saida).getTime();
+    if (ts > dataHoje.getTime() && ts <= dataFim.getTime()) tsProjetados.add(ts);
+  }
+
+  const tsOrdenados = Array.from(tsProjetados).sort((a, b) => a - b);
+  for (const t of tsOrdenados) {
+    const proj = calcProjetado(t);
     pontos.push({
-      data,
+      data: new Date(t).toISOString().slice(0, 10),
       realizado: null,
-      esperado,
-      sigma1_low,
-      sigma1_high,
-      sigma2_low,
-      sigma2_high,
+      esperado: proj.esperado,
+      sigma1_low: proj.sigma1_low,
+      sigma1_high: proj.sigma1_high,
+      sigma2_low: proj.sigma2_low,
+      sigma2_high: proj.sigma2_high,
     });
   }
 

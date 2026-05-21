@@ -223,7 +223,7 @@ export function LinhaDoRebanho({
             }}
           />
 
-          {/* Cursor vertical */}
+          {/* Cursor vertical — label dentro do grafico pra nao invadir o titulo acima */}
           <ReferenceLine
             x={cursorTs}
             stroke="var(--ink)"
@@ -233,10 +233,11 @@ export function LinhaDoRebanho({
               value: cursorValor != null
                 ? `R$ ${fmtBRL(cursorValor)}/@`
                 : "",
-              position: "top",
+              position: "insideTop",
               fontSize: 10,
               fontFamily: "var(--font-mono)",
               fill: "var(--ink)",
+              offset: 6,
             }}
           />
 
