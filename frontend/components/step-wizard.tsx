@@ -13,10 +13,10 @@ const steps = [
 
 function SemaphoreBadge({ margemPct }: { margemPct: number }) {
   const s = margemPct >= 0.15
-    ? { bg: "#4A5D3A18", border: "#4A5D3A44", dot: "#4A5D3A", text: "#6B8F5A", label: "Margem saudavel" }
+    ? { bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.27)", dot: "var(--gain)", text: "var(--gain-2)", label: "Margem saudavel" }
     : margemPct >= 0.05
-    ? { bg: "#C89B3C18", border: "#C89B3C44", dot: "#C89B3C", text: "#C89B3C", label: "Margem apertada" }
-    : { bg: "#B5413418", border: "#B5413444", dot: "#B54134", text: "#D4614A", label: "Margem critica" };
+    ? { bg: "rgba(217, 119, 6, 0.10)", border: "rgba(217, 119, 6, 0.27)", dot: "var(--amber)", text: "var(--amber)", label: "Margem apertada" }
+    : { bg: "rgba(220, 38, 38, 0.10)", border: "rgba(220, 38, 38, 0.27)", dot: "var(--loss)", text: "var(--loss-2)", label: "Margem critica" };
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
@@ -30,7 +30,7 @@ function SemaphoreBadge({ margemPct }: { margemPct: number }) {
 export function StepWizard({ currentStep, margemPct }: StepWizardProps) {
   return (
     <div className="flex items-center justify-between px-6 py-3.5"
-      style={{ background: "#221F18", borderBottom: "0.5px solid #2A2820" }}>
+      style={{ background: "var(--paper-3)", borderBottom: "0.5px solid var(--rule)" }}>
       <div className="flex items-center gap-0 flex-1">
         {steps.map((step, i) => {
           const state = currentStep > step.n ? "done" : currentStep === step.n ? "active" : "pending";
@@ -40,24 +40,24 @@ export function StepWizard({ currentStep, margemPct }: StepWizardProps) {
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium"
                   style={{
-                    background: state === "done" ? "#4A5D3A" : state === "active" ? "#B8763E" : "transparent",
-                    border: state === "pending" ? "0.5px solid #2A2820" : "none",
-                    color: state === "pending" ? "#6B6860" : "#FAF0E0",
+                    background: state === "done" ? "var(--gain)" : state === "active" ? "var(--grafite-2)" : "transparent",
+                    border: state === "pending" ? "0.5px solid var(--rule)" : "none",
+                    color: state === "pending" ? "var(--ink-3)" : "var(--paper)",
                   }}>
                   {state === "done" ? (
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 5L4 7L8 3" stroke="#FAF0E0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M2 5L4 7L8 3" stroke="var(--paper)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ) : step.n}
                 </div>
                 <span className={`text-[11px] ${state === "pending" ? "" : "font-medium"}`}
-                  style={{ color: state === "pending" ? "#6B6860" : "#F5F1E8" }}>
+                  style={{ color: state === "pending" ? "var(--ink-3)" : "var(--ink)" }}>
                   {step.label}
                 </span>
               </div>
               {/* Line */}
               {i < steps.length - 1 && (
-                <div className="flex-1 mx-3 h-px min-w-[40px]" style={{ background: "#2A2820" }} />
+                <div className="flex-1 mx-3 h-px min-w-[40px]" style={{ background: "var(--rule)" }} />
               )}
             </div>
           );

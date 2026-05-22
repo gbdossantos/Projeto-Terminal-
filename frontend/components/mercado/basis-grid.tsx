@@ -18,13 +18,13 @@ const BASES: { regiao: string; basis: number }[] = [
 
 function getBasisStyle(basis: number, isDark: boolean): { bg: string; border: string; deltaColor: string } {
   // Dark mode uses deep tones, light mode uses tinted backgrounds
-  if (basis === 0) return { bg: isDark ? "#4A5D3A2A" : "#4A5D3A18", border: isDark ? "#4A5D3A44" : "#4A5D3A33", deltaColor: "var(--green-2)" };
-  if (basis >= -3) return { bg: isDark ? "#3D5128" : "#4A5D3A12", border: isDark ? "#4A5D3A22" : "#4A5D3A22", deltaColor: "var(--green-2)" };
+  if (basis === 0) return { bg: isDark ? "rgba(22, 163, 74, 0.16)" : "rgba(22, 163, 74, 0.10)", border: isDark ? "rgba(22, 163, 74, 0.27)" : "rgba(22, 163, 74, 0.20)", deltaColor: "var(--green-2)" };
+  if (basis >= -3) return { bg: isDark ? "rgba(22, 163, 74, 0.25)" : "rgba(22, 163, 74, 0.07)", border: isDark ? "rgba(22, 163, 74, 0.13)" : "rgba(22, 163, 74, 0.13)", deltaColor: "var(--green-2)" };
   if (basis >= -5) return { bg: isDark ? "#2A3D1A" : "#8B7A3A10", border: isDark ? "#3A4D2A22" : "#8B7A3A18", deltaColor: "var(--amber)" };
-  if (basis >= -7) return { bg: isDark ? "#2A2010" : "#C89B3C10", border: isDark ? "#3A3020" : "#C89B3C18", deltaColor: "var(--amber)" };
-  if (basis >= -10) return { bg: isDark ? "#2A1A0C" : "#B5413410", border: isDark ? "#3A2A1A" : "#B5413418", deltaColor: "var(--red-2)" };
-  if (basis >= -12) return { bg: isDark ? "#2A1208" : "#B541340C", border: isDark ? "#3A2215" : "#B5413414", deltaColor: "var(--red-2)" };
-  return { bg: isDark ? "#2A0E06" : "#B5413408", border: isDark ? "#3A1E10" : "#B5413410", deltaColor: "var(--red-2)" };
+  if (basis >= -7) return { bg: isDark ? "rgba(217, 119, 6, 0.08)" : "rgba(217, 119, 6, 0.06)", border: isDark ? "rgba(217, 119, 6, 0.18)" : "rgba(217, 119, 6, 0.10)", deltaColor: "var(--amber)" };
+  if (basis >= -10) return { bg: isDark ? "#2A1A0C" : "rgba(220, 38, 38, 0.06)", border: isDark ? "#3A2A1A" : "rgba(220, 38, 38, 0.10)", deltaColor: "var(--red-2)" };
+  if (basis >= -12) return { bg: isDark ? "#2A1208" : "rgba(220, 38, 38, 0.05)", border: isDark ? "#3A2215" : "rgba(220, 38, 38, 0.08)", deltaColor: "var(--red-2)" };
+  return { bg: isDark ? "#2A0E06" : "rgba(220, 38, 38, 0.03)", border: isDark ? "#3A1E10" : "rgba(220, 38, 38, 0.06)", deltaColor: "var(--red-2)" };
 }
 
 export function BasisGrid({ spotPrice }: BasisGridProps) {

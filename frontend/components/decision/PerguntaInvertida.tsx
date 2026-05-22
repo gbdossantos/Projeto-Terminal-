@@ -4,8 +4,8 @@ interface Props {
 }
 
 const styles = {
-  alerta: { bg: "#C89B3C18", border: "#C89B3C33", text: "#C89B3C" },
-  ok: { bg: "#4A5D3A18", border: "#4A5D3A33", text: "#6B8F5A" },
+  alerta: { bg: "rgba(217, 119, 6, 0.10)", border: "rgba(217, 119, 6, 0.20)", text: "var(--amber)" },
+  ok: { bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.20)", text: "var(--gain-2)" },
 };
 
 export function PerguntaInvertida({ texto, tipo }: Props) {

@@ -34,7 +34,7 @@ export function PerguntaInvertidaBlock({ impacto, margemBruta }: Props) {
       className="rounded-lg"
       style={{
         background: "rgba(200, 155, 60, 0.09)",   // amber bg sutil
-        borderLeft: "3px solid #B8763E",          // borda esquerda brand
+        borderLeft: "3px solid var(--grafite-2)",          // borda esquerda brand
         padding: "14px 18px",
         marginBottom: 14,
       }}
@@ -53,7 +53,7 @@ export function PerguntaInvertidaBlock({ impacto, margemBruta }: Props) {
           style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontWeight: 600,
-            color: "#C89B3C",
+            color: "var(--amber)",
             fontVariantNumeric: "tabular-nums",
           }}
         >

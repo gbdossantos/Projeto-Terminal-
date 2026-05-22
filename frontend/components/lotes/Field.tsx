@@ -13,7 +13,7 @@ export function Field({
     <div>
       <label
         className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-1.5"
-        style={{ color: "#6B6860" }}
+        style={{ color: "var(--ink-3)" }}
       >
         {label}
       </label>
@@ -24,16 +24,16 @@ export function Field({
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full h-10 px-3 font-mono text-sm rounded-lg transition-colors focus:outline-none"
         style={{
-          background: "#0F0E0B",
-          border: "0.5px solid #2A2820",
-          color: "#F5F1E8",
+          background: "var(--paper)",
+          border: "0.5px solid var(--rule)",
+          color: "var(--ink)",
         }}
         onFocus={(e) => {
-          e.target.style.borderColor = "#B8763E";
-          e.target.style.boxShadow = "0 0 0 2px #B8763E22";
+          e.target.style.borderColor = "var(--grafite-2)";
+          e.target.style.boxShadow = "0 0 0 2px rgba(99, 102, 241, 0.13)";
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = "#2A2820";
+          e.target.style.borderColor = "var(--rule)";
           e.target.style.boxShadow = "none";
         }}
       />

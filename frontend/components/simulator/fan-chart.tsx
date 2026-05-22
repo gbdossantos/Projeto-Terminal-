@@ -65,7 +65,7 @@ export function FanChart({ data }: FanChartProps) {
           <CartesianGrid
             horizontal
             vertical={false}
-            stroke="#2A2820"
+            stroke="var(--rule)"
             strokeWidth={0.5}
           />
 
@@ -75,7 +75,7 @@ export function FanChart({ data }: FanChartProps) {
             tick={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 8,
-              fill: "#6B6860",
+              fill: "var(--ink-3)",
             }}
             axisLine={false}
             tickLine={false}
@@ -88,7 +88,7 @@ export function FanChart({ data }: FanChartProps) {
             tick={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 8,
-              fill: "#6B6860",
+              fill: "var(--ink-3)",
             }}
             axisLine={false}
             tickLine={false}
@@ -107,7 +107,7 @@ export function FanChart({ data }: FanChartProps) {
                 x2={next.dia}
                 y1={Math.min(point.pessimista, next.pessimista)}
                 y2={Math.max(point.otimista, next.otimista)}
-                fill="#B8763E"
+                fill="var(--grafite-2)"
                 fillOpacity={0.07}
                 stroke="none"
               />
@@ -125,7 +125,7 @@ export function FanChart({ data }: FanChartProps) {
           {/* Pessimista line */}
           <Line
             dataKey="pessimista"
-            stroke="#B54134"
+            stroke="var(--loss)"
             strokeWidth={1.5}
             strokeDasharray="4 3"
             dot={false}
@@ -135,7 +135,7 @@ export function FanChart({ data }: FanChartProps) {
           {/* Otimista line */}
           <Line
             dataKey="otimista"
-            stroke="#4A5D3A"
+            stroke="var(--gain)"
             strokeWidth={1.5}
             strokeDasharray="4 3"
             dot={false}
@@ -145,12 +145,12 @@ export function FanChart({ data }: FanChartProps) {
           {/* Base line — main */}
           <Line
             dataKey="base"
-            stroke="#B8763E"
+            stroke="var(--grafite-2)"
             strokeWidth={2.5}
-            dot={{ fill: "#B8763E", r: 3.5, strokeWidth: 0 }}
+            dot={{ fill: "var(--grafite-2)", r: 3.5, strokeWidth: 0 }}
             activeDot={{
-              fill: "#FAF0E0",
-              stroke: "#B8763E",
+              fill: "var(--paper)",
+              stroke: "var(--grafite-2)",
               strokeWidth: 2,
               r: 4.5,
             }}
@@ -159,12 +159,12 @@ export function FanChart({ data }: FanChartProps) {
 
           <Tooltip
             contentStyle={{
-              background: "#1A1814",
-              border: "0.5px solid #2A2820",
+              background: "var(--paper-2)",
+              border: "0.5px solid var(--rule)",
               borderRadius: 6,
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              color: "#F5F1E8",
+              color: "var(--ink)",
             }}
             formatter={(value, name) => {
               const labels: Record<string, string> = {
@@ -199,7 +199,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 16,
               height: 2.5,
-              background: "#B8763E",
+              background: "var(--grafite-2)",
               borderRadius: 1,
               display: "inline-block",
             }}
@@ -211,7 +211,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 16,
               height: 0,
-              borderTop: "1.5px dashed #4A5D3A",
+              borderTop: "1.5px dashed var(--gain)",
               display: "inline-block",
             }}
           />
@@ -222,7 +222,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 16,
               height: 0,
-              borderTop: "1.5px dashed #B54134",
+              borderTop: "1.5px dashed var(--loss)",
               display: "inline-block",
             }}
           />
@@ -233,7 +233,7 @@ export function FanChart({ data }: FanChartProps) {
             style={{
               width: 12,
               height: 8,
-              background: "#B8763E",
+              background: "var(--grafite-2)",
               opacity: 0.12,
               borderRadius: 1,
               display: "inline-block",

@@ -16,13 +16,13 @@ export function MetricCard({
   compact = false,
 }: MetricCardProps) {
   const deltaColors = {
-    positive: "#6B8F5A",
-    negative: "#D4614A",
-    neutral: "#6B6860",
+    positive: "var(--gain-2)",
+    negative: "var(--loss-2)",
+    neutral: "var(--ink-3)",
   };
   const deltaBg = {
-    positive: "#4A5D3A18",
-    negative: "#B5413418",
+    positive: "rgba(22, 163, 74, 0.10)",
+    negative: "rgba(220, 38, 38, 0.10)",
     neutral: "transparent",
   };
 
@@ -30,25 +30,25 @@ export function MetricCard({
     <div
       className={`rounded-xl ${compact ? "px-5 py-4" : "px-5 py-[18px]"}`}
       style={{
-        background: "#1A1814",
-        border: "0.5px solid #2A2820",
+        background: "var(--paper-2)",
+        border: "0.5px solid var(--rule)",
       }}
     >
       <p
         className="text-[10px] font-medium uppercase tracking-[0.08em] mb-2"
-        style={{ color: "#6B6860" }}
+        style={{ color: "var(--ink-3)" }}
       >
         {label}
       </p>
       <div className="flex items-baseline gap-1.5">
         <span
           className={`font-mono font-medium ${compact ? "text-lg" : "text-[22px]"}`}
-          style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}
+          style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}
         >
           {value}
         </span>
         {unit && (
-          <span className="font-mono text-[13px]" style={{ color: "#6B6860" }}>
+          <span className="font-mono text-[13px]" style={{ color: "var(--ink-3)" }}>
             {unit}
           </span>
         )}

@@ -11,9 +11,9 @@ interface Props {
 }
 
 const semaforoMap: Record<string, { dot: string; text: string; bg: string; border: string; label: string }> = {
-  recomendado: { dot: "#B54134", text: "#D4614A", bg: "#B5413418", border: "#B5413444", label: "Protecao recomendada" },
-  opcional: { dot: "#C89B3C", text: "#C89B3C", bg: "#C89B3C18", border: "#C89B3C44", label: "Protecao opcional" },
-  desnecessario: { dot: "#4A5D3A", text: "#6B8F5A", bg: "#4A5D3A18", border: "#4A5D3A44", label: "Margem confortavel" },
+  recomendado: { dot: "var(--loss)", text: "var(--loss-2)", bg: "rgba(220, 38, 38, 0.10)", border: "rgba(220, 38, 38, 0.27)", label: "Protecao recomendada" },
+  opcional: { dot: "var(--amber)", text: "var(--amber)", bg: "rgba(217, 119, 6, 0.10)", border: "rgba(217, 119, 6, 0.27)", label: "Protecao opcional" },
+  desnecessario: { dot: "var(--gain)", text: "var(--gain-2)", bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.27)", label: "Margem confortavel" },
 };
 
 export function PainelHedge({ hedge }: Props) {
@@ -21,7 +21,7 @@ export function PainelHedge({ hedge }: Props) {
     return (
       <div
         className="px-5 py-4 rounded-xl text-[13px]"
-        style={{ background: "#1A1814", border: "0.5px solid #2A2820", color: "#6B6860" }}
+        style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)", color: "var(--ink-3)" }}
       >
         Lote pequeno demais para hedge com futuros B3 (minimo ~165@, 1 contrato = 330@)
       </div>
@@ -40,7 +40,7 @@ export function PainelHedge({ hedge }: Props) {
         <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.dot }} />
         <div>
           <p className="text-[13px] font-medium" style={{ color: s.text }}>{s.label}</p>
-          <p className="text-xs mt-0.5" style={{ color: "#6B6860" }}>
+          <p className="text-xs mt-0.5" style={{ color: "var(--ink-3)" }}>
             {hedge.contrato_selecionado.codigo} · {hedge.contratos_necessarios} contrato(s) · {fmtPct(hedge.cobertura_pct, 0)} coberto
           </p>
         </div>
@@ -49,9 +49,9 @@ export function PainelHedge({ hedge }: Props) {
       {/* Chart */}
       <div
         className="rounded-xl px-6 py-5"
-        style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}
+        style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}
       >
-        <p className="text-[13px] font-medium mb-4" style={{ color: "#F5F1E8" }}>
+        <p className="text-[13px] font-medium mb-4" style={{ color: "var(--ink)" }}>
           Seu lote em 3 cenarios
         </p>
         <ResponsiveContainer width="100%" height={200}>
@@ -60,28 +60,28 @@ export function PainelHedge({ hedge }: Props) {
             layout="vertical"
             margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
           >
-            <CartesianGrid horizontal={false} stroke="#2A2820" strokeDasharray="3 3" />
+            <CartesianGrid horizontal={false} stroke="var(--rule)" strokeDasharray="3 3" />
             <XAxis
               type="number"
               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-              stroke="#6B6860" fontSize={11} tickLine={false} axisLine={false}
+              stroke="var(--ink-3)" fontSize={11} tickLine={false} axisLine={false}
               tick={{ fontFamily: "var(--font-jetbrains)" }}
             />
             <YAxis
               type="category" dataKey="cenario" width={110}
-              stroke="#6B6860" fontSize={11} tickLine={false} axisLine={false}
+              stroke="var(--ink-3)" fontSize={11} tickLine={false} axisLine={false}
             />
             <Tooltip
               formatter={(value) => fmtBRL(Number(value))}
               contentStyle={{
-                background: "#1A1814", border: "0.5px solid #2A2820",
+                background: "var(--paper-2)", border: "0.5px solid var(--rule)",
                 borderRadius: "8px", fontSize: "12px", fontFamily: "var(--font-jetbrains)",
               }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <ReferenceLine x={0} stroke="#2A2820" strokeDasharray="4 4" />
-            <Bar dataKey="sem_hedge" name="Sem hedge" fill="#B54134" radius={[0, 3, 3, 0]} />
-            <Bar dataKey="com_hedge" name="Com hedge" fill="#4A5D3A" radius={[0, 3, 3, 0]} />
+            <ReferenceLine x={0} stroke="var(--rule)" strokeDasharray="4 4" />
+            <Bar dataKey="sem_hedge" name="Sem hedge" fill="var(--loss)" radius={[0, 3, 3, 0]} />
+            <Bar dataKey="com_hedge" name="Com hedge" fill="var(--gain)" radius={[0, 3, 3, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -90,9 +90,9 @@ export function PainelHedge({ hedge }: Props) {
       <div
         className="px-4 py-3 rounded-lg text-[13px] font-medium leading-relaxed"
         style={{
-          background: hedge.semaforo_hedge === "desnecessario" ? "#4A5D3A18" : "#C89B3C18",
-          border: `0.5px solid ${hedge.semaforo_hedge === "desnecessario" ? "#4A5D3A33" : "#C89B3C33"}`,
-          color: hedge.semaforo_hedge === "desnecessario" ? "#6B8F5A" : "#C89B3C",
+          background: hedge.semaforo_hedge === "desnecessario" ? "rgba(22, 163, 74, 0.10)" : "rgba(217, 119, 6, 0.10)",
+          border: `0.5px solid ${hedge.semaforo_hedge === "desnecessario" ? "rgba(22, 163, 74, 0.20)" : "rgba(217, 119, 6, 0.20)"}`,
+          color: hedge.semaforo_hedge === "desnecessario" ? "var(--gain-2)" : "var(--amber)",
         }}
       >
         {hedge.justificativa}
@@ -103,26 +103,26 @@ export function PainelHedge({ hedge }: Props) {
         {/* Se travar */}
         <div
           className="rounded-xl p-6"
-          style={{ background: "#4A5D3A18", border: "0.5px solid #4A5D3A44" }}
+          style={{ background: "rgba(22, 163, 74, 0.10)", border: "0.5px solid rgba(22, 163, 74, 0.27)" }}
         >
-          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "#6B8F5A" }}>
+          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--gain-2)" }}>
             Se travar
           </p>
           <div className="mt-4">
-            <p className="text-[11px]" style={{ color: "#6B6860" }}>Preco garantido</p>
-            <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Preco garantido</p>
+            <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.preco_travado)}/@
             </p>
           </div>
           <div className="mt-4">
-            <p className="text-[11px]" style={{ color: "#6B6860" }}>Voce garante</p>
-            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "#6B8F5A", fontVariantNumeric: "tabular-nums" }}>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Voce garante</p>
+            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "var(--gain-2)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.margem_hedgeada_brl)} de lucro
             </p>
           </div>
           <p
             className="text-[11px] mt-3 pt-3"
-            style={{ color: "#6B6860", borderTop: "0.5px solid #4A5D3A33" }}
+            style={{ color: "var(--ink-3)", borderTop: "0.5px solid rgba(22, 163, 74, 0.20)" }}
           >
             {hedge.contrato_selecionado.codigo} · {hedge.contratos_necessarios} contrato(s) ({hedge.arrobas_hedgeadas.toFixed(0)}@)
           </p>
@@ -131,27 +131,27 @@ export function PainelHedge({ hedge }: Props) {
         {/* Se nao travar */}
         <div
           className="rounded-xl p-6"
-          style={{ background: "#B5413418", border: "0.5px solid #B5413444" }}
+          style={{ background: "rgba(220, 38, 38, 0.10)", border: "0.5px solid rgba(220, 38, 38, 0.27)" }}
         >
-          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "#D4614A" }}>
+          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--loss-2)" }}>
             Se nao travar
           </p>
           <div className="mt-4">
-            <p className="text-[11px]" style={{ color: "#6B6860" }}>Preco atual</p>
-            <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Preco atual</p>
+            <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.preco_spot)}/@
             </p>
           </div>
           <div className="mt-4">
-            <p className="text-[11px]" style={{ color: "#6B6860" }}>Se cair 20%</p>
-            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "#D4614A", fontVariantNumeric: "tabular-nums" }}>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Se cair 20%</p>
+            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "var(--loss-2)", fontVariantNumeric: "tabular-nums" }}>
               {hedge.cenarios_grafico[0]?.sem_hedge < 0 ? "Perde " : "Lucro cai para "}
               {fmtBRL(hedge.cenarios_grafico[0]?.sem_hedge ?? 0)}
             </p>
           </div>
           <p
             className="text-[11px] mt-3 pt-3"
-            style={{ color: "#6B6860", borderTop: "0.5px solid #B5413433" }}
+            style={{ color: "var(--ink-3)", borderTop: "0.5px solid rgba(220, 38, 38, 0.20)" }}
           >
             Nada protege suas {hedge.arrobas_totais.toFixed(0)} arrobas
           </p>

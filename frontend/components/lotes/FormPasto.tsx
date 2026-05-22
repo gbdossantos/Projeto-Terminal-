@@ -79,8 +79,8 @@ export default function FormPasto() {
           <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-5">
             {/* Form */}
             <div className="rounded-xl p-5 space-y-5"
-              style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}>
-              <p className="text-[11px] font-medium uppercase tracking-[0.1em]" style={{ color: "#6B6860" }}>
+              style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}>
+              <p className="text-[11px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--ink-3)" }}>
                 Dados do lote
               </p>
               <div className="grid grid-cols-3 gap-3">
@@ -92,8 +92,8 @@ export default function FormPasto() {
                 <Field label="Reposicao total (R$)" value={form.custo_reposicao_total} onChange={(v) => set("custo_reposicao_total", v)} step={1000} />
               </div>
 
-              <div className="pt-4" style={{ borderTop: "0.5px solid #2A2820" }}>
-                <p className="text-[11px] font-medium uppercase tracking-[0.1em] mb-3" style={{ color: "#6B6860" }}>
+              <div className="pt-4" style={{ borderTop: "0.5px solid var(--rule)" }}>
+                <p className="text-[11px] font-medium uppercase tracking-[0.1em] mb-3" style={{ color: "var(--ink-3)" }}>
                   Custos operacionais (R$/cab/dia)
                 </p>
                 <div className="grid grid-cols-2 gap-3">
@@ -104,8 +104,8 @@ export default function FormPasto() {
                 </div>
               </div>
 
-              <div className="pt-4" style={{ borderTop: "0.5px solid #2A2820" }}>
-                <p className="text-[11px] font-medium uppercase tracking-[0.1em] mb-3" style={{ color: "#6B6860" }}>
+              <div className="pt-4" style={{ borderTop: "0.5px solid var(--rule)" }}>
+                <p className="text-[11px] font-medium uppercase tracking-[0.1em] mb-3" style={{ color: "var(--ink-3)" }}>
                   Mercado e logistica
                 </p>
                 <div className="grid grid-cols-3 gap-3">
@@ -119,8 +119,8 @@ export default function FormPasto() {
             {/* Right column — cotacoes + score preview */}
             <div className="space-y-4">
               {/* Cotacoes */}
-              <div className="rounded-xl p-4" style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}>
-                <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-3" style={{ color: "#6B6860" }}>
+              <div className="rounded-xl p-4" style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}>
+                <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-3" style={{ color: "var(--ink-3)" }}>
                   Cotacoes de mercado
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -130,12 +130,12 @@ export default function FormPasto() {
                     { l: "Milho ESALQ", v: cotacoes?.milho_esalq, u: "/sc" },
                     { l: "CDI", v: cotacoes?.cdi_anual ? cotacoes.cdi_anual * 100 : null, u: "% a.a." },
                   ].map((c) => (
-                    <div key={c.l} className="rounded-lg px-3 py-2.5" style={{ background: "#221F18" }}>
-                      <p className="text-[9px] uppercase tracking-[0.08em] mb-1" style={{ color: "#6B6860" }}>{c.l}</p>
-                      <span className="font-mono text-[17px] font-medium" style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>
+                    <div key={c.l} className="rounded-lg px-3 py-2.5" style={{ background: "var(--paper-3)" }}>
+                      <p className="text-[9px] uppercase tracking-[0.08em] mb-1" style={{ color: "var(--ink-3)" }}>{c.l}</p>
+                      <span className="font-mono text-[17px] font-medium" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
                         {c.v?.toFixed(2) ?? "—"}
                       </span>
-                      {c.u && <span className="font-mono text-[11px] ml-0.5" style={{ color: "#6B6860" }}>{c.u}</span>}
+                      {c.u && <span className="font-mono text-[11px] ml-0.5" style={{ color: "var(--ink-3)" }}>{c.u}</span>}
                     </div>
                   ))}
                 </div>
@@ -143,9 +143,9 @@ export default function FormPasto() {
 
               {/* Score preview */}
               <div className="rounded-xl p-5 flex flex-col items-center justify-center gap-3"
-                style={{ background: "#1A1814", border: "0.5px solid #2A2820", minHeight: 180 }}>
+                style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)", minHeight: 180 }}>
                 <ScoreRing score={null} tier={null} size="md" />
-                <p className="text-[12px] text-center leading-relaxed" style={{ color: "#6B6860" }}>
+                <p className="text-[12px] text-center leading-relaxed" style={{ color: "var(--ink-3)" }}>
                   Preencha os dados e calcule para ver o score de risco.
                 </p>
               </div>
@@ -156,15 +156,15 @@ export default function FormPasto() {
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg text-[13px] font-medium transition-all"
                 style={{
-                  background: "#B8763E",
-                  color: "#FAF0E0",
+                  background: "var(--grafite-2)",
+                  color: "var(--paper)",
                   opacity: loading ? 0.7 : 1,
                 }}
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-3 h-3 rounded-full animate-spin"
-                      style={{ border: "1.5px solid transparent", borderTop: "1.5px solid #FAF0E0" }} />
+                      style={{ border: "1.5px solid transparent", borderTop: "1.5px solid var(--paper)" }} />
                     Calculando...
                   </span>
                 ) : "Calcular \u2192"}
@@ -175,7 +175,7 @@ export default function FormPasto() {
 
         {error && (
           <div className="rounded-lg px-4 py-3 text-[12px]"
-            style={{ background: "#B5413418", border: "0.5px solid #B5413444", color: "#D4614A" }}>
+            style={{ background: "rgba(220, 38, 38, 0.10)", border: "0.5px solid rgba(220, 38, 38, 0.27)", color: "var(--loss-2)" }}>
             {error}
           </div>
         )}
@@ -187,13 +187,13 @@ export default function FormPasto() {
             <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3">
               <KpiCard label="Custo por arroba" value={r.custo_por_arroba.toFixed(2)} unit="/@" />
               <KpiCard label="Break-even" value={r.break_even_price.toFixed(2)} unit="/@"
-                badge={`\u25B2 spread R$ ${(form.preco_venda - r.break_even_price).toFixed(0)}`} badgeColor="#4A5D3A" />
+                badge={`\u25B2 spread R$ ${(form.preco_venda - r.break_even_price).toFixed(0)}`} badgeColor="var(--gain)" />
               <KpiCard label="Margem bruta" value={fmtBRL(r.margem_bruta)}
-                badge={`\u25B2 ${fmtPct(r.margem_percentual)}`} badgeColor="#4A5D3A" />
+                badge={`\u25B2 ${fmtPct(r.margem_percentual)}`} badgeColor="var(--gain)" />
               <KpiCard label="ROI anualizado" value={fmtPct(r.roi_anualizado)}
                 sub={`vs ${((data.cotacoes.cdi_anual ?? 0.1415) * 100).toFixed(2)}% CDI`} />
               <div className="rounded-[10px] px-4 py-3 flex items-center"
-                style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}>
+                style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}>
                 <ScoreRing score={score} tier={tier} size="md" showDetails
                   details={{ margem: fmtPct(r.margem_percentual), exposicao: fmtBRL(r.arrobas_totais * form.preco_venda), vencBGI: "12 dias" }} />
               </div>
@@ -202,17 +202,17 @@ export default function FormPasto() {
             {/* Semaphore */}
             <div className="flex items-center gap-3 px-4 py-3 rounded-lg"
               style={{
-                background: r.margem_percentual >= 0.15 ? "#4A5D3A18" : r.margem_percentual >= 0.05 ? "#C89B3C18" : "#B5413418",
-                border: `0.5px solid ${r.margem_percentual >= 0.15 ? "#4A5D3A44" : r.margem_percentual >= 0.05 ? "#C89B3C44" : "#B5413444"}`,
+                background: r.margem_percentual >= 0.15 ? "rgba(22, 163, 74, 0.10)" : r.margem_percentual >= 0.05 ? "rgba(217, 119, 6, 0.10)" : "rgba(220, 38, 38, 0.10)",
+                border: `0.5px solid ${r.margem_percentual >= 0.15 ? "rgba(22, 163, 74, 0.27)" : r.margem_percentual >= 0.05 ? "rgba(217, 119, 6, 0.27)" : "rgba(220, 38, 38, 0.27)"}`,
               }}>
               <div className="w-2 h-2 rounded-full"
-                style={{ background: r.margem_percentual >= 0.15 ? "#4A5D3A" : r.margem_percentual >= 0.05 ? "#C89B3C" : "#B54134" }} />
+                style={{ background: r.margem_percentual >= 0.15 ? "var(--gain)" : r.margem_percentual >= 0.05 ? "var(--amber)" : "var(--loss)" }} />
               <div>
                 <p className="text-[12px] font-medium"
-                  style={{ color: r.margem_percentual >= 0.15 ? "#6B8F5A" : r.margem_percentual >= 0.05 ? "#C89B3C" : "#D4614A" }}>
+                  style={{ color: r.margem_percentual >= 0.15 ? "var(--gain-2)" : r.margem_percentual >= 0.05 ? "var(--amber)" : "var(--loss-2)" }}>
                   {r.margem_percentual >= 0.15 ? "Margem saudavel" : r.margem_percentual >= 0.05 ? "Margem apertada" : "Margem critica"}
                 </p>
-                <p className="text-[11px]" style={{ color: "#6B6860" }}>
+                <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
                   Margem de {fmtPct(r.margem_percentual)} — spread de {fmtBRL(form.preco_venda - r.break_even_price)}/@ sobre o break-even
                 </p>
               </div>
@@ -221,13 +221,13 @@ export default function FormPasto() {
             {/* Grid: impacto + custos */}
             <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
               <div>
-                <p className="font-display text-[13px] mb-2.5" style={{ color: "#F5F1E8" }}>Painel de impacto economico</p>
+                <p className="font-display text-[13px] mb-2.5" style={{ color: "var(--ink)" }}>Painel de impacto economico</p>
                 <PerguntaInvertidaBlock impacto={data.impacto} margemBruta={r.margem_bruta} />
                 <ScenarioTable cenarios={data.impacto.cenarios} />
               </div>
 
               <div>
-                <p className="font-display text-[13px] mb-2.5" style={{ color: "#F5F1E8" }}>Composicao de custos</p>
+                <p className="font-display text-[13px] mb-2.5" style={{ color: "var(--ink)" }}>Composicao de custos</p>
                 <div className="space-y-2">
                   {[
                     { l: "Reposicao", v: r.custo_reposicao },
@@ -236,15 +236,15 @@ export default function FormPasto() {
                     { l: "Oportunidade", v: r.custo_oportunidade },
                   ].map((c) => (
                     <div key={c.l} className="flex justify-between items-center rounded-lg px-3.5 py-2.5"
-                      style={{ background: "#1A1814", border: "0.5px solid #2A2820" }}>
-                      <span className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: "#6B6860" }}>{c.l}</span>
-                      <span className="font-mono text-[14px] font-medium" style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>{fmtBRL(c.v)}</span>
+                      style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}>
+                      <span className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>{c.l}</span>
+                      <span className="font-mono text-[14px] font-medium" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtBRL(c.v)}</span>
                     </div>
                   ))}
                   <div className="flex justify-between items-center rounded-lg px-3.5 py-2.5"
-                    style={{ background: "#221F18", border: "0.5px solid #2A2820" }}>
-                    <span className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: "#F5F1E8" }}>Total</span>
-                    <span className="font-mono text-[14px] font-medium" style={{ color: "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>{fmtBRL(r.custo_total)}</span>
+                    style={{ background: "var(--paper-3)", border: "0.5px solid var(--rule)" }}>
+                    <span className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--ink)" }}>Total</span>
+                    <span className="font-mono text-[14px] font-medium" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtBRL(r.custo_total)}</span>
                   </div>
                 </div>
               </div>
@@ -254,14 +254,14 @@ export default function FormPasto() {
             <div className="flex justify-between items-center pt-2">
               <button onClick={() => setStep(1)}
                 className="text-[12px] px-4 py-2 rounded-lg transition-colors"
-                style={{ border: "0.5px solid #2A2820", color: "#6B6860" }}>
+                style={{ border: "0.5px solid var(--rule)", color: "var(--ink-3)" }}>
                 &larr; Editar dados
               </button>
               <div className="flex items-center gap-3">
                 <SaveLoteButton onSave={handleSave} defaultName={`Pasto · ${form.num_animais} cab`} />
                 <button onClick={() => setStep(3)}
                   className="text-[12px] font-medium px-4 py-2 rounded-lg"
-                  style={{ background: "#B8763E", color: "#FAF0E0" }}>
+                  style={{ background: "var(--grafite-2)", color: "var(--paper)" }}>
                   Ver decisao de hedge &rarr;
                 </button>
               </div>
@@ -274,16 +274,16 @@ export default function FormPasto() {
           <>
             {/* KPI strip */}
             <div className="grid grid-cols-5 gap-0 rounded-lg overflow-hidden"
-              style={{ background: "#221F18", border: "0.5px solid #2A2820" }}>
+              style={{ background: "var(--paper-3)", border: "0.5px solid var(--rule)" }}>
               {[
                 { l: "Custo/@", v: `${r.custo_por_arroba.toFixed(0)}` },
                 { l: "Break-even", v: `${r.break_even_price.toFixed(0)}` },
-                { l: "Margem", v: fmtPct(r.margem_percentual), c: "#6B8F5A" },
+                { l: "Margem", v: fmtPct(r.margem_percentual), c: "var(--gain-2)" },
                 { l: "Exposicao", v: fmtBRL(r.arrobas_totais * form.preco_venda) },
               ].map((k) => (
-                <div key={k.l} className="px-3 py-2.5" style={{ borderRight: "0.5px solid #2A2820" }}>
-                  <p className="text-[9px] uppercase tracking-[0.08em]" style={{ color: "#6B6860" }}>{k.l}</p>
-                  <p className="font-mono text-[14px] font-medium" style={{ color: k.c || "#F5F1E8", fontVariantNumeric: "tabular-nums" }}>{k.v}</p>
+                <div key={k.l} className="px-3 py-2.5" style={{ borderRight: "0.5px solid var(--rule)" }}>
+                  <p className="text-[9px] uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>{k.l}</p>
+                  <p className="font-mono text-[14px] font-medium" style={{ color: k.c || "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{k.v}</p>
                 </div>
               ))}
               <div className="px-3 py-2 flex items-center justify-center">
@@ -298,12 +298,12 @@ export default function FormPasto() {
             <div className="flex justify-between pt-2">
               <button onClick={() => setStep(2)}
                 className="text-[12px] px-4 py-2 rounded-lg transition-colors"
-                style={{ border: "0.5px solid #2A2820", color: "#6B6860" }}>
+                style={{ border: "0.5px solid var(--rule)", color: "var(--ink-3)" }}>
                 &larr; Analise economica
               </button>
               <button
                 className="text-[12px] font-medium px-4 py-2 rounded-lg"
-                style={{ background: "#B8763E", color: "#FAF0E0" }}
+                style={{ background: "var(--grafite-2)", color: "var(--paper)" }}
                 onClick={() => { /* TODO: implementar geracao de PDF */ }}>
                 Exportar relatorio PDF &rarr;
               </button>
