@@ -29,10 +29,10 @@ export default function LotesPage() {
   return (
     <div>
       {/* Header */}
-      <h1 className="font-display text-[28px]" style={{ color: "#F5F1E8", fontWeight: 400 }}>
+      <h1 className="font-display text-[28px]" style={{ color: "var(--ink)", fontWeight: 400 }}>
         Lotes
       </h1>
-      <p className="text-sm mt-1 mb-7" style={{ color: "#6B6860" }}>
+      <p className="text-sm mt-1 mb-7" style={{ color: "var(--ink-3)" }}>
         Calcule custo, margem, ROI e protecao para cada sistema produtivo
       </p>
 
@@ -40,7 +40,7 @@ export default function LotesPage() {
       <LotesSalvosList key={`saved-${reloadKey}`} onLoad={handleLoadLote} />
 
       {/* Tabs */}
-      <div className="flex gap-0 mb-8" style={{ borderBottom: "0.5px solid #2A2820" }}>
+      <div className="flex gap-0 mb-8" style={{ borderBottom: "0.5px solid var(--rule)" }}>
         {SISTEMAS_PRODUTIVOS.map((s) => (
           <button
             key={s.id}
@@ -49,7 +49,7 @@ export default function LotesPage() {
             style={{
               padding: "10px 0",
               marginRight: "28px",
-              color: tab === s.id ? "#F5F1E8" : "#6B6860",
+              color: tab === s.id ? "var(--ink)" : "var(--ink-3)",
               background: "none",
               border: "none",
             }}
@@ -58,7 +58,7 @@ export default function LotesPage() {
             {tab === s.id && (
               <span
                 className="absolute bottom-0 left-0 right-0 h-0.5"
-                style={{ background: "#B8763E" }}
+                style={{ background: "var(--grafite-2)" }}
               />
             )}
           </button>

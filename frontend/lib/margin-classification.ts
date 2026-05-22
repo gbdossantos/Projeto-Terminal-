@@ -15,28 +15,28 @@ export interface MargemClassification {
 const VERDE: MargemClassification = {
   tier: "verde",
   label: "margem saudavel",
-  color: "#4A5D3A",
-  bg: "#4A5D3A18",
-  textColor: "#6B8F5A",
-  borderColor: "#4A5D3A44",
+  color: "var(--gain)",
+  bg: "rgba(22, 163, 74, 0.10)",
+  textColor: "var(--gain-2)",
+  borderColor: "rgba(22, 163, 74, 0.27)",
 };
 
 const AMBER: MargemClassification = {
   tier: "amber",
   label: "margem apertada",
-  color: "#C89B3C",
-  bg: "#C89B3C18",
-  textColor: "#C89B3C",
-  borderColor: "#C89B3C44",
+  color: "var(--amber)",
+  bg: "rgba(217, 119, 6, 0.10)",
+  textColor: "var(--amber)",
+  borderColor: "rgba(217, 119, 6, 0.27)",
 };
 
 const VERMELHO: MargemClassification = {
   tier: "vermelho",
   label: "margem critica",
-  color: "#B54134",
-  bg: "#B5413418",
-  textColor: "#D4614A",
-  borderColor: "#B5413444",
+  color: "var(--loss)",
+  bg: "rgba(220, 38, 38, 0.10)",
+  textColor: "var(--loss-2)",
+  borderColor: "rgba(220, 38, 38, 0.27)",
 };
 
 /**
