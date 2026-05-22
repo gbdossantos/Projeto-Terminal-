@@ -5,42 +5,51 @@
 @tailwind utilities;
 
 /* ── DM Sans + DM Mono via next/font (layout.tsx) ── */
-/* ── Identidade fechada: light terroso unico, sem dark mode ── */
+/* ── V19 — Vercel sobre o shell. Light unico, sem dark mode. ── */
 
 @layer base {
   :root {
-    /* Papel quente — base terrosa */
-    --paper:           #F5F2EA;   /* fundo principal */
-    --paper-2:         #EDE9DF;   /* surface 1 (cards, faixas) */
-    --paper-3:         #E3DED1;   /* surface 2 (separadores, hover) */
-    --ink:             #1A1814;   /* tinta quase-preta — texto principal */
-    --ink-2:           #4D4A42;   /* texto secundario */
-    --ink-3:           #8C8678;   /* texto terciario, eixos */
-    --rule:            #D8D2C2;   /* linhas, bordas */
-    --rule-strong:     #C4BCA8;   /* bordas marcadas */
+    /* Superficies V19 — off-white quente + cards brancos puros */
+    --paper:           #FAFAF9;                  /* fundo da página */
+    --paper-2:         #FFFFFF;                  /* cards, surfaces */
+    --paper-3:         rgba(10, 10, 10, 0.04);   /* separadores, hover */
 
-    /* Azul-grafite — acento tecnico (eixos, chips de referencia, mono labels) */
-    --grafite:         #3A4A5C;
-    --grafite-2:       #54657A;
-    --grafite-soft:    rgba(58, 74, 92, 0.08);
+    /* Tinta V19 — preto puro + cinzas neutros */
+    --ink:             #0A0A0A;                  /* texto principal */
+    --ink-2:           #4B5563;                  /* texto secundário */
+    --ink-3:           #6B7280;                  /* texto terciário, eixos */
 
-    /* Deltas */
-    --gain:            #3D7A2A;   /* ganho */
-    --gain-2:          #2D6A1A;
-    --loss:            #B54134;   /* perda / tijolo */
-    --loss-2:          #A33828;
+    /* Hairlines V19 */
+    --rule:            rgba(10, 10, 10, 0.08);
+    --rule-strong:     rgba(10, 10, 10, 0.14);
+
+    /* Acento técnico — indigo (substitui azul-grafite anterior) */
+    --grafite:         #6366F1;
+    --grafite-2:       #4338CA;
+    --grafite-soft:    rgba(99, 102, 241, 0.08);
+
+    /* Deltas V19 (Vercel/Tailwind green-600, red-600) */
+    --gain:            #16A34A;
+    --gain-2:          #15803D;
+    --loss:            #DC2626;
+    --loss-2:          #B91C1C;
     --neutral:         var(--ink-2);
 
-    /* Brand (ambar/couro residual — usar com parcimonia) */
-    --brand:           #B8763E;
-    --brand-fg:        #F5F2EA;
+    /* Brand — V19 não tem âmbar/terroso; brand vira indigo (acento técnico) */
+    --brand:           var(--grafite);
+    --brand-fg:        var(--paper);
+
+    /* Sombras + raios V19 */
+    --shadow-card:     0 1px 2px rgba(10, 10, 10, 0.04), 0 8px 24px -12px rgba(10, 10, 10, 0.06);
+    --shadow-card-hover: 0 1px 2px rgba(10, 10, 10, 0.05), 0 12px 32px -12px rgba(10, 10, 10, 0.08);
+    --radius-card:     12px;
 
     /* Compat shadcn (mapeia paleta nova nos slots antigos) */
     --background:      var(--paper);
     --foreground:      var(--ink);
     --card:            var(--paper-2);
     --card-foreground: var(--ink);
-    --popover:         var(--paper);
+    --popover:         var(--paper-2);
     --popover-foreground: var(--ink);
     --primary:         var(--ink);
     --primary-foreground: var(--paper);
@@ -49,14 +58,14 @@
     --muted:           var(--paper-3);
     --muted-foreground: var(--ink-2);
     --accent:          var(--grafite-soft);
-    --accent-foreground: var(--grafite);
+    --accent-foreground: var(--grafite-2);
     --destructive:     var(--loss);
     --border:          var(--rule);
     --input:           var(--rule);
     --ring:            var(--grafite);
     --radius:          0.5rem;
 
-    /* Compat tokens antigos usados em telas que ainda nao foram revisadas */
+    /* Compat tokens antigos usados em telas que ainda usam classes legadas */
     --bg-deep:         var(--paper);
     --surface:         var(--paper-2);
     --surface-2:       var(--paper-3);
@@ -65,27 +74,27 @@
     --text-secondary:  var(--ink-2);
     --text-tertiary:   var(--ink-3);
     --success:         var(--gain);
-    --success-bg:      rgba(61, 122, 42, 0.12);
-    --warning:         #B88A2C;
-    --warning-bg:      rgba(184, 138, 44, 0.12);
+    --success-bg:      rgba(22, 163, 74, 0.10);
+    --warning:         #D97706;
+    --warning-bg:      rgba(217, 119, 6, 0.10);
     --danger:          var(--loss);
-    --danger-bg:       rgba(181, 65, 52, 0.12);
-    --terra:           var(--brand);
-    --terra-bg:        rgba(184, 118, 62, 0.08);
+    --danger-bg:       rgba(220, 38, 38, 0.10);
+    --terra:           var(--grafite);
+    --terra-bg:        var(--grafite-soft);
     --green:           var(--gain);
     --green-2:         var(--gain-2);
-    --amber:           #B88A2C;
+    --amber:           #D97706;
     --red:             var(--loss);
     --red-2:           var(--loss-2);
-    --pasto:           #4A5D3A;
-    --couro:           #8B4513;
+    --pasto:           #16A34A;
+    --couro:           var(--grafite-2);
     --chart-1:         var(--ink);
     --chart-2:         var(--grafite);
-    --chart-3:         var(--brand);
-    --chart-4:         var(--gain);
-    --chart-5:         var(--loss);
+    --chart-3:         var(--gain);
+    --chart-4:         var(--loss);
+    --chart-5:         var(--ink-3);
 
-    /* Aliases legados — outras 8 telas usam estes ate revisao da identidade */
+    /* Aliases legados de fonte (componentes antigos referenciam) */
     --font-inter:      var(--font-sans);
     --font-jetbrains:  var(--font-mono);
   }
@@ -99,14 +108,32 @@
     @apply border-border;
     outline-color: var(--ring);
   }
+  html {
+    @apply font-sans;
+  }
   body {
     background-color: var(--paper);
     color: var(--ink);
     font-feature-settings: "ss01", "cv11";
+    position: relative;
     @apply antialiased;
   }
-  html {
-    @apply font-sans;
+
+  /*
+    Aurora V19 — 3 radial gradients sutilíssimos, fixos na viewport.
+    z-index -1 garante que ficam atrás de tudo. Pseudo-element no body
+    pra não alterar nenhuma estrutura React.
+  */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 65% 50% at 0% 0%, rgba(99, 102, 241, 0.05), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(244, 114, 182, 0.035), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(99, 102, 241, 0.045), transparent 70%);
   }
 }
 
@@ -121,9 +148,16 @@
     font-family: var(--font-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
   }
+  /* Card V19 — utilitário pra padronizar surface */
+  .card-v19 {
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
 }
 
-/* ── Landing page animation ── */
+/* ── Landing page animation (legado) ── */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -155,6 +189,15 @@
 }
 .ticker-scroll { animation: ticker 28s linear infinite; }
 .ticker-scroll:hover { animation-play-state: paused; }
+
+/* ── Dot verde pulse (pílula Pregão aberto) ── */
+@keyframes pregao-dot-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
+}
+.pregao-dot-pulse {
+  animation: pregao-dot-pulse 2s ease-in-out infinite;
+}
 
 /* ── Scenario sliders (Simulador) ── */
 input[type="range"].scenario-slider {
