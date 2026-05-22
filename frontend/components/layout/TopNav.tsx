@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Settings } from "lucide-react";
 import { getProfile } from "@/lib/profile";
 import { MOCK_USUARIO, MOCK_FAZENDA } from "@/lib/mock-data";
 import { Bandeira } from "@/lib/bandeiras";
@@ -117,6 +118,37 @@ export function TopNav() {
             <span>{hojeStr || "—"}</span>
           </div>
           <PregaoStatus />
+          {/* Engrenagem → /configuracoes. Fora das tabs principais (decisão #2). */}
+          <Link
+            href="/configuracoes"
+            aria-label="Configurações"
+            title="Configurações"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 30,
+              height: 30,
+              borderRadius: 7,
+              color: pathname === "/configuracoes" ? "var(--ink)" : "var(--ink-2)",
+              background: pathname === "/configuracoes" ? "rgba(10, 10, 10, 0.06)" : "transparent",
+              transition: "background 120ms, color 120ms",
+            }}
+            onMouseEnter={(e) => {
+              if (pathname !== "/configuracoes") {
+                (e.currentTarget as HTMLElement).style.background = "rgba(10, 10, 10, 0.04)";
+                (e.currentTarget as HTMLElement).style.color = "var(--ink)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (pathname !== "/configuracoes") {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+                (e.currentTarget as HTMLElement).style.color = "var(--ink-2)";
+              }
+            }}
+          >
+            <Settings size={16} strokeWidth={1.6} />
+          </Link>
         </div>
       </div>
 
