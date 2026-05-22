@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/profile";
 import { MOCK_USUARIO, MOCK_FAZENDA } from "@/lib/mock-data";
+import { Bandeira } from "@/lib/bandeiras";
 
 /**
  * Header canônico — V19 (Vercel-like).
@@ -18,11 +19,17 @@ import { MOCK_USUARIO, MOCK_FAZENDA } from "@/lib/mock-data";
 export function TopNav() {
   const pathname = usePathname();
   const [farmName, setFarmName] = useState<string>(MOCK_FAZENDA.nome);
+  const [userName, setUserName] = useState<string>(MOCK_USUARIO.nome);
+  const [municipio, setMunicipio] = useState<string>(MOCK_FAZENDA.municipio);
+  const [estado, setEstado] = useState<string>(MOCK_FAZENDA.estado);
   const [hojeStr, setHojeStr] = useState<string>("");
 
   useEffect(() => {
     const p = getProfile();
     if (p.nome_fazenda) setFarmName(p.nome_fazenda);
+    if (p.nome_produtor) setUserName(p.nome_produtor);
+    if (p.municipio) setMunicipio(p.municipio);
+    if (p.estado) setEstado(p.estado);
     const hoje = new Date();
     const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
     setHojeStr(
@@ -90,17 +97,22 @@ export function TopNav() {
           <div
             className="hidden md:flex items-center"
             style={{
-              gap: 14,
+              gap: 12,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               color: "var(--ink-2)",
             }}
           >
-            <span>{MOCK_USUARIO.nome}</span>
+            {/* Bandeiras Brasil + estado — reativas ao profile.estado */}
+            <span className="flex items-center" style={{ gap: 4 }}>
+              <Bandeira code="BR" size={14} title="Brasil" />
+              <Bandeira code={estado} size={14} title={estado} />
+            </span>
+            <span>{userName}</span>
             <span style={{ color: "var(--ink-3)" }}>·</span>
             <span style={{ color: "var(--ink)", fontWeight: 500 }}>{farmName}</span>
             <span style={{ color: "var(--ink-3)" }}>·</span>
-            <span>{MOCK_FAZENDA.municipio} / {MOCK_FAZENDA.estado}</span>
+            <span>{municipio} / {estado}</span>
             <span style={{ color: "var(--ink-3)" }}>·</span>
             <span>{hojeStr || "—"}</span>
           </div>
