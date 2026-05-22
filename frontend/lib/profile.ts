@@ -1,39 +1,62 @@
 /**
- * Perfil da fazenda — persistido em localStorage.
- * Quando tiver auth/banco, migra para API sem mudar a interface.
+ * Perfil do produtor + fazenda — persistido em localStorage.
+ *
+ * Fonte única do estado do usuário. Quando auth/banco chegar, migra para API
+ * mantendo a interface FarmProfile + funções get/save.
+ *
+ * Hook reativo: useProfile() em "@/lib/use-profile".
  */
 
+import type { SistemaProdutivo } from "@/lib/sistemas";
+
 export interface FarmProfile {
-  // Identificacao
-  nome_fazenda: string;
+  // ── Perfil ────────────────────────────────────────────────────
   nome_produtor: string;
-  estado: string;
+  nome_fazenda: string;
+
+  // ── Localização ──────────────────────────────────────────────
+  estado: string;            // UF (MS, MT, SP, ...)
   municipio: string;
+  basis_valor: number;       // R$/@ — desconto local sobre o BGI
 
-  // Operacao
+  // ── Operação ─────────────────────────────────────────────────
+  sistema_padrao: SistemaProdutivo | "ciclo_completo";
+  break_even_medio: number;  // R$/@
+  mortalidade_hist: number;  // decimal (0.02 = 2%)
+
+  // ── Aparência ────────────────────────────────────────────────
+  theme: "light" | "dark" | "auto";
+  densidade: "compacto" | "normal";
+
+  // ── Legados (compat com /configuracoes antigo) ───────────────
   area_hectares: number;
-  sistemas_produtivos: string[];  // ["pasto", "confinamento", "semi", "cria", "recria"]
-  faturamento_estimado: string;   // "ate_15m", "15m_40m", "40m_80m", "acima_80m"
-
-  // Preferencias
-  regiao_basis: string;           // "SP", "MS", "MT", etc — define basis default
-  moeda_display: string;          // "BRL" (futuro: USD)
-  theme: string;                  // "dark", "light"
+  sistemas_produtivos: string[];
+  faturamento_estimado: string;
+  regiao_basis: string;
+  moeda_display: string;
 }
 
 const STORAGE_KEY = "terminal_farm_profile";
 
-const DEFAULT_PROFILE: FarmProfile = {
-  nome_fazenda: "",
-  nome_produtor: "",
+// Defaults — Fazenda Santa Luzia / Guilherme Barreto / Três Lagoas-MS.
+// Substituidos quando o usuário editar em /configuracoes.
+export const DEFAULT_PROFILE: FarmProfile = {
+  nome_produtor: "Guilherme Barreto",
+  nome_fazenda: "Fazenda Santa Luzia",
   estado: "MS",
-  municipio: "",
+  municipio: "Três Lagoas",
+  basis_valor: -5,
+  sistema_padrao: "terminacao_pasto",
+  break_even_medio: 286.50,
+  mortalidade_hist: 0.02,
+  theme: "light",
+  densidade: "normal",
+  // Legados (mantém compat com /configuracoes antigo)
   area_hectares: 0,
-  sistemas_produtivos: ["pasto"],
+  sistemas_produtivos: ["terminacao_pasto"],
   faturamento_estimado: "",
   regiao_basis: "MS",
   moeda_display: "BRL",
-  theme: "dark",
 };
 
 export function getProfile(): FarmProfile {
@@ -44,17 +67,22 @@ export function getProfile(): FarmProfile {
       return { ...DEFAULT_PROFILE, ...JSON.parse(stored) };
     }
   } catch {
-    // corrupted storage
+    // corrupted
   }
   return DEFAULT_PROFILE;
 }
+
+const CHANGE_EVENT = "terminal:profile-changed";
 
 export function saveProfile(profile: FarmProfile): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    // Notifica todos os hooks useProfile() no mesmo tab (storage event
+    // não dispara na própria janela que escreveu — só em outras tabs).
+    window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
   } catch {
-    // storage full or blocked
+    // quota cheia ou modo privado — ignora
   }
 }
 
@@ -72,6 +100,8 @@ export function hasProfile(): boolean {
   return false;
 }
 
+// ── Tabelas auxiliares ──────────────────────────────────────────
+
 export const ESTADOS = [
   "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO",
   "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR",
@@ -79,24 +109,43 @@ export const ESTADOS = [
 ];
 
 export const FAIXAS_FATURAMENTO = [
-  { value: "ate_15m", label: "Ate R$ 15M" },
+  { value: "ate_15m", label: "Até R$ 15M" },
   { value: "15m_40m", label: "R$ 15M — R$ 40M" },
   { value: "40m_80m", label: "R$ 40M — R$ 80M" },
   { value: "acima_80m", label: "Acima de R$ 80M" },
 ];
 
-export const SISTEMAS_OPCOES = [
-  { value: "pasto", label: "Terminacao pasto" },
+export const SISTEMAS_OPCOES: Array<{ value: FarmProfile["sistema_padrao"]; label: string }> = [
+  { value: "terminacao_pasto", label: "Terminação em Pasto" },
   { value: "confinamento", label: "Confinamento" },
-  { value: "semi", label: "Semiconfinamento" },
+  { value: "semiconfinamento", label: "Semi-confinamento" },
   { value: "cria", label: "Cria" },
   { value: "recria", label: "Recria" },
+  { value: "ciclo_completo", label: "Ciclo Completo" },
 ];
 
+/**
+ * Basis padrão sugerido por estado (R$/@). Valores negativos = desconto
+ * sobre o BGI. Quando o usuário trocar de estado em /configuracoes, o
+ * basis_valor é pré-preenchido com este — mas continua editável manualmente
+ * porque cada operação tem basis específico (distância de frigorífico, etc.).
+ */
+export const BASIS_VALOR_POR_ESTADO: Record<string, number> = {
+  MS: -5,
+  MT: -10,
+  GO: -7,
+  MG: -3,
+  PA: -15,
+  TO: -12,
+  RO: -15,
+  SP: 0,
+  // Estados sem basis específico → default 0 (editável)
+};
+
+// Legado (compat com código antigo que referenciava BASIS_POR_ESTADO string)
 export const BASIS_POR_ESTADO: Record<string, string> = {
   SP: "SP", MG: "MG", MS: "MS", GO: "GO", MT: "MT",
   PA: "PA", TO: "TO", RO: "RO",
-  // Estados sem basis especifico → mais proximo
   PR: "SP", RS: "SP", SC: "SP", RJ: "SP", ES: "MG",
   BA: "MG", MA: "PA", PI: "PA", CE: "PA", RN: "PA",
   PB: "PA", PE: "PA", AL: "PA", SE: "PA",
