@@ -129,11 +129,14 @@ export function HomeDashboard({ empty = false }: Props = {}) {
               <h1
                 style={{
                   fontFamily: "var(--font-sans)",
-                  fontSize: 26,
+                  fontSize: 42,
                   fontWeight: 500,
                   color: "var(--ink)",
-                  letterSpacing: "-0.01em",
-                  lineHeight: 1.2,
+                  // V19: DM Sans 500 com tracking apertado -0.030em pra ganhar
+                  // a 'modernidade' Vercel/Linear sem trocar de família global.
+                  letterSpacing: "-0.030em",
+                  lineHeight: 1.1,
+                  maxWidth: 720,
                 }}
               >
                 {empty
@@ -834,7 +837,8 @@ function CaminhosCard({ empty }: { empty?: boolean }) {
       >
         CAMINHOS
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--rule)", border: "0.5px solid var(--rule)" }}>
+      {/* Grid V19: cards independentes (raio + sombra cada) com gap maior */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <CaminhoQuadrante
           titulo="Simulador"
           subtitulo={empty ? "cadastre um lote para liberar" : "travar parte do rebanho?"}
@@ -923,19 +927,39 @@ function CaminhoQuadrante({
       href={href}
       style={{
         display: "block",
-        padding: "14px 16px",
-        background: destaque ? "var(--ink)" : "var(--paper-2)",
-        color: destaque ? "var(--paper)" : "var(--ink)",
+        padding: "16px 18px",
+        // V19: card 'featured' (Simulador) preto puro com texto branco — estilo
+        // 'btn primary' do Vercel. Cards comuns: branco com hairline.
+        background: destaque ? "#0A0A0A" : "var(--paper-2)",
+        color: destaque ? "#FAFAFA" : "var(--ink)",
+        borderRadius: "var(--radius-card)",
+        border: destaque ? "1px solid #0A0A0A" : "1px solid var(--rule)",
+        boxShadow: destaque ? "0 4px 14px -8px rgba(10,10,10,0.45)" : "var(--shadow-card)",
         textDecoration: "none",
-        transition: "background 120ms",
+        transition: "background 140ms, box-shadow 140ms, transform 140ms",
+      }}
+      onMouseEnter={(e) => {
+        if (destaque) {
+          (e.currentTarget as HTMLElement).style.background = "#171717";
+        } else {
+          (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-card-hover)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (destaque) {
+          (e.currentTarget as HTMLElement).style.background = "#0A0A0A";
+        } else {
+          (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-card)";
+        }
       }}
     >
       <div
         style={{
           fontFamily: "var(--font-sans)",
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: 600,
           marginBottom: 4,
+          letterSpacing: "-0.01em",
         }}
       >
         {titulo}
@@ -943,9 +967,9 @@ function CaminhoQuadrante({
       <div
         style={{
           fontFamily: "var(--font-sans)",
-          fontSize: 11,
-          color: destaque ? "rgba(245, 242, 234, 0.65)" : "var(--ink-2)",
-          marginBottom: 12,
+          fontSize: 11.5,
+          color: destaque ? "rgba(250, 250, 250, 0.65)" : "var(--ink-2)",
+          marginBottom: 14,
         }}
       >
         {subtitulo}
@@ -955,7 +979,7 @@ function CaminhoQuadrante({
           fontFamily: "var(--font-mono)",
           fontSize: 10,
           letterSpacing: "0.04em",
-          color: destaque ? "var(--paper)" : "var(--ink)",
+          color: destaque ? "#FAFAFA" : "var(--grafite-2)",
         }}
       >
         {cta}
