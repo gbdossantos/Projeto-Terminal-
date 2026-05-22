@@ -153,19 +153,26 @@ export function FaixaCotacoes() {
       style={{
         background: "var(--paper-2)",
         borderBottom: "0.5px solid var(--rule)",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
+      {/* Ticker móvel: renderiza a lista duplicada pra loop sem corte visual.
+          A animação translateX(0 → -50%) faz o container deslizar pra esquerda;
+          quando atinge -50% o conteúdo da segunda metade está no mesmo lugar
+          onde estava a primeira, e o loop se reinicia sem salto.
+          .ticker-scroll:hover pausa via CSS (definido em globals.css). */}
       <div
-        className="flex items-center"
+        className="ticker-scroll flex items-center"
         style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          padding: "8px 32px",
+          padding: "8px 0",
           gap: 0,
+          width: "max-content",
+          animationDuration: "75s",
         }}
       >
-        {itens.map((item, i) => (
-          <ItemFaixa key={item.codigo} item={item} isLast={i === itens.length - 1} />
+        {[...itens, ...itens].map((item, i) => (
+          <ItemFaixa key={`${item.codigo}-${i}`} item={item} isLast={false} />
         ))}
       </div>
     </div>
@@ -193,12 +200,14 @@ function ItemFaixa({ item, isLast }: { item: ItemCotacao; isLast: boolean }) {
     <div
       className="flex items-baseline"
       style={{
-        flex: 1,
+        // flex 0 0 auto: item NÃO estica nem encolhe — tamanho natural do conteúdo.
+        // Permite que o container `ticker-scroll` (width: max-content) calcule
+        // a largura total corretamente pra o loop translateX(-50%) ficar suave.
+        flex: "0 0 auto",
         gap: 8,
         paddingRight: 16,
         marginRight: 16,
         borderRight: isLast ? "none" : "0.5px solid var(--rule)",
-        minWidth: 0,
       }}
     >
       {/* Código mono azul-grafite */}
@@ -242,7 +251,6 @@ function ItemFaixa({ item, isLast }: { item: ItemCotacao; isLast: boolean }) {
           color: item.valor != null ? "var(--ink)" : "var(--ink-3)",
           fontVariantNumeric: "tabular-nums",
           fontWeight: 500,
-          marginLeft: "auto",
           whiteSpace: "nowrap",
         }}
       >
