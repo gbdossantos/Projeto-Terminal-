@@ -32,6 +32,8 @@ interface Props {
   spotAtual?: number | null;
   /** BGI próximo contrato (do /api/futuros). */
   bgi?: { vencimento: string; preco_ajuste: number } | null;
+  /** Break-even médio (vindo do profile do produtor — /configuracoes). */
+  breakEven?: number;
 }
 
 // Mapeia ISO yyyy-mm-dd → timestamp (ms) para o eixo X numérico
@@ -52,7 +54,9 @@ export function LinhaDoRebanho({
   historico,
   spotAtual,
   bgi,
+  breakEven,
 }: Props) {
+  const BE = breakEven ?? MOCK_MERCADO.break_even;
   const pontos = useMemo(
     () => gerarLinhaRebanho({ sigmaAnualizado, historico, spotAtual, bgi }),
     [sigmaAnualizado, historico, spotAtual, bgi],
@@ -95,7 +99,7 @@ export function LinhaDoRebanho({
 
   // Domínio Y dinâmico baseado nos dados + break-even + padding
   const yDomain = useMemo<[number, number]>(() => {
-    const vals: number[] = [MOCK_MERCADO.break_even];
+    const vals: number[] = [BE];
     for (const p of pontos) {
       if (p.realizado != null) vals.push(p.realizado);
       if (p.esperado != null) vals.push(p.esperado);
@@ -208,13 +212,13 @@ export function LinhaDoRebanho({
 
           {/* Break-even horizontal (tracejado) — label inline na esquerda pra não cortar */}
           <ReferenceLine
-            y={MOCK_MERCADO.break_even}
+            y={BE}
             stroke="var(--loss)"
             strokeWidth={1}
             strokeDasharray="3 4"
             ifOverflow="extendDomain"
             label={{
-              value: `BE  R$ ${fmtBRL(MOCK_MERCADO.break_even, 0)}`,
+              value: `BE  R$ ${fmtBRL(BE, 0)}`,
               position: "insideBottomLeft",
               fontSize: 10,
               fontFamily: "var(--font-mono)",

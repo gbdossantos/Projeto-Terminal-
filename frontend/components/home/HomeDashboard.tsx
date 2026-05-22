@@ -23,16 +23,14 @@ import {
   MOCK_LOTES,
   MOCK_TOTAL_ARROBAS,
   MOCK_TOTAL_CABECAS,
-  MOCK_MERCADO,
   fmtBRL,
 } from "@/lib/mock-data";
+import { useProfile } from "@/lib/use-profile";
 
 const SIGMA_FALLBACK = 0.18; // ~18% anualizado — típico boi gordo, fallback se endpoint falhar
 
-// Basis MS continua mock — depende da regiao da fazenda, vira config do user com auth
-const BASIS_MS = MOCK_MERCADO.basis_ms; // -5
-// Break-even continua mock — depende dos custos do lote, vira calculado com auth/banco
-const BREAK_EVEN = MOCK_MERCADO.break_even; // 286.50
+// Basis e break-even agora vem de useProfile() (editaveis em /configuracoes).
+// Defaults: MS basis -5, break-even R$ 286,50 — definidos em lib/profile.ts.
 
 interface Props {
   /** Sem lote cadastrado: gráfico só mercado, cards 'R$ —', microcopy honesta. */
@@ -40,6 +38,10 @@ interface Props {
 }
 
 export function HomeDashboard({ empty = false }: Props = {}) {
+  const { profile } = useProfile();
+  const BASIS_MS = profile.basis_valor;
+  const BREAK_EVEN = profile.break_even_medio;
+
   const [sigma, setSigma] = useState<number | null>(null);
   const [exposicaoPorLote, setExposicaoPorLote] = useState(false);
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
@@ -153,6 +155,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             historico={histArroba}
             spotAtual={spotMS}
             bgi={bgiProximo}
+            breakEven={BREAK_EVEN}
           />
         </section>
 

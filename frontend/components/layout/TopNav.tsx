@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
-import { getProfile } from "@/lib/profile";
-import { MOCK_USUARIO, MOCK_FAZENDA } from "@/lib/mock-data";
+import { useProfile } from "@/lib/use-profile";
 import { Bandeira } from "@/lib/bandeiras";
 
 /**
@@ -19,18 +18,16 @@ import { Bandeira } from "@/lib/bandeiras";
  */
 export function TopNav() {
   const pathname = usePathname();
-  const [farmName, setFarmName] = useState<string>(MOCK_FAZENDA.nome);
-  const [userName, setUserName] = useState<string>(MOCK_USUARIO.nome);
-  const [municipio, setMunicipio] = useState<string>(MOCK_FAZENDA.municipio);
-  const [estado, setEstado] = useState<string>(MOCK_FAZENDA.estado);
+  // Profile reativo: muda automaticamente quando salvo em /configuracoes.
+  const { profile } = useProfile();
+  const userName = profile.nome_produtor;
+  const farmName = profile.nome_fazenda;
+  const municipio = profile.municipio;
+  const estado = profile.estado;
+
   const [hojeStr, setHojeStr] = useState<string>("");
 
   useEffect(() => {
-    const p = getProfile();
-    if (p.nome_fazenda) setFarmName(p.nome_fazenda);
-    if (p.nome_produtor) setUserName(p.nome_produtor);
-    if (p.municipio) setMunicipio(p.municipio);
-    if (p.estado) setEstado(p.estado);
     const hoje = new Date();
     const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
     setHojeStr(

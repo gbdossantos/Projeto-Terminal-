@@ -10,10 +10,7 @@ import {
 } from "@/lib/api";
 import type { CotacaoMercado, CurvaFuturos, HistoricoDolarEntry } from "@/lib/types";
 import { persistCotacoes, resolveCotacao, formatRelativeTime } from "@/lib/cotacoes-cache";
-import { MOCK_MERCADO } from "@/lib/mock-data";
-
-// Basis MS continua mock — depende da regiao da fazenda (config futura com auth)
-const BASIS_MS = MOCK_MERCADO.basis_ms;
+import { useProfile } from "@/lib/use-profile";
 
 // Limiar de movimento relevante (briefing T2.1): >= 1,0% no dia
 const MOVIMENTO_RELEVANTE_PCT = 1.0;
@@ -42,6 +39,9 @@ interface ItemCotacao {
  * NÃO aparece no Simulador (decisão fechada: ticker compete por foco).
  */
 export function FaixaCotacoes() {
+  const { profile } = useProfile();
+  const BASIS_MS = profile.basis_valor;
+
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
   const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
   const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
