@@ -104,18 +104,76 @@ def upsert_noticia(
 def list_noticias_recentes(*, limit: int = 3, horas: int = 24) -> list[dict]:
     """
     Retorna as N noticias mais recentes publicadas nas ultimas H horas.
+
+    Para o briefing T2.3: quando limit==3, reserva 1 slot para a categoria
+    'insumos' caso haja noticia relevante na janela. Garante que milho/diete
+    nao seja invisibilizado por noticia de boi vencer cronologicamente.
+
+    Algoritmo (limit=3):
+      1. Pega a noticia mais recente de 'insumos' (se houver).
+      2. Completa com as 2 mais recentes das outras categorias.
+      3. Se nao ha insumo, fallback: 3 mais recentes cronologico normal.
+
+    Para limit != 3: mantem comportamento cronologico puro.
     """
     desde = (datetime.now(timezone.utc) - timedelta(hours=horas)).isoformat()
+
+    # Comportamento padrao cronologico
+    if limit != 3:
+        with _conn() as c:
+            rows = c.execute(
+                """
+                SELECT id, titulo, fonte, url, imagem, categoria, publicado_em, ingerido_em
+                FROM noticias
+                WHERE publicado_em >= ?
+                ORDER BY publicado_em DESC
+                LIMIT ?
+                """,
+                (desde, limit),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    # limit=3 → diversidade: slot reservado para 'insumos'
     with _conn() as c:
+        # Slot 1: noticia de insumo mais recente (se houver)
+        insumo = c.execute(
+            """
+            SELECT id, titulo, fonte, url, imagem, categoria, publicado_em, ingerido_em
+            FROM noticias
+            WHERE publicado_em >= ? AND categoria = 'insumos'
+            ORDER BY publicado_em DESC
+            LIMIT 1
+            """,
+            (desde,),
+        ).fetchone()
+
+        if insumo:
+            # Slots 2 e 3: outras categorias, ordem cronologica
+            outras = c.execute(
+                """
+                SELECT id, titulo, fonte, url, imagem, categoria, publicado_em, ingerido_em
+                FROM noticias
+                WHERE publicado_em >= ? AND categoria != 'insumos'
+                ORDER BY publicado_em DESC
+                LIMIT 2
+                """,
+                (desde,),
+            ).fetchall()
+            # Reordena: cronologico geral entre os 3 escolhidos
+            resultado = [dict(insumo)] + [dict(r) for r in outras]
+            resultado.sort(key=lambda x: x["publicado_em"], reverse=True)
+            return resultado
+
+        # Sem insumo na janela → fallback cronologico puro
         rows = c.execute(
             """
             SELECT id, titulo, fonte, url, imagem, categoria, publicado_em, ingerido_em
             FROM noticias
             WHERE publicado_em >= ?
             ORDER BY publicado_em DESC
-            LIMIT ?
+            LIMIT 3
             """,
-            (desde, limit),
+            (desde,),
         ).fetchall()
     return [dict(r) for r in rows]
 
