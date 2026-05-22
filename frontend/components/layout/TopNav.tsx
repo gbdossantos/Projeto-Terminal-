@@ -7,14 +7,13 @@ import { getProfile } from "@/lib/profile";
 import { MOCK_USUARIO, MOCK_FAZENDA } from "@/lib/mock-data";
 
 /**
- * Header canônico do produto — usado em todas as telas do dashboard e na Home.
+ * Header canônico — V19 (Vercel-like).
  *
- * Layout: 2 linhas.
- *  Linha 1 (identidade): "TERMINAL · BOI GORDO" | usuário · fazenda · data
- *  Linha 2 (nav): Home | Lotes | Simulador | Histórico | Mercado
+ * Layout em 2 linhas:
+ *   Linha 1 (identidade): TERMINAL · BOI GORDO | usuário · fazenda · data + pílula Pregão
+ *   Linha 2 (nav):        Home | Lotes | Simulador | Histórico | Mercado (tabs pill)
  *
- * Quando auth entrar, os dados do usuário/fazenda virão do contexto autenticado
- * em vez do MOCK_*; o resto da estrutura permanece.
+ * Sticky com backdrop-filter pra ficar sobre o fundo aurora.
  */
 export function TopNav() {
   const pathname = usePathname();
@@ -24,7 +23,6 @@ export function TopNav() {
   useEffect(() => {
     const p = getProfile();
     if (p.nome_fazenda) setFarmName(p.nome_fazenda);
-    // Data atual em pt-BR (ex: "19 mai/26"). useEffect evita mismatch SSR.
     const hoje = new Date();
     const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
     setHojeStr(
@@ -41,8 +39,18 @@ export function TopNav() {
   ];
 
   return (
-    <div style={{ background: "var(--paper)", borderBottom: "0.5px solid var(--rule)" }}>
-      {/* Linha 1 — identidade */}
+    <div
+      style={{
+        background: "rgba(255, 255, 255, 0.78)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderBottom: "1px solid var(--rule)",
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+      }}
+    >
+      {/* Linha 1 — identidade + Pregão */}
       <div
         className="flex items-center justify-between"
         style={{
@@ -78,33 +86,36 @@ export function TopNav() {
           </span>
         </Link>
 
-        <div
-          className="hidden md:flex items-center"
-          style={{
-            gap: 14,
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ink-2)",
-          }}
-        >
-          <span>{MOCK_USUARIO.nome}</span>
-          <span style={{ color: "var(--ink-3)" }}>·</span>
-          <span style={{ color: "var(--ink)", fontWeight: 500 }}>{farmName}</span>
-          <span style={{ color: "var(--ink-3)" }}>·</span>
-          <span>{MOCK_FAZENDA.municipio} / {MOCK_FAZENDA.estado}</span>
-          <span style={{ color: "var(--ink-3)" }}>·</span>
-          <span>{hojeStr || "—"}</span>
+        <div className="flex items-center" style={{ gap: 14 }}>
+          <div
+            className="hidden md:flex items-center"
+            style={{
+              gap: 14,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--ink-2)",
+            }}
+          >
+            <span>{MOCK_USUARIO.nome}</span>
+            <span style={{ color: "var(--ink-3)" }}>·</span>
+            <span style={{ color: "var(--ink)", fontWeight: 500 }}>{farmName}</span>
+            <span style={{ color: "var(--ink-3)" }}>·</span>
+            <span>{MOCK_FAZENDA.municipio} / {MOCK_FAZENDA.estado}</span>
+            <span style={{ color: "var(--ink-3)" }}>·</span>
+            <span>{hojeStr || "—"}</span>
+          </div>
+          <PregaoStatus />
         </div>
       </div>
 
-      {/* Linha 2 — nav tabs */}
+      {/* Linha 2 — nav tabs (pill V19) */}
       <nav
         className="flex"
         style={{
-          gap: 22,
+          gap: 4,
           maxWidth: 1180,
           margin: "0 auto",
-          padding: "0 32px",
+          padding: "0 28px 10px",
         }}
       >
         {tabs.map((t) => {
@@ -116,12 +127,25 @@ export function TopNav() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 13,
-                padding: "8px 0 10px",
-                color: active ? "var(--ink)" : "var(--ink-3)",
-                fontWeight: active ? 600 : 400,
-                borderBottom: active ? "2px solid var(--ink)" : "2px solid transparent",
+                padding: "6px 12px",
+                color: active ? "var(--ink)" : "var(--ink-2)",
+                fontWeight: active ? 600 : 500,
+                background: active ? "rgba(10, 10, 10, 0.06)" : "transparent",
+                borderRadius: 7,
                 textDecoration: "none",
-                marginBottom: -1,
+                transition: "background 120ms, color 120ms",
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(10, 10, 10, 0.035)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--ink)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.background = "transparent";
+                  (e.currentTarget as HTMLElement).style.color = "var(--ink-2)";
+                }
               }}
             >
               {t.label}
@@ -129,6 +153,70 @@ export function TopNav() {
           );
         })}
       </nav>
+    </div>
+  );
+}
+
+/**
+ * Pílula de status do pregão B3.
+ *
+ * Janela considerada: segunda a sexta, 09:00–18:00 BRT (decisão MVP — feriados
+ * B3 não são checados; vira bug conhecido ~20 dias/ano).
+ *
+ * Aberto: dot verde pulse + texto "Pregão aberto"
+ * Fechado: dot cinza estático + texto "Pregão fechado"
+ *
+ * Estado real, lê da hora do navegador convertida pra BRT.
+ */
+function PregaoStatus() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const compute = () => {
+      // Hora atual em BRT. Browser fornece local; assumimos que se o user está
+      // no Brasil, local já é BRT. Se estiver em outro fuso, ainda funciona
+      // porque calcula via UTC + offset -3.
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60_000;
+      const brt = new Date(utc - 3 * 60 * 60_000);
+      const dia = brt.getDay(); // 0 = domingo, 6 = sábado
+      const hora = brt.getHours();
+      const ehDiaUtil = dia >= 1 && dia <= 5;
+      const ehHorarioPregao = hora >= 9 && hora < 18;
+      setOpen(ehDiaUtil && ehHorarioPregao);
+    };
+    compute();
+    const i = setInterval(compute, 60_000);
+    return () => clearInterval(i);
+  }, []);
+
+  return (
+    <div
+      className="flex items-center"
+      style={{
+        gap: 6,
+        padding: "4px 10px",
+        borderRadius: 999,
+        background: open ? "rgba(22, 163, 74, 0.10)" : "rgba(10, 10, 10, 0.06)",
+        border: `1px solid ${open ? "rgba(22, 163, 74, 0.20)" : "var(--rule)"}`,
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        color: open ? "var(--gain-2)" : "var(--ink-2)",
+        letterSpacing: "0.02em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        className={open ? "pregao-dot-pulse" : ""}
+        style={{
+          width: 7,
+          height: 7,
+          borderRadius: "50%",
+          background: open ? "#16A34A" : "var(--ink-3)",
+          display: "inline-block",
+        }}
+      />
+      <span>Pregão {open ? "aberto" : "fechado"}</span>
     </div>
   );
 }
