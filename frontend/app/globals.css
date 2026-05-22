@@ -138,6 +138,16 @@
   animation: noticia-slide-in 400ms ease-out;
 }
 
+/* ── Pulse sutil no numero da FaixaCotacoes quando muda ── */
+@keyframes faixa-pulse {
+  0%   { opacity: 0.35; }
+  60%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+.faixa-pulse {
+  animation: faixa-pulse 320ms ease-out;
+}
+
 /* ── Ticker tape ── */
 @keyframes ticker {
   from { transform: translateX(0); }

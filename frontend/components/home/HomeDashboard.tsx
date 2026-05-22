@@ -17,6 +17,7 @@ import type {
   NoticiaCategoria,
 } from "@/lib/types";
 import { LinhaDoRebanho } from "./LinhaDoRebanho";
+import { FaixaCotacoes } from "./FaixaCotacoes";
 import { TopNav } from "@/components/layout/TopNav";
 import {
   MOCK_LOTES,
@@ -106,6 +107,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
   return (
     <div style={{ background: "var(--paper)", minHeight: "100vh" }}>
       <TopNav />
+      <FaixaCotacoes />
 
       <main style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 32px 60px" }}>
         {/* Linha do rebanho — seção principal */}
@@ -139,12 +141,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
                   : "Do que aconteceu hoje até a saída do último lote."}
               </h1>
             </div>
-            <MarketChips
-              spotSP={spotSP}
-              spotMS={spotMS}
-              deltaDia={deltaDia}
-              bgiProximo={bgiProximo}
-            />
+            {/* Cotações agora vivem na FaixaCotacoes (abaixo do TopNav) */}
           </div>
 
           <LinhaDoRebanho
@@ -315,71 +312,6 @@ export function HomeDashboard({ empty = false }: Props = {}) {
 }
 
 // ─── Chips de mercado (BGI próximo, spot, delta) ────────────────
-function MarketChips({
-  spotSP,
-  spotMS,
-  deltaDia,
-  bgiProximo,
-}: {
-  spotSP: number | null;
-  spotMS: number | null;
-  deltaDia: number | null;
-  bgiProximo: { codigo: string; vencimento: string; preco_ajuste: number } | null;
-}) {
-  // Formata vencimento "2026-08-30" → "ago/26"
-  const fmtVenc = (iso: string) => {
-    const d = new Date(iso);
-    const m = d.getUTCMonth();
-    const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-    return `${meses[m]}/${String(d.getUTCFullYear()).slice(2)}`;
-  };
-
-  return (
-    <div className="flex items-center" style={{ gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
-      {bgiProximo ? (
-        <>
-          <ChipMono variant="grafite">{bgiProximo.codigo}</ChipMono>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-2)" }}>
-            boi gordo {fmtVenc(bgiProximo.vencimento)} · R$ <span className="mono-num">{fmtBRL(bgiProximo.preco_ajuste)}</span>
-          </span>
-        </>
-      ) : (
-        <>
-          <ChipMono variant="grafite">BGI</ChipMono>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
-            curva indisponível
-          </span>
-        </>
-      )}
-      <span style={{ color: "var(--ink-3)", margin: "0 4px" }}>·</span>
-
-      <ChipMono variant="grafite">spot MS</ChipMono>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: spotMS != null ? "var(--ink-2)" : "var(--ink-3)" }}>
-        {spotMS != null ? (
-          <>R$ <span className="mono-num">{fmtBRL(spotMS)}</span></>
-        ) : (
-          "—"
-        )}
-      </span>
-      {spotSP != null && (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
-          (SP {fmtBRL(spotSP)})
-        </span>
-      )}
-      <span style={{ color: "var(--ink-3)", margin: "0 4px" }}>·</span>
-
-      <ChipMono variant={deltaDia != null && deltaDia < 0 ? "loss" : "grafite"}>Δ dia</ChipMono>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: deltaDia == null ? "var(--ink-3)" : deltaDia < 0 ? "var(--loss)" : "var(--gain)" }}>
-        {deltaDia != null ? (
-          <>{deltaDia >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(deltaDia))}</span>/@</>
-        ) : (
-          "—"
-        )}
-      </span>
-    </div>
-  );
-}
-
 function ChipMono({
   variant,
   children,
