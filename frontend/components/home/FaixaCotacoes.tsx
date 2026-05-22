@@ -21,10 +21,10 @@ const MOVIMENTO_RELEVANTE_PCT = 1.0;
 interface ItemCotacao {
   codigo: string;        // 'spot MS', 'BGIK26', 'PTAX', etc — vai em mono azul-grafite
   label: string;         // 'Arroba MS', 'Boi gordo ago/26', etc — fonte sans secundária
-  valor: number | null;  // R$ ou %
-  formato: "moeda" | "percentual";
+  valor: number | null;  // R$, %, ou pontos
+  formato: "moeda" | "percentual" | "pontos";
   decimais: number;
-  unidade?: string;      // '/@', '/sc', 'a.a.'
+  unidade?: string;      // '/@', '/sc', 'a.a.', 'pts'
   deltaPct: number | null; // variação % do dia
   stale: boolean;        // veio do cache, não fresco
   lastUpdateIso: string | null;
@@ -69,6 +69,9 @@ export function FaixaCotacoes() {
   const dolarStatus = resolveCotacao("dolar_ptax", cotacoes);
   const milhoStatus = resolveCotacao("milho_esalq", cotacoes);
   const cdiStatus = resolveCotacao("cdi_anual", cotacoes);
+  const bezerroStatus = resolveCotacao("bezerro_cepea", cotacoes);
+  const sojaStatus = resolveCotacao("soja_esalq", cotacoes);
+  const ibovStatus = resolveCotacao("ibov", cotacoes);
 
   // BGI próximo contrato (futuros)
   const bgiProximo = (() => {
@@ -145,6 +148,40 @@ export function FaixaCotacoes() {
       deltaPct: null,
       stale: cdiStatus.state === "stale",
       lastUpdateIso: cdiStatus.lastUpdateIso,
+    },
+    {
+      codigo: "ESALQ",
+      label: "Bezerro",
+      valor: bezerroStatus.value,
+      formato: "moeda",
+      decimais: 2,
+      unidade: "/cab",
+      deltaPct: null, // sem histórico do dia anterior pra Bezerro nesta passada
+      stale: bezerroStatus.state === "stale",
+      lastUpdateIso: bezerroStatus.lastUpdateIso,
+    },
+    {
+      codigo: "ESALQ",
+      label: "Soja",
+      valor: sojaStatus.value,
+      formato: "moeda",
+      decimais: 2,
+      unidade: "/sc",
+      deltaPct: null,
+      stale: sojaStatus.state === "stale",
+      lastUpdateIso: sojaStatus.lastUpdateIso,
+    },
+    {
+      codigo: "IBOV",
+      label: "Bovespa",
+      valor: ibovStatus.value,
+      formato: "pontos",
+      decimais: 0,
+      unidade: "pts",
+      // delta% vem direto do Yahoo (regularMarketPrice vs previousClose)
+      deltaPct: cotacoes?.ibov_delta_pct ?? null,
+      stale: ibovStatus.state === "stale",
+      lastUpdateIso: ibovStatus.lastUpdateIso,
     },
   ];
 
@@ -255,7 +292,7 @@ function ItemFaixa({ item, isLast }: { item: ItemCotacao; isLast: boolean }) {
         }}
       >
         {item.valor != null
-          ? `${item.formato === "moeda" ? "R$ " : ""}${formatarValor(item.valor, item.decimais, item.formato)}${item.unidade ?? ""}`
+          ? `${item.formato === "moeda" ? "R$ " : ""}${formatarValor(item.valor, item.decimais, item.formato)}${item.formato !== "percentual" && item.unidade ? item.unidade : ""}`
           : "—"}
       </span>
 
@@ -309,7 +346,7 @@ function ItemFaixa({ item, isLast }: { item: ItemCotacao; isLast: boolean }) {
   );
 }
 
-function formatarValor(v: number, decimais: number, formato: "moeda" | "percentual"): string {
+function formatarValor(v: number, decimais: number, formato: "moeda" | "percentual" | "pontos"): string {
   const s = v.toLocaleString("pt-BR", {
     minimumFractionDigits: decimais,
     maximumFractionDigits: decimais,

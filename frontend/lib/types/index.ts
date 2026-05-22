@@ -23,6 +23,11 @@ export interface CotacaoMercado {
   dolar_ptax: number | null;
   milho_esalq: number | null;
   cdi_anual: number | null;
+  // extras (ticker da Home)
+  bezerro_cepea?: number | null;     // R$/cabeça — reposição
+  soja_esalq?: number | null;        // R$/saca 60kg — insumo dieta
+  ibov?: number | null;              // pontos — aversão a risco macro
+  ibov_delta_pct?: number | null;    // variação % do dia (vem do Yahoo)
   timestamp: string | null;
 }
 

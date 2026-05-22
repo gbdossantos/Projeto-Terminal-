@@ -56,6 +56,11 @@ class CotacaoMercado:
     dolar_ptax: Optional[float] = None
     milho_esalq: Optional[float] = None
     cdi_anual: Optional[float] = None
+    # ── extras adicionados pra ampliar o ticker da Home ──
+    bezerro_cepea: Optional[float] = None      # R$/cabeça — reposição
+    soja_esalq: Optional[float] = None         # R$/saca 60kg — insumo dieta
+    ibov: Optional[float] = None               # pontos — aversão a risco macro
+    ibov_delta_pct: Optional[float] = None     # %  variação do dia (já vem do Yahoo)
     timestamp: Optional[datetime] = None
 
     def __post_init__(self):
@@ -506,15 +511,114 @@ def _buscar_futuros_bgi() -> Optional[CurvaFuturos]:
 
 
 # ---------------------------------------------------------------------------
+# Bezerro CEPEA (reposicao)
+# ---------------------------------------------------------------------------
+
+def _buscar_bezerro_cepea() -> Optional[float]:
+    """Indicador CEPEA do bezerro (R$/cabeca MS). Mesmo padrao dos demais."""
+    if BeautifulSoup is None:
+        return None
+
+    try:
+        url = "https://cepea.org.br/br/indicador/bezerro.aspx"
+        resp = requests.get(url, headers=_HEADERS, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        tabela = soup.find("table", {"id": "imagenet-indicador1"})
+        if tabela:
+            primeira_linha = tabela.find("tbody").find("tr")
+            celulas = primeira_linha.find_all("td")
+            if len(celulas) >= 2:
+                valor_str = celulas[1].text.strip().replace(".", "").replace(",", ".")
+                valor = float(valor_str)
+                # Bezerro varia em milhares de R$/cab — 1.500 a 5.000 é a faixa real
+                if 1000 < valor < 8000:
+                    return valor
+    except Exception as e:
+        logger.warning("CEPEA bezerro falhou: %s", e)
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Soja ESALQ
+# ---------------------------------------------------------------------------
+
+def _buscar_soja_esalq() -> Optional[float]:
+    """Indicador CEPEA da soja (R$/saca 60kg). Insumo da dieta confinamento."""
+    if BeautifulSoup is None:
+        return None
+
+    try:
+        url = "https://cepea.org.br/br/indicador/soja.aspx"
+        resp = requests.get(url, headers=_HEADERS, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        tabela = soup.find("table", {"id": "imagenet-indicador1"})
+        if tabela:
+            primeira_linha = tabela.find("tbody").find("tr")
+            celulas = primeira_linha.find_all("td")
+            if len(celulas) >= 2:
+                valor_str = celulas[1].text.strip().replace(".", "").replace(",", ".")
+                valor = float(valor_str)
+                # Soja varia em 80-250 R$/sc tipicamente
+                if 50 < valor < 400:
+                    return valor
+    except Exception as e:
+        logger.warning("CEPEA soja falhou: %s", e)
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# IBOV — Yahoo Finance v8 (publico, sem chave)
+# ---------------------------------------------------------------------------
+
+def _buscar_ibov() -> tuple[Optional[float], Optional[float]]:
+    """
+    Retorna (pontos_atual, variacao_pct_dia) do Ibovespa.
+
+    Fonte: Yahoo Finance v8 chart endpoint (^BVSP). Endpoint publico, JSON,
+    sem chave necessaria. Resposta inclui regularMarketPrice e regularMarketPreviousClose,
+    suficientes pra calcular o delta% direto.
+    """
+    try:
+        url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EBVSP?interval=1d&range=2d"
+        resp = requests.get(url, headers=_HEADERS, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        data = resp.json()
+        result = (data.get("chart", {}).get("result") or [None])[0]
+        if not result:
+            return None, None
+        meta = result.get("meta", {})
+        atual = meta.get("regularMarketPrice")
+        anterior = meta.get("chartPreviousClose") or meta.get("previousClose")
+        if atual is None:
+            return None, None
+        delta_pct = None
+        if anterior and anterior > 0:
+            delta_pct = ((atual - anterior) / anterior) * 100.0
+        return float(atual), float(delta_pct) if delta_pct is not None else None
+    except Exception as e:
+        logger.warning("Yahoo IBOV falhou: %s", e)
+        return None, None
+
+
+# ---------------------------------------------------------------------------
 # Cotações consolidadas
 # ---------------------------------------------------------------------------
 
 def _buscar_cotacoes() -> CotacaoMercado:
+    ibov_val, ibov_delta = _buscar_ibov()
     return CotacaoMercado(
         arroba_boi_gordo=_buscar_arroba_boi_cepea(),
         dolar_ptax=_buscar_dolar_ptax(),
         milho_esalq=_buscar_milho_esalq(),
         cdi_anual=_buscar_cdi_anual(),
+        bezerro_cepea=_buscar_bezerro_cepea(),
+        soja_esalq=_buscar_soja_esalq(),
+        ibov=ibov_val,
+        ibov_delta_pct=ibov_delta,
     )
 
 

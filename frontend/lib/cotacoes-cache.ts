@@ -4,7 +4,14 @@
 
 import type { CotacaoMercado } from "@/lib/types";
 
-type FieldName = "arroba_boi_gordo" | "dolar_ptax" | "milho_esalq" | "cdi_anual";
+type FieldName =
+  | "arroba_boi_gordo"
+  | "dolar_ptax"
+  | "milho_esalq"
+  | "cdi_anual"
+  | "bezerro_cepea"
+  | "soja_esalq"
+  | "ibov";
 
 export type CotacaoFieldState = "fresh" | "stale" | "unavailable";
 
@@ -51,7 +58,15 @@ export function persistCotacoes(cotacoes: CotacaoMercado | null): void {
   if (!cotacoes) return;
   const cache = readCache();
   const iso = cotacoes.timestamp ?? new Date().toISOString();
-  const fields: FieldName[] = ["arroba_boi_gordo", "dolar_ptax", "milho_esalq", "cdi_anual"];
+  const fields: FieldName[] = [
+    "arroba_boi_gordo",
+    "dolar_ptax",
+    "milho_esalq",
+    "cdi_anual",
+    "bezerro_cepea",
+    "soja_esalq",
+    "ibov",
+  ];
   for (const f of fields) {
     const v = cotacoes[f];
     if (v != null && Number.isFinite(v)) {
@@ -69,7 +84,7 @@ export function resolveCotacao(
   field: FieldName,
   cotacoes: CotacaoMercado | null,
 ): CotacaoFieldStatus {
-  const fresh = cotacoes?.[field];
+  const fresh = (cotacoes as Record<string, number | null | undefined> | null)?.[field];
   if (fresh != null && Number.isFinite(fresh)) {
     return {
       value: fresh,

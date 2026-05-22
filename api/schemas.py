@@ -50,6 +50,11 @@ class CotacaoMercadoSchema(BaseModel):
     dolar_ptax: Optional[float] = None
     milho_esalq: Optional[float] = None
     cdi_anual: Optional[float] = None
+    # extras (ticker da Home)
+    bezerro_cepea: Optional[float] = None
+    soja_esalq: Optional[float] = None
+    ibov: Optional[float] = None
+    ibov_delta_pct: Optional[float] = None
     timestamp: Optional[str] = None
 
     @classmethod
@@ -59,6 +64,10 @@ class CotacaoMercadoSchema(BaseModel):
             dolar_ptax=dc.dolar_ptax,
             milho_esalq=dc.milho_esalq,
             cdi_anual=dc.cdi_anual,
+            bezerro_cepea=getattr(dc, "bezerro_cepea", None),
+            soja_esalq=getattr(dc, "soja_esalq", None),
+            ibov=getattr(dc, "ibov", None),
+            ibov_delta_pct=getattr(dc, "ibov_delta_pct", None),
             timestamp=dc.timestamp.isoformat() if dc.timestamp else None,
         )
 
