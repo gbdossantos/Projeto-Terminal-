@@ -14,12 +14,15 @@ import { Field } from "@/components/lotes/Field";
 import { DEFAULTS_SEMICONFINAMENTO as DEFAULTS } from "@/lib/defaults-sistema";
 import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
+import { saveDecisao } from "@/lib/decisoes-storage";
+import { HedgeMilhoToggle, type HedgeMilhoState } from "@/components/lotes/HedgeMilhoToggle";
 
 export default function FormSemi() {
   const [form, setForm] = useState(DEFAULTS);
   const [data, setData] = useState<SemiconfinamentoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hedgeMilho, setHedgeMilho] = useState<HedgeMilhoState>({ tipo: "sem" });
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -28,7 +31,13 @@ export default function FormSemi() {
 
     fetchCotacoes()
       .then((c) => {
-        if (c.arroba_boi_gordo) setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! }));
+        setForm((f) => {
+          const next = { ...f };
+          if (c.arroba_boi_gordo) next.preco_venda = c.arroba_boi_gordo;
+          // Pré-popula custo do suplemento com ESALQ (R$/saca 60kg → R$/kg natural)
+          if (c.milho_esalq) next.custo_suplemento_kg = c.milho_esalq / 60;
+          return next;
+        });
       })
       .catch(() => {});
   }, []);
@@ -42,6 +51,16 @@ export default function FormSemi() {
       resultadoCache: data,
       margemPct: data.resultado.margem_percentual,
     });
+    if (hedgeMilho.tipo !== "sem") {
+      saveDecisao({
+        lote_id: `semiconfinamento-${nome}`,
+        lote_nome: `${nome} · hedge milho ${hedgeMilho.tipo}${hedgeMilho.tipo === "parcial" ? ` ${hedgeMilho.pct}%` : ""}`,
+        hedge_pct: hedgeMilho.tipo === "total" ? 1 : hedgeMilho.tipo === "parcial" ? hedgeMilho.pct / 100 : 0,
+        cenario_arroba: form.preco_venda,
+        preco_travado: 0,
+        intencao: null,
+      });
+    }
   };
 
   const calculate = useCallback(async (req: SemiconfinamentoRequest) => {
@@ -90,6 +109,12 @@ export default function FormSemi() {
             <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
             <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
           </div>
+        </div>
+
+        {/* Hedge milho — só registro local (engine não usa por enquanto) */}
+        <div className="border-t border-border pt-4">
+          <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Hedge de milho</p>
+          <HedgeMilhoToggle value={hedgeMilho} onChange={setHedgeMilho} />
         </div>
 
         <div className="border-t border-border pt-4">

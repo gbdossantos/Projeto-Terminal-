@@ -19,6 +19,14 @@ import {
 import { isFirstVisit, markFirstVisitDone } from "@/lib/first-visit";
 import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
+import { saveDecisao } from "@/lib/decisoes-storage";
+import { HedgeMilhoToggle, type HedgeMilhoState } from "@/components/lotes/HedgeMilhoToggle";
+
+// Fator de matéria seca do milho grão (~88% MS). Constante zootécnica padrão.
+// Usado pra converter R$/saca natural (60kg) em R$/kg MS que o engine espera.
+// Para dieta majoritariamente milho — em rações balanceadas o fator difere
+// ligeiramente, mas pro MVP é aproximação razoável.
+const FATOR_MS_MILHO = 0.88;
 
 export default function FormConfinamento() {
   const [form, setForm] = useState(DEFAULTS);
@@ -26,6 +34,7 @@ export default function FormConfinamento() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showExemploBanner, setShowExemploBanner] = useState(false);
+  const [hedgeMilho, setHedgeMilho] = useState<HedgeMilhoState>({ tipo: "sem" });
   const debounceRef = useRef<NodeJS.Timeout>();
 
   // Detecta primeira visita pos-hidratacao (evita mismatch SSR/CSR).
@@ -51,12 +60,33 @@ export default function FormConfinamento() {
       resultadoCache: data,
       margemPct: data.resultado.margem_percentual,
     });
+    // Briefing T3.1 decisão #4: hedge milho é só registro local pro MVP.
+    // Engine não usa esse campo — quando Simulador absorver milho (camada 3),
+    // vira input do cálculo.
+    if (hedgeMilho.tipo !== "sem") {
+      saveDecisao({
+        lote_id: `confinamento-${nome}`,
+        lote_nome: `${nome} · hedge milho ${hedgeMilho.tipo}${hedgeMilho.tipo === "parcial" ? ` ${hedgeMilho.pct}%` : ""}`,
+        hedge_pct: hedgeMilho.tipo === "total" ? 1 : hedgeMilho.tipo === "parcial" ? hedgeMilho.pct / 100 : 0,
+        cenario_arroba: form.preco_venda,
+        preco_travado: 0,
+        intencao: null,
+      });
+    }
   };
 
   useEffect(() => {
     fetchCotacoes()
       .then((c) => {
-        if (c.arroba_boi_gordo) setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! }));
+        setForm((f) => {
+          const next = { ...f };
+          // Pré-popula cotação de venda com arroba CEPEA
+          if (c.arroba_boi_gordo) next.preco_venda = c.arroba_boi_gordo;
+          // Pré-popula custo da dieta a partir da cotação ESALQ (milho saca 60kg)
+          // Conversão: R$/saca / 60 kg = R$/kg natural; / fator_MS = R$/kg MS
+          if (c.milho_esalq) next.custo_dieta_kg_ms = c.milho_esalq / 60 / FATOR_MS_MILHO;
+          return next;
+        });
       })
       .catch(() => {});
   }, []);
@@ -152,10 +182,54 @@ export default function FormConfinamento() {
 
         <div className="border-t border-border pt-4">
           <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Dieta</p>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Consumo MS (% peso vivo)" value={form.consumo_ms_pct_pv * 100} onChange={(v) => set("consumo_ms_pct_pv", v / 100)} step={0.1} />
-            <Field label="Custo dieta (R$/kg MS)" value={form.custo_dieta_kg_ms} onChange={(v) => set("custo_dieta_kg_ms", v)} step={0.01} />
-          </div>
+          {/* Inputs em linguagem do produtor: kg MS/cab/dia + R$/saca milho.
+              Conversao p/ os campos do engine (consumo_ms_pct_pv, custo_dieta_kg_ms)
+              acontece no onChange — pesoMedio = (entrada + saida) / 2; fator MS = 0.88. */}
+          {(() => {
+            const pesoMedio = (form.peso_entrada_kg + form.peso_saida_estimado_kg) / 2;
+            const consumoKgMsCabDia = pesoMedio > 0 ? form.consumo_ms_pct_pv * pesoMedio : 0;
+            const custoSacaMilho = form.custo_dieta_kg_ms * 60 * FATOR_MS_MILHO;
+            const pctPV = (form.consumo_ms_pct_pv * 100).toFixed(2);
+            const rsKgMs = form.custo_dieta_kg_ms.toFixed(2);
+            return (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Field
+                    label="Consumo dieta (kg MS/cab/dia)"
+                    value={consumoKgMsCabDia}
+                    onChange={(v) => {
+                      const novoPct = pesoMedio > 0 ? v / pesoMedio : 0;
+                      set("consumo_ms_pct_pv", novoPct);
+                    }}
+                    step={0.5}
+                  />
+                  <p className="text-xs mt-1" style={{ color: "var(--text-tertiary, #9B9388)", fontFamily: "var(--font-mono)" }}>
+                    = {pctPV}% peso vivo (média)
+                  </p>
+                </div>
+                <div>
+                  <Field
+                    label="Custo saca milho (R$/60kg)"
+                    value={custoSacaMilho}
+                    onChange={(v) => {
+                      const novoKgMs = v / 60 / FATOR_MS_MILHO;
+                      set("custo_dieta_kg_ms", novoKgMs);
+                    }}
+                    step={1}
+                  />
+                  <p className="text-xs mt-1" style={{ color: "var(--text-tertiary, #9B9388)", fontFamily: "var(--font-mono)" }}>
+                    = R$ {rsKgMs}/kg MS (fator {FATOR_MS_MILHO} milho)
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Hedge milho — só registro local (engine não usa por enquanto) */}
+        <div className="border-t border-border pt-4">
+          <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Hedge de milho</p>
+          <HedgeMilhoToggle value={hedgeMilho} onChange={setHedgeMilho} />
         </div>
 
         <div className="border-t border-border pt-4">
@@ -226,3 +300,4 @@ export default function FormConfinamento() {
     </>
   );
 }
+
