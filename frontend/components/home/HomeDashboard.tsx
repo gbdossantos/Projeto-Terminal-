@@ -43,7 +43,6 @@ export function HomeDashboard({ empty = false }: Props = {}) {
   const BREAK_EVEN = profile.break_even_medio;
 
   const [sigma, setSigma] = useState<number | null>(null);
-  const [exposicaoPorLote, setExposicaoPorLote] = useState(false);
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
   const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
   const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
@@ -173,7 +172,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
         >
           {/* Card 1 — Arroba do boi */}
           <CardResumo
-            titulo="ARROBA DO BOI · NO FECHAMENTO DE HOJE"
+            titulo="ARROBA DO BOI"
             valor={
               spotMS != null ? (
                 <span>
@@ -185,44 +184,20 @@ export function HomeDashboard({ empty = false }: Props = {}) {
               )
             }
             sub={
-              <span>
-                <ChipMono variant="grafite">spot MS</ChipMono>{" "}
-                {deltaDia != null ? (
-                  <span style={{ color: deltaDia < 0 ? "var(--loss)" : "var(--gain)" }}>
-                    {deltaDia >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(deltaDia))}</span>/@ no dia
-                  </span>
-                ) : (
-                  <span style={{ color: "var(--ink-3)" }}>histórico indisponível</span>
-                )}
-              </span>
+              deltaDia != null ? (
+                <span style={{ color: deltaDia < 0 ? "var(--loss)" : "var(--gain)" }}>
+                  {deltaDia >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(deltaDia))}</span>/@ no dia
+                </span>
+              ) : (
+                <span style={{ color: "var(--ink-3)" }}>histórico indisponível</span>
+              )
             }
             border="right"
           />
 
           {/* Card 2 — Rebanho exposto (centro, hero) */}
           <CardResumo
-            titulo={
-              empty ? (
-                "REBANHO EXPOSTO · NO FECHAMENTO DE HOJE"
-              ) : (
-                <span className="flex items-center justify-between" style={{ width: "100%" }}>
-                  <span>REBANHO EXPOSTO · NO FECHAMENTO DE HOJE</span>
-                  <button
-                    onClick={() => setExposicaoPorLote(!exposicaoPorLote)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      color: "var(--ink-3)",
-                    }}
-                  >
-                    {exposicaoPorLote ? "↓ AGREGADO" : "↓ POR LOTE"}
-                  </button>
-                </span>
-              )
-            }
+            titulo="REBANHO EXPOSTO"
             valor={
               empty || rebanhoExposto == null ? (
                 <span style={{ fontSize: 38, color: "var(--ink-3)" }}>R$ — mi</span>
@@ -237,15 +212,6 @@ export function HomeDashboard({ empty = false }: Props = {}) {
                 <span>cadastre um lote para projetar sua exposição</span>
               ) : rebanhoExposto == null ? (
                 <span style={{ color: "var(--ink-3)" }}>cotação indisponível</span>
-              ) : exposicaoPorLote && spotEfetivo != null ? (
-                <div className="flex flex-col" style={{ gap: 2, marginTop: 4 }}>
-                  {MOCK_LOTES.map((l) => (
-                    <span key={l.id} style={{ fontSize: 10 }}>
-                      {l.nome} · <span className="mono-num">{l.arrobas_totais.toLocaleString("pt-BR")}</span> @ ·
-                      R$ <span className="mono-num">{fmtBRL((l.arrobas_totais * spotEfetivo) / 1_000_000)}</span> mi
-                    </span>
-                  ))}
-                </div>
               ) : (
                 <span>
                   <span className="mono-num">{MOCK_TOTAL_ARROBAS.toLocaleString("pt-BR")}</span> @ em{" "}
@@ -256,11 +222,12 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             }
             border="right"
             hero
+            href={empty ? undefined : "/lotes"}
           />
 
           {/* Card 3 — Margem sobre BE */}
           <CardResumo
-            titulo="MARGEM SOBRE BREAK-EVEN · NO FECHAMENTO DE HOJE"
+            titulo="MARGEM SOBRE BREAK-EVEN"
             valor={
               empty || margemSobreBE == null ? (
                 <span style={{ color: "var(--ink-3)" }}>
@@ -280,8 +247,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
                 <span style={{ color: "var(--ink-3)" }}>cotação indisponível</span>
               ) : (
                 <span>
-                  {margemTotal >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(margemTotal) / 1_000_000)}</span> mi no rebanho ·{" "}
-                  BE R$ <span className="mono-num">{fmtBRL(BREAK_EVEN)}</span>/@
+                  {margemTotal >= 0 ? "+" : "-"}R$ <span className="mono-num">{fmtBRL(Math.abs(margemTotal) / 1_000_000)}</span> mi no rebanho
                 </span>
               )
             }
@@ -317,35 +283,6 @@ export function HomeDashboard({ empty = false }: Props = {}) {
   );
 }
 
-// ─── Chips de mercado (BGI próximo, spot, delta) ────────────────
-function ChipMono({
-  variant,
-  children,
-}: {
-  variant: "grafite" | "loss";
-  mono?: boolean;
-  children: React.ReactNode;
-}) {
-  const bg = variant === "loss" ? "rgba(181, 65, 52, 0.10)" : "var(--grafite-soft)";
-  const color = variant === "loss" ? "var(--loss)" : "var(--grafite)";
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        padding: "1px 5px",
-        background: bg,
-        color,
-        borderRadius: 2,
-        letterSpacing: "0.02em",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 // ─── Card de resumo (3 colunas) ──────────────────────────────────
 function CardResumo({
   titulo,
@@ -353,21 +290,17 @@ function CardResumo({
   sub,
   border,
   hero,
+  href,
 }: {
   titulo: React.ReactNode;
   valor: React.ReactNode;
   sub: React.ReactNode;
   border?: "right";
   hero?: boolean;
+  href?: string;
 }) {
-  return (
-    <div
-      style={{
-        padding: "18px 22px",
-        borderRight: border === "right" ? "0.5px solid var(--rule)" : "none",
-        background: "var(--paper-2)",
-      }}
-    >
+  const conteudo = (
+    <>
       <div
         className="uppercase"
         style={{
@@ -402,8 +335,26 @@ function CardResumo({
       >
         {sub}
       </div>
-    </div>
+    </>
   );
+
+  const estilo = {
+    padding: "18px 22px",
+    borderRight: border === "right" ? "0.5px solid var(--rule)" : "none",
+    background: "var(--paper-2)",
+  } as const;
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        style={{ ...estilo, display: "block", color: "inherit", textDecoration: "none" }}
+      >
+        {conteudo}
+      </Link>
+    );
+  }
+  return <div style={estilo}>{conteudo}</div>;
 }
 
 // ─── O que moveu a linha hoje ────────────────────────────────────
