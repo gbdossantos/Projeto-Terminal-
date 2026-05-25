@@ -11,6 +11,7 @@ import {
   type FarmProfile,
 } from "@/lib/profile";
 import { Bandeira } from "@/lib/bandeiras";
+import { ComboboxCidade } from "@/components/ui/ComboboxCidade";
 
 /**
  * Tela /configuracoes — V19.
@@ -163,12 +164,16 @@ export default function ConfiguracoesPage() {
       {/* Seção 2 — Localização */}
       <Card titulo="Localização">
         <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 16 }}>
-          <Campo
-            label="Cidade"
-            value={profile.municipio}
-            onChange={(v) => set("municipio", v)}
-            placeholder="Ex: Três Lagoas"
-          />
+          <div>
+            <Label texto="Cidade" />
+            <ComboboxCidade
+              uf={profile.estado}
+              value={profile.municipio}
+              onChange={(v) => set("municipio", v)}
+              placeholder="Ex: Três Lagoas"
+              disabled={!profile.estado}
+            />
+          </div>
           <div>
             <Label texto="Estado" obrigatorio />
             <div className="flex items-center" style={{ gap: 8 }}>
