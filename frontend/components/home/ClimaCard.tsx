@@ -99,21 +99,20 @@ async function geocodeCidade(municipio: string, estado: string): Promise<Geocodi
       // ignora cache corrompido
     }
   }
-  // Open-Meteo geocoding
-  const query = encodeURIComponent(`${municipio}, ${estado}`);
-  const url = `${GEOCODING_URL}?name=${query}&count=5&country=BR&language=pt`;
+  // Open-Meteo geocoding aceita só o nome da cidade (não "Cidade, UF").
+  // Estratégia: buscar pelo nome, depois filtrar resultados pelo estado via admin1.
+  const query = encodeURIComponent(municipio);
+  const url = `${GEOCODING_URL}?name=${query}&count=10&country=BR&language=pt`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("geocoding falhou");
   const json = await res.json();
   if (!json.results || json.results.length === 0) return null;
-  // Prefere resultado cujo admin1 (estado) bate com o UF buscado
-  type GeoRow = { latitude: number; longitude: number; name: string; admin1?: string; admin1_code?: string };
+  // Prefere resultado cujo admin1 (estado por extenso) bate com a UF buscada.
+  // Ex.: 'Três Lagoas' tem 5 resultados (MS, PI, MA, PA, PI) — queremos o de MS.
+  type GeoRow = { latitude: number; longitude: number; name: string; admin1?: string };
   const candidatos = json.results as GeoRow[];
-  const ufMatch = candidatos.find(
-    (r) =>
-      r.admin1_code === estado.toUpperCase() ||
-      r.admin1?.toLowerCase().includes(estadoNomeCompleto(estado).toLowerCase())
-  );
+  const ufExtenso = estadoNomeCompleto(estado).toLowerCase();
+  const ufMatch = candidatos.find((r) => r.admin1?.toLowerCase() === ufExtenso);
   const escolhido = ufMatch ?? candidatos[0];
   const result: GeocodingResult = {
     latitude: escolhido.latitude,
