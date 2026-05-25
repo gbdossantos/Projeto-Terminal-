@@ -18,6 +18,7 @@ import type {
 } from "@/lib/types";
 import { LinhaDoRebanho } from "./LinhaDoRebanho";
 import { FaixaCotacoes } from "./FaixaCotacoes";
+import { ClimaCard } from "./ClimaCard";
 import { TopNav } from "@/components/layout/TopNav";
 import {
   MOCK_LOTES,
@@ -253,6 +254,9 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             }
           />
         </section>
+
+        {/* Card de clima — Open-Meteo, abaixo da faixa de 3 cards */}
+        <ClimaCard />
 
         {/* O que moveu a linha hoje + Caminhos */}
         <section
