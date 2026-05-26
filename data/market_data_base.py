@@ -574,17 +574,20 @@ def _buscar_soja_esalq() -> Optional[float]:
 # IBOV — Yahoo Finance v8 (publico, sem chave)
 # ---------------------------------------------------------------------------
 
-def _buscar_ibov() -> tuple[Optional[float], Optional[float]]:
+def _buscar_ibov_yahoo() -> tuple[Optional[float], Optional[float]]:
     """
-    Retorna (pontos_atual, variacao_pct_dia) do Ibovespa.
-
-    Fonte: Yahoo Finance v8 chart endpoint (^BVSP). Endpoint publico, JSON,
-    sem chave necessaria. Resposta inclui regularMarketPrice e regularMarketPreviousClose,
-    suficientes pra calcular o delta% direto.
+    Yahoo Finance v8 chart endpoint (^BVSP). Headers ajustados pra JSON
+    (Accept: application/json) — o _HEADERS global anuncia text/html,
+    o que faz o Yahoo as vezes responder HTML de bloqueio.
     """
     try:
         url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EBVSP?interval=1d&range=2d"
-        resp = requests.get(url, headers=_HEADERS, timeout=TIMEOUT_SEGUNDOS)
+        headers = {
+            "User-Agent": _HEADERS["User-Agent"],
+            "Accept": "application/json",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        resp = requests.get(url, headers=headers, timeout=TIMEOUT_SEGUNDOS)
         resp.raise_for_status()
         data = resp.json()
         result = (data.get("chart", {}).get("result") or [None])[0]
@@ -602,6 +605,46 @@ def _buscar_ibov() -> tuple[Optional[float], Optional[float]]:
     except Exception as e:
         logger.warning("Yahoo IBOV falhou: %s", e)
         return None, None
+
+
+def _buscar_ibov_stooq() -> tuple[Optional[float], Optional[float]]:
+    """
+    Fallback: stooq.com CSV publico, sem chave. Símbolo ^bvp.
+
+    Endpoint daily entrega OHLC do dia, sem o fechamento anterior. Pra ter
+    delta%, fazemos duas requests:
+      1. /q/l/?s=^bvp&i=d → close atual
+      2. /q/d/l/?s=^bvp&i=d&d1=N-5&d2=N → últimas linhas, pega prevClose
+    Em produção mantemos só a primeira (close atual) e o delta% fica None
+    quando Yahoo não respondeu — verdade > número fictício.
+    """
+    try:
+        url = "https://stooq.com/q/l/?s=%5Ebvp&i=d&f=sd2t2ohlcv"
+        resp = requests.get(url, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        # Formato: ^BVP,2026-05-26,20:43:30,177815.95,177815.95,175522.2,175725.55,
+        linha = resp.text.strip().split("\n")[-1]
+        partes = linha.split(",")
+        if len(partes) < 7:
+            return None, None
+        close_str = partes[6]
+        if not close_str or close_str == "N/D":
+            return None, None
+        return float(close_str), None  # delta% indisponível por aqui
+    except Exception as e:
+        logger.warning("Stooq IBOV falhou: %s", e)
+        return None, None
+
+
+def _buscar_ibov() -> tuple[Optional[float], Optional[float]]:
+    """
+    Retorna (pontos_atual, variacao_pct_dia) do Ibovespa.
+    Cadeia: Yahoo Finance (delta% incluso) → Stooq (só nível, fallback).
+    """
+    val, delta = _buscar_ibov_yahoo()
+    if val is not None:
+        return val, delta
+    return _buscar_ibov_stooq()
 
 
 # ---------------------------------------------------------------------------

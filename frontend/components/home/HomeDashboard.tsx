@@ -90,14 +90,19 @@ export function HomeDashboard({ empty = false }: Props = {}) {
     return ultimo - penultimo;
   }, [histArroba]);
 
-  // BGI próximo: primeiro contrato BGI com vencimento futuro
-  const bgiProximo = useMemo(() => {
+  // BGI alvo da Linha do Rebanho: contrato MAIS DISTANTE disponível na curva.
+  // Decisão de produto: a linha precisa mostrar pra onde o mercado precifica
+  // a médio prazo (pedagógico). Usar o BGI próximo deixa a linha quase reta
+  // porque o contrato vencendo já convergiu com o spot. A faixa de cotações
+  // (ticker) continua usando o BGI próximo — é outro caso de uso (cotação
+  // rolando do dia).
+  const bgiAlvo = useMemo(() => {
     if (!futuros?.contratos?.length) return null;
     const hoje = new Date();
-    const futuros_validos = futuros.contratos
+    const validos = futuros.contratos
       .filter((c) => new Date(c.vencimento) > hoje)
-      .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime());
-    return futuros_validos[0] ?? null;
+      .sort((a, b) => new Date(b.vencimento).getTime() - new Date(a.vencimento).getTime());
+    return validos[0] ?? null;
   }, [futuros]);
 
   // Cálculos do rebanho (ainda dependem de cotação real)
@@ -154,7 +159,7 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             empty={empty}
             historico={histArroba}
             spotAtual={spotMS}
-            bgi={bgiProximo}
+            bgi={bgiAlvo}
             breakEven={BREAK_EVEN}
           />
         </section>
