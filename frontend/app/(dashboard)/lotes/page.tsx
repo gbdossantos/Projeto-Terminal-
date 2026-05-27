@@ -26,6 +26,13 @@ import { isFirstVisit } from "@/lib/first-visit";
 import { LotesSalvosList } from "@/components/lotes/LotesSalvosList";
 import { ImportPlanilha } from "@/components/lotes/ImportPlanilha";
 import { FASE_LABEL, SISTEMA_LABEL, type Fase, type Sistema } from "@/lib/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const FASES: Fase[] = ["cria", "recria", "terminacao"];
 const SISTEMAS: Sistema[] = ["pasto", "semiconfinamento", "confinamento"];
@@ -99,26 +106,44 @@ export default function LotesPage() {
             Novo lote
           </p>
 
-          {/* Dropdown Fase */}
+          {/* Dropdown Fase — shadcn/ui Select (V19, DM Sans, não-nativo) */}
           <div style={{ marginBottom: 14 }}>
             <Label texto="Fase do ciclo" />
-            <DropdownNativo<Fase>
-              value={fase}
-              onChange={(v) => setFase(v)}
-              opcoes={FASES.map((f) => ({ value: f, label: FASE_LABEL[f] }))}
-              placeholder="Selecione a fase"
-            />
+            <Select
+              value={fase || undefined}
+              onValueChange={(v) => setFase(v as Fase)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione a fase" />
+              </SelectTrigger>
+              <SelectContent>
+                {FASES.map((f) => (
+                  <SelectItem key={f} value={f}>
+                    {FASE_LABEL[f]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Dropdown Sistema */}
+          {/* Dropdown Sistema — shadcn/ui Select */}
           <div style={{ marginBottom: 18 }}>
             <Label texto="Sistema de produção" />
-            <DropdownNativo<Sistema>
-              value={sistema}
-              onChange={(v) => setSistema(v)}
-              opcoes={SISTEMAS.map((s) => ({ value: s, label: SISTEMA_LABEL[s] }))}
-              placeholder="Selecione o sistema"
-            />
+            <Select
+              value={sistema || undefined}
+              onValueChange={(v) => setSistema(v as Sistema)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione o sistema" />
+              </SelectTrigger>
+              <SelectContent>
+                {SISTEMAS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {SISTEMA_LABEL[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Hint contextual quando fase é Cria ou Recria */}
@@ -234,42 +259,3 @@ function Label({ texto }: { texto: string }) {
   );
 }
 
-function DropdownNativo<T extends string>({
-  value,
-  onChange,
-  opcoes,
-  placeholder,
-}: {
-  value: T | "";
-  onChange: (v: T) => void;
-  opcoes: { value: T; label: string }[];
-  placeholder: string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as T)}
-      style={{
-        width: "100%",
-        fontFamily: "var(--font-sans)",
-        fontSize: 13,
-        padding: "9px 12px",
-        background: "var(--paper-2)",
-        color: value === "" ? "var(--ink-3)" : "var(--ink)",
-        border: "1px solid var(--rule)",
-        borderRadius: 7,
-        outline: "none",
-        cursor: "pointer",
-      }}
-    >
-      <option value="" disabled>
-        {placeholder}
-      </option>
-      {opcoes.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  );
-}
