@@ -9,6 +9,7 @@ import FormRecria from "@/components/lotes/FormRecria";
 import { SISTEMAS_PRODUTIVOS, type SistemaProdutivo } from "@/lib/sistemas";
 import { isFirstVisit } from "@/lib/first-visit";
 import { LotesSalvosList } from "@/components/lotes/LotesSalvosList";
+import { ImportPlanilha } from "@/components/lotes/ImportPlanilha";
 
 export default function LotesPage() {
   const [tab, setTab] = useState<SistemaProdutivo>("terminacao_pasto");
@@ -28,13 +29,19 @@ export default function LotesPage() {
 
   return (
     <div>
-      {/* Header */}
-      <h1 className="font-display text-[28px]" style={{ color: "var(--ink)", fontWeight: 400 }}>
-        Lotes
-      </h1>
-      <p className="text-sm mt-1 mb-7" style={{ color: "var(--ink-3)" }}>
-        Calcule custo, margem, ROI e protecao para cada sistema produtivo
-      </p>
+      {/* Header — título + ações de import */}
+      <div className="flex items-start justify-between" style={{ marginBottom: 28 }}>
+        <div>
+          <h1 className="font-display text-[28px]" style={{ color: "var(--ink)", fontWeight: 400 }}>
+            Lotes
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--ink-3)" }}>
+            Calcule custo, margem, ROI e protecao para cada sistema produtivo
+          </p>
+        </div>
+        {/* Import via planilha + download template — convivem com cadastro manual */}
+        <ImportPlanilha />
+      </div>
 
       {/* Lotes salvos (persistencia local) */}
       <LotesSalvosList key={`saved-${reloadKey}`} onLoad={handleLoadLote} />
