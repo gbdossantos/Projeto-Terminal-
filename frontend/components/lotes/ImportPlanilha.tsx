@@ -448,7 +448,12 @@ function LinhaTabela({
       </td>
       {colunas.map((c) => {
         const erro = linha.errosPorCampo[c.nome];
-        const aplicavel = linha.sistema ? campoAplicavel(c, linha.sistema) : true;
+        // Pós-refactor: aplicabilidade depende da combinação (fase, sistema).
+        // Se algum dos dois ainda não foi resolvido, mostra aplicável (estado provisório).
+        const aplicavel =
+          linha.fase && linha.sistema
+            ? campoAplicavel(c, linha.fase, linha.sistema)
+            : true;
         const valor = celulas[c.nome] ?? "";
         return (
           <td

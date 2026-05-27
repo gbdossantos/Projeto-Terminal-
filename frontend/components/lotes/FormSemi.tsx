@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { SemiconfinamentoRequest, SemiconfinamentoResponse } from "@/lib/types";
-import { calcularSemiconfinamento, fetchCotacoes } from "@/lib/api";
+import type {
+  LoteInputTerminacao, LoteTerminacaoResponse, Sistema,
+} from "@/lib/types";
+import { calcularLote, fetchCotacoes } from "@/lib/api";
 import { fmtBRL, fmtPct } from "@/lib/utils/format";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
@@ -11,22 +13,30 @@ import { TabelaCenarios } from "@/components/decision/TabelaCenarios";
 import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaBlock";
 import { PainelHedge } from "@/components/decision/PainelHedge";
 import { Field } from "@/components/lotes/Field";
-import { DEFAULTS_SEMICONFINAMENTO as DEFAULTS } from "@/lib/defaults-sistema";
+import { DEFAULTS_SEMICONFINAMENTO } from "@/lib/defaults-sistema";
 import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 import { saveDecisao } from "@/lib/decisoes-storage";
 import { HedgeMilhoToggle, type HedgeMilhoState } from "@/components/lotes/HedgeMilhoToggle";
 
-export default function FormSemi() {
-  const [form, setForm] = useState(DEFAULTS);
-  const [data, setData] = useState<SemiconfinamentoResponse | null>(null);
+interface Props {
+  sistema: Sistema;
+}
+
+export default function FormSemi({ sistema }: Props) {
+  const [form, setForm] = useState<LoteInputTerminacao>({
+    fase: "terminacao",
+    sistema,
+    ...DEFAULTS_SEMICONFINAMENTO,
+  } as LoteInputTerminacao);
+  const [data, setData] = useState<LoteTerminacaoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hedgeMilho, setHedgeMilho] = useState<HedgeMilhoState>({ tipo: "sem" });
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    const pending = consumePendingLoad<SemiconfinamentoRequest>("semiconfinamento");
+    const pending = consumePendingLoad<LoteInputTerminacao>("terminacao", sistema);
     if (pending) setForm(pending);
 
     fetchCotacoes()
@@ -34,18 +44,18 @@ export default function FormSemi() {
         setForm((f) => {
           const next = { ...f };
           if (c.arroba_boi_gordo) next.preco_venda = c.arroba_boi_gordo;
-          // Pré-popula custo do suplemento com ESALQ (R$/saca 60kg → R$/kg natural)
           if (c.milho_esalq) next.custo_suplemento_kg = c.milho_esalq / 60;
           return next;
         });
       })
       .catch(() => {});
-  }, []);
+  }, [sistema]);
 
   const handleSave = (nome: string) => {
     if (!data) return;
     saveLote({
-      sistema: "semiconfinamento",
+      fase: "terminacao",
+      sistema,
       nome,
       inputs: form,
       resultadoCache: data,
@@ -63,11 +73,11 @@ export default function FormSemi() {
     }
   };
 
-  const calculate = useCallback(async (req: SemiconfinamentoRequest) => {
+  const calculate = useCallback(async (req: LoteInputTerminacao) => {
     setLoading(true);
     setError(null);
     try {
-      setData(await calcularSemiconfinamento(req));
+      setData(await calcularLote(req));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -81,7 +91,7 @@ export default function FormSemi() {
     return () => clearTimeout(debounceRef.current);
   }, [form, calculate]);
 
-  const set = (key: keyof SemiconfinamentoRequest, value: number) =>
+  const set = (key: keyof LoteInputTerminacao, value: number) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   const r = data?.resultado;
@@ -102,10 +112,10 @@ export default function FormSemi() {
         <div className="border-t border-border pt-4">
           <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Custos (R$/cab/dia)</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Field label="Arrendamento" value={form.custo_arrendamento_dia} onChange={(v) => set("custo_arrendamento_dia", v)} step={0.1} />
-            <Field label="Manutencao pasto" value={form.custo_manutencao_pasto_dia} onChange={(v) => set("custo_manutencao_pasto_dia", v)} step={0.1} />
-            <Field label="Consumo suplemento (kg/dia)" value={form.consumo_suplemento_kg_dia} onChange={(v) => set("consumo_suplemento_kg_dia", v)} step={0.1} />
-            <Field label="Custo suplemento (R$/kg)" value={form.custo_suplemento_kg} onChange={(v) => set("custo_suplemento_kg", v)} step={0.05} />
+            <Field label="Arrendamento" value={form.custo_arrendamento_dia ?? 0} onChange={(v) => set("custo_arrendamento_dia", v)} step={0.1} />
+            <Field label="Manutencao pasto" value={form.custo_manutencao_pasto_dia ?? 0} onChange={(v) => set("custo_manutencao_pasto_dia", v)} step={0.1} />
+            <Field label="Consumo suplemento (kg/dia)" value={form.consumo_suplemento_kg_dia ?? 0} onChange={(v) => set("consumo_suplemento_kg_dia", v)} step={0.1} />
+            <Field label="Custo suplemento (R$/kg)" value={form.custo_suplemento_kg ?? 0} onChange={(v) => set("custo_suplemento_kg", v)} step={0.05} />
             <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
             <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
           </div>
@@ -150,7 +160,7 @@ export default function FormSemi() {
             <MetricCard label="ROI anualizado" value={fmtPct(r.roi_anualizado)} />
           </div>
 
-          <MetricCard label="Suplementacao por arroba" value={fmtBRL(r.custo_suplementacao_por_arroba, 2) + "/@"} compact />
+          <MetricCard label="Suplementacao por arroba" value={fmtBRL(r.custo_suplementacao_por_arroba ?? 0, 2) + "/@"} compact />
 
           <div className="space-y-4">
             <h2 className="text-sm font-medium text-t-primary">Painel de impacto economico</h2>

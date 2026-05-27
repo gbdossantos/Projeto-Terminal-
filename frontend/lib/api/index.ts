@@ -1,9 +1,12 @@
 import type {
-  TerminacaoPastoRequest, TerminacaoPastoResponse,
-  ConfinamentoRequest, ConfinamentoResponse,
-  SemiconfinamentoRequest, SemiconfinamentoResponse,
-  CriaRequest, CriaResponse,
-  RecriaRequest, RecriaResponse,
+  LoteInput,
+  LoteInputCria,
+  LoteInputRecria,
+  LoteInputTerminacao,
+  LoteCalculoResponse,
+  LoteCriaResponse,
+  LoteRecriaResponse,
+  LoteTerminacaoResponse,
   CotacaoMercado,
   CurvaFuturos,
   HistoricoDolarEntry,
@@ -57,10 +60,44 @@ export async function fetchNoticiasDoDia(): Promise<NoticiasDoDiaResponse> {
   return res.json();
 }
 
-export async function calcularTerminacaoPasto(
-  req: TerminacaoPastoRequest
-): Promise<TerminacaoPastoResponse> {
-  const res = await fetch(`${BASE}/terminacao-pasto/calcular`, {
+// ============================================================================
+// LOTES — endpoint único pós-refactor fase/sistema
+// ============================================================================
+
+/**
+ * POST /lotes/calcular — endpoint único pra cálculo de lote.
+ *
+ * Backend discrimina o payload por `fase`. Retorno também é discriminado:
+ *  - fase=cria        → LoteCriaResponse {resultado, cotacoes}
+ *  - fase=recria      → LoteRecriaResponse {resultado, cotacoes}
+ *  - fase=terminacao  → LoteTerminacaoResponse {resultado, exposicao, impacto, hedge?, cotacoes}
+ *
+ * Overloads dão narrowing automático no tipo de retorno conforme a fase
+ * do input — não precisa de cast no consumidor.
+ */
+export async function calcularLote(input: LoteInputCria): Promise<LoteCriaResponse>;
+export async function calcularLote(input: LoteInputRecria): Promise<LoteRecriaResponse>;
+export async function calcularLote(input: LoteInputTerminacao): Promise<LoteTerminacaoResponse>;
+export async function calcularLote(input: LoteInput): Promise<LoteCalculoResponse>;
+export async function calcularLote(input: LoteInput): Promise<LoteCalculoResponse> {
+  const res = await fetch(`${BASE}/lotes/calcular`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Erro: ${res.status}`);
+  }
+  return res.json();
+}
+
+// ============================================================================
+// Simulador
+// ============================================================================
+
+export async function simularCenarios(req: SimulatorRequest): Promise<SimulatorResponse> {
+  const res = await fetch(`${BASE}/simulador/calcular`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -70,37 +107,4 @@ export async function calcularTerminacaoPasto(
     throw new Error(err.detail || `Erro: ${res.status}`);
   }
   return res.json();
-}
-
-async function postCalc<Req, Res>(path: string, req: Req): Promise<Res> {
-  const res = await fetch(`${BASE}/${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Erro: ${res.status}`);
-  }
-  return res.json();
-}
-
-export function calcularConfinamento(req: ConfinamentoRequest) {
-  return postCalc<ConfinamentoRequest, ConfinamentoResponse>("confinamento/calcular", req);
-}
-
-export function calcularSemiconfinamento(req: SemiconfinamentoRequest) {
-  return postCalc<SemiconfinamentoRequest, SemiconfinamentoResponse>("semiconfinamento/calcular", req);
-}
-
-export function calcularCria(req: CriaRequest) {
-  return postCalc<CriaRequest, CriaResponse>("cria/calcular", req);
-}
-
-export function calcularRecria(req: RecriaRequest) {
-  return postCalc<RecriaRequest, RecriaResponse>("recria/calcular", req);
-}
-
-export function simularCenarios(req: SimulatorRequest) {
-  return postCalc<SimulatorRequest, SimulatorResponse>("simulador/calcular", req);
 }
