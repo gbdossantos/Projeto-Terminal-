@@ -80,8 +80,15 @@ export function PainelHedge({ hedge }: Props) {
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <ReferenceLine x={0} stroke="var(--rule)" strokeDasharray="4 4" />
-            <Bar dataKey="sem_hedge" name="Sem hedge" fill="var(--loss)" radius={[0, 3, 3, 0]} />
-            <Bar dataKey="com_hedge" name="Com hedge" fill="var(--gain)" radius={[0, 3, 3, 0]} />
+            {/*
+              Paleta neutra: indigo (V19 acento técnico) + slate (cinza neutro).
+              Antes: verde/vermelho — semanticamente errado porque 'sem hedge'
+              nem sempre é perda (no cenário 'arroba sobe 20%' sem hedge
+              lucra MAIS). A nova paleta separa 'protegido' vs 'cru' sem
+              juízo de valor implícito.
+            */}
+            <Bar dataKey="sem_hedge" name="Sem hedge" fill="#64748B" radius={[0, 3, 3, 0]} />
+            <Bar dataKey="com_hedge" name="Com hedge" fill="var(--grafite)" radius={[0, 3, 3, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -100,12 +107,17 @@ export function PainelHedge({ hedge }: Props) {
 
       {/* Cards Se travar / Se nao travar */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Se travar */}
+        {/*
+          Cards Se travar / Se nao travar — mesma paleta neutra do gráfico
+          (indigo p/ ação protegida, slate p/ status quo). Sem verde/vermelho
+          pra não sugerir que 'não travar' é necessariamente perda.
+        */}
+        {/* Se travar — indigo (V19 acento técnico) */}
         <div
           className="rounded-xl p-6"
-          style={{ background: "rgba(22, 163, 74, 0.10)", border: "0.5px solid rgba(22, 163, 74, 0.27)" }}
+          style={{ background: "rgba(99, 102, 241, 0.08)", border: "0.5px solid rgba(99, 102, 241, 0.27)" }}
         >
-          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--gain-2)" }}>
+          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--grafite-2)" }}>
             Se travar
           </p>
           <div className="mt-4">
@@ -116,24 +128,24 @@ export function PainelHedge({ hedge }: Props) {
           </div>
           <div className="mt-4">
             <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Voce garante</p>
-            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "var(--gain-2)", fontVariantNumeric: "tabular-nums" }}>
+            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "var(--grafite-2)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.margem_hedgeada_brl)} de lucro
             </p>
           </div>
           <p
             className="text-[11px] mt-3 pt-3"
-            style={{ color: "var(--ink-3)", borderTop: "0.5px solid rgba(22, 163, 74, 0.20)" }}
+            style={{ color: "var(--ink-3)", borderTop: "0.5px solid rgba(99, 102, 241, 0.20)" }}
           >
             {hedge.contrato_selecionado.codigo} · {hedge.contratos_necessarios} contrato(s) ({hedge.arrobas_hedgeadas.toFixed(0)}@)
           </p>
         </div>
 
-        {/* Se nao travar */}
+        {/* Se nao travar — slate (status quo, sem juizo) */}
         <div
           className="rounded-xl p-6"
-          style={{ background: "rgba(220, 38, 38, 0.10)", border: "0.5px solid rgba(220, 38, 38, 0.27)" }}
+          style={{ background: "rgba(100, 116, 139, 0.08)", border: "0.5px solid rgba(100, 116, 139, 0.27)" }}
         >
-          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--loss-2)" }}>
+          <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "#475569" }}>
             Se nao travar
           </p>
           <div className="mt-4">
@@ -144,14 +156,14 @@ export function PainelHedge({ hedge }: Props) {
           </div>
           <div className="mt-4">
             <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Se cair 20%</p>
-            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "var(--loss-2)", fontVariantNumeric: "tabular-nums" }}>
+            <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "#475569", fontVariantNumeric: "tabular-nums" }}>
               {hedge.cenarios_grafico[0]?.sem_hedge < 0 ? "Perde " : "Lucro cai para "}
               {fmtBRL(hedge.cenarios_grafico[0]?.sem_hedge ?? 0)}
             </p>
           </div>
           <p
             className="text-[11px] mt-3 pt-3"
-            style={{ color: "var(--ink-3)", borderTop: "0.5px solid rgba(220, 38, 38, 0.20)" }}
+            style={{ color: "var(--ink-3)", borderTop: "0.5px solid rgba(100, 116, 139, 0.20)" }}
           >
             Nada protege suas {hedge.arrobas_totais.toFixed(0)} arrobas
           </p>
