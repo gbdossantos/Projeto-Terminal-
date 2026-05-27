@@ -1,46 +1,55 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { CriaRequest, CriaResponse } from "@/lib/types";
-import { calcularCria, fetchCotacoes } from "@/lib/api";
+import type { LoteInputCria, LoteCriaResponse, Sistema } from "@/lib/types";
+import { calcularLote, fetchCotacoes } from "@/lib/api";
 import { fmtBRL } from "@/lib/utils/format";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
 import { Field } from "@/components/lotes/Field";
-import { DEFAULTS_CRIA as DEFAULTS } from "@/lib/defaults-sistema";
+import { DEFAULTS_CRIA } from "@/lib/defaults-sistema";
 import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
-export default function FormCria() {
-  const [form, setForm] = useState(DEFAULTS);
-  const [data, setData] = useState<CriaResponse | null>(null);
+interface Props {
+  /** Sistema é meta-tag em Cria (não entra em cálculo). Vem do seletor. */
+  sistema: Sistema;
+}
+
+export default function FormCria({ sistema }: Props) {
+  const [form, setForm] = useState<LoteInputCria>({
+    fase: "cria",
+    sistema,
+    ...DEFAULTS_CRIA,
+  });
+  const [data, setData] = useState<LoteCriaResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    const pending = consumePendingLoad<CriaRequest>("cria");
+    const pending = consumePendingLoad<LoteInputCria>("cria", sistema);
     if (pending) setForm(pending);
-
     fetchCotacoes().catch(() => {});
-  }, []);
+  }, [sistema]);
 
   const handleSave = (nome: string) => {
     if (!data) return;
     saveLote({
-      sistema: "cria",
+      fase: "cria",
+      sistema,
       nome,
       inputs: form,
       resultadoCache: data,
-      margemPct: null, // Cria nao tem margem percentual (custo/bezerro)
+      margemPct: null,
     });
   };
 
-  const calculate = useCallback(async (req: CriaRequest) => {
+  const calculate = useCallback(async (req: LoteInputCria) => {
     setLoading(true);
     setError(null);
     try {
-      setData(await calcularCria(req));
+      setData(await calcularLote(req));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -54,7 +63,7 @@ export default function FormCria() {
     return () => clearTimeout(debounceRef.current);
   }, [form, calculate]);
 
-  const set = (key: keyof CriaRequest, value: number) =>
+  const set = (key: keyof LoteInputCria, value: number) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   const r = data?.resultado;

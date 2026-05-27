@@ -1,18 +1,24 @@
 "use client";
 
+/**
+ * Lista de lotes salvos no localStorage.
+ *
+ * Pós-refactor fase/sistema: exibe `Fase · Sistema` (middot U+00B7) como
+ * info terciária discreta. Hierarquia visual: status > margem > fase·sistema.
+ */
+
 import { useEffect, useState } from "react";
 import { listLotes, deleteLote, setPendingLoad, type LoteSalvo } from "@/lib/lotes-storage";
-import { SISTEMAS_PRODUTIVOS, type SistemaProdutivo } from "@/lib/sistemas";
+import { FASE_LABEL, SISTEMA_LABEL, type Fase, type Sistema } from "@/lib/types";
 import { fmtPct } from "@/lib/utils/format";
 
 interface Props {
-  /** Chamado quando o usuario clica em um lote salvo. Pai deve trocar a tab para o sistema correspondente. */
-  onLoad?: (sistema: SistemaProdutivo) => void;
+  /**
+   * Chamado quando o usuário clica em um lote salvo. Pai abre o form da
+   * combinação `(fase, sistema)` correspondente.
+   */
+  onLoad?: (fase: Fase, sistema: Sistema) => void;
 }
-
-const sistemaLabel: Record<SistemaProdutivo, string> = Object.fromEntries(
-  SISTEMAS_PRODUTIVOS.map((s) => [s.id, s.label]),
-) as Record<SistemaProdutivo, string>;
 
 function fmtData(iso: string): string {
   const d = new Date(iso);
@@ -29,8 +35,8 @@ export function LotesSalvosList({ onLoad }: Props) {
   if (lotes.length === 0) return null;
 
   const handleLoad = (lote: LoteSalvo) => {
-    setPendingLoad({ sistema: lote.sistema, inputs: lote.inputs });
-    onLoad?.(lote.sistema);
+    setPendingLoad({ fase: lote.fase, sistema: lote.sistema, inputs: lote.inputs });
+    onLoad?.(lote.fase, lote.sistema);
   };
 
   const handleDelete = (id: string) => {
@@ -86,9 +92,15 @@ export function LotesSalvosList({ onLoad }: Props) {
               }}
             >
               <span style={{ fontWeight: 500 }}>{l.nome}</span>
+              {/*
+                Info terciária — discreta: data, margem (quando aplicável), fase·sistema.
+                Brief: hierarquia status > margem > fase·sistema.
+                Fase·Sistema fica por último, mesma cor de --text-tertiary, sem chip.
+              */}
               <span style={{ color: "var(--text-tertiary)", fontSize: 10 }}>
-                {sistemaLabel[l.sistema]} · {fmtData(l.criadoEm)}
+                {fmtData(l.criadoEm)}
                 {l.margemPct != null && ` · ${fmtPct(l.margemPct)}`}
+                {` · ${FASE_LABEL[l.fase]} · ${SISTEMA_LABEL[l.sistema]}`}
               </span>
             </button>
             <button

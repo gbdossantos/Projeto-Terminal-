@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { TerminacaoPastoRequest, TerminacaoPastoResponse } from "@/lib/types";
-import { calcularTerminacaoPasto, fetchCotacoes } from "@/lib/api";
-import type { CotacaoMercado } from "@/lib/types";
+import type {
+  LoteInputTerminacao, LoteTerminacaoResponse, CotacaoMercado, Sistema,
+} from "@/lib/types";
+import { calcularLote, fetchCotacoes } from "@/lib/api";
 import { fmtBRL, fmtPct } from "@/lib/utils/format";
 import { Field } from "@/components/lotes/Field";
 import { StepWizard } from "@/components/step-wizard";
@@ -12,34 +13,45 @@ import { KpiCard } from "@/components/kpi-card";
 import { ScenarioTable } from "@/components/scenario-table";
 import { HedgeDecision } from "@/components/hedge-decision";
 import { classifyMargin } from "@/lib/margin-classification";
-import { DEFAULTS_TERMINACAO_PASTO as DEFAULTS } from "@/lib/defaults-sistema";
+import { DEFAULTS_TERMINACAO_PASTO } from "@/lib/defaults-sistema";
 import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaBlock";
 import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
-export default function FormPasto() {
-  const [form, setForm] = useState<TerminacaoPastoRequest>(DEFAULTS);
-  const [data, setData] = useState<TerminacaoPastoResponse | null>(null);
+interface Props {
+  /** Sistema vem do seletor da page — pra FormPasto é sempre "pasto". */
+  sistema: Sistema;
+}
+
+export default function FormPasto({ sistema }: Props) {
+  // DEFAULTS_TERMINACAO_PASTO ainda tem o shape antigo — adapta no useState inicial.
+  const [form, setForm] = useState<LoteInputTerminacao>({
+    fase: "terminacao",
+    sistema,
+    ...DEFAULTS_TERMINACAO_PASTO,
+  } as LoteInputTerminacao);
+  const [data, setData] = useState<LoteTerminacaoResponse | null>(null);
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
-    // Se houver lote salvo pendente para esta tab, carrega seus inputs.
-    const pending = consumePendingLoad<TerminacaoPastoRequest>("terminacao_pasto");
+    // Pending load: só consome se a combinação bate.
+    const pending = consumePendingLoad<LoteInputTerminacao>("terminacao", sistema);
     if (pending) setForm(pending);
 
     fetchCotacoes().then((c) => {
       setCotacoes(c);
       if (c.arroba_boi_gordo) setForm((f) => ({ ...f, preco_venda: c.arroba_boi_gordo! }));
     }).catch(() => {});
-  }, []);
+  }, [sistema]);
 
   const handleSave = (nome: string) => {
     if (!data) return;
     saveLote({
-      sistema: "terminacao_pasto",
+      fase: "terminacao",
+      sistema,
       nome,
       inputs: form,
       resultadoCache: data,
@@ -47,13 +59,13 @@ export default function FormPasto() {
     });
   };
 
-  const set = (key: keyof TerminacaoPastoRequest, value: number) =>
+  const set = (key: keyof LoteInputTerminacao, value: number) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   const calculate = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const result = await calcularTerminacaoPasto(form);
+      const result = await calcularLote(form);
       setData(result);
       setStep(2);
     } catch (e: unknown) {
@@ -97,10 +109,10 @@ export default function FormPasto() {
                   Custos operacionais (R$/cab/dia)
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Suplementacao" value={form.custo_suplementacao_dia} onChange={(v) => set("custo_suplementacao_dia", v)} step={0.1} />
+                  <Field label="Suplementacao" value={form.custo_suplementacao_dia ?? 0} onChange={(v) => set("custo_suplementacao_dia", v)} step={0.1} />
                   <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
                   <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
-                  <Field label="Arrendamento" value={form.custo_arrendamento_dia} onChange={(v) => set("custo_arrendamento_dia", v)} step={0.1} />
+                  <Field label="Arrendamento" value={form.custo_arrendamento_dia ?? 0} onChange={(v) => set("custo_arrendamento_dia", v)} step={0.1} />
                 </div>
               </div>
 

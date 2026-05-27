@@ -11,17 +11,20 @@
 //
 // Cotacoes (preco_venda) sao re-populadas via fetchCotacoes() no mount.
 
+// Pós-refactor fase/sistema: defaults usam `Omit<LoteInput*, "fase" | "sistema">`
+// porque a fase é sempre fixa pra cada constante e o sistema vem do seletor
+// (page/form passa o sistema escolhido pelo usuário).
 import type {
-  TerminacaoPastoRequest,
-  ConfinamentoRequest,
-  SemiconfinamentoRequest,
-  CriaRequest,
-  RecriaRequest,
+  LoteInputCria, LoteInputRecria, LoteInputTerminacao,
 } from "@/lib/types";
+
+type DefaultsTerminacao = Omit<LoteInputTerminacao, "fase" | "sistema">;
+type DefaultsCria       = Omit<LoteInputCria, "fase" | "sistema">;
+type DefaultsRecria     = Omit<LoteInputRecria, "fase" | "sistema">;
 
 // ── Terminacao Pasto ────────────────────────────────────────────────
 // 200 cab × R$ 3.300/cab reposicao · 180 dias · 380 -> 510 kg · rend 52%
-export const DEFAULTS_TERMINACAO_PASTO: TerminacaoPastoRequest = {
+export const DEFAULTS_TERMINACAO_PASTO: DefaultsTerminacao = {
   num_animais: 200,
   peso_entrada_kg: 380,
   peso_saida_estimado_kg: 510,
@@ -41,7 +44,7 @@ export const DEFAULTS_TERMINACAO_PASTO: TerminacaoPastoRequest = {
 
 // ── Confinamento ────────────────────────────────────────────────────
 // 1.500 cab × R$ 3.500/cab · 100 dias · 380 -> 540 kg · rend 54%
-export const DEFAULTS_CONFINAMENTO: ConfinamentoRequest = {
+export const DEFAULTS_CONFINAMENTO: DefaultsTerminacao = {
   num_animais: 1_500,
   peso_entrada_kg: 380,
   peso_saida_estimado_kg: 540,
@@ -61,7 +64,7 @@ export const DEFAULTS_CONFINAMENTO: ConfinamentoRequest = {
 
 // ── Semiconfinamento ───────────────────────────────────────────────
 // 500 cab × R$ 3.300/cab · 130 dias · 380 -> 520 kg · rend 53%
-export const DEFAULTS_SEMICONFINAMENTO: SemiconfinamentoRequest = {
+export const DEFAULTS_SEMICONFINAMENTO: DefaultsTerminacao = {
   num_animais: 500,
   peso_entrada_kg: 380,
   peso_saida_estimado_kg: 520,
@@ -79,7 +82,7 @@ export const DEFAULTS_SEMICONFINAMENTO: SemiconfinamentoRequest = {
 
 // ── Cria ────────────────────────────────────────────────────────────
 // 500 matrizes · natalidade 78% · desmama 95% · peso 200kg · valor matriz R$ 4.500
-export const DEFAULTS_CRIA: CriaRequest = {
+export const DEFAULTS_CRIA: DefaultsCria = {
   num_matrizes: 500,
   taxa_natalidade: 0.78,            // Embrapa CNPGC + Gazeta — modal tecnificado
   taxa_desmama: 0.95,               // Embrapa CNPGC referencia
@@ -95,7 +98,7 @@ export const DEFAULTS_CRIA: CriaRequest = {
 
 // ── Recria ──────────────────────────────────────────────────────────
 // 800 cab · 365 dias · 220 -> 380 kg · GMD ~440g/dia
-export const DEFAULTS_RECRIA: RecriaRequest = {
+export const DEFAULTS_RECRIA: DefaultsRecria = {
   num_animais: 800,
   peso_entrada_kg: 220,             // Embrapa pos-desmama
   peso_saida_estimado_kg: 380,      // Embrapa CNPGC
@@ -112,7 +115,7 @@ export const DEFAULTS_RECRIA: RecriaRequest = {
 // Usado na PRIMEIRA visita ao /lotes para dar referencia ao usuario novo.
 // Numeros explicitamente didaticos (arredondados, rendimento padrao IMEA).
 // Ver Tarefa 8: substituido pelos defaults regulares apos primeiro Calcular.
-export const EXEMPLO_CONFINAMENTO: ConfinamentoRequest = {
+export const EXEMPLO_CONFINAMENTO: DefaultsTerminacao = {
   num_animais: 1_000,
   peso_entrada_kg: 380,
   peso_saida_estimado_kg: 540,
@@ -132,7 +135,7 @@ export const EXEMPLO_CONFINAMENTO: ConfinamentoRequest = {
 
 // Estado "vazio" do form de confinamento — usado quando usuario clica "comece do zero".
 // Todos os campos numericos zerados; usuario digita do zero.
-export const ZERO_CONFINAMENTO: ConfinamentoRequest = {
+export const ZERO_CONFINAMENTO: DefaultsTerminacao = {
   num_animais: 0,
   peso_entrada_kg: 0,
   peso_saida_estimado_kg: 0,

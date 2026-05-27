@@ -1,4 +1,35 @@
-// Terminal API types — mirrors Python Pydantic schemas
+// Terminal API types — mirrors Python Pydantic schemas (pós-refactor fase/sistema).
+//
+// Modelo de lote: discriminated union por `fase`. Endpoint único POST /lotes/calcular
+// aceita LoteInput e devolve LoteCalculoResponse (também union por fase).
+//
+// 9 combinações permitidas (fase × sistema). Sem restrição de negócio bloqueando.
+// Cria e Recria são sistema-agnósticas em cálculo — `sistema` é meta-tag.
+
+// ============================================================================
+// Enums (snake_case minúsculo no wire — bate com backend Python)
+// ============================================================================
+
+export type Fase = "cria" | "recria" | "terminacao";
+
+export type Sistema = "pasto" | "semiconfinamento" | "confinamento";
+
+// Labels PT-BR pra UI — backend recebe os valores em snake_case acima
+export const FASE_LABEL: Record<Fase, string> = {
+  cria: "Cria",
+  recria: "Recria",
+  terminacao: "Terminação",
+};
+
+export const SISTEMA_LABEL: Record<Sistema, string> = {
+  pasto: "Pasto",
+  semiconfinamento: "Semiconfinamento",
+  confinamento: "Confinamento",
+};
+
+// ============================================================================
+// Cotações / Mercado
+// ============================================================================
 
 export interface ContratoFuturo {
   codigo: string;
@@ -23,15 +54,17 @@ export interface CotacaoMercado {
   dolar_ptax: number | null;
   milho_esalq: number | null;
   cdi_anual: number | null;
-  // extras (ticker da Home)
-  bezerro_cepea?: number | null;     // R$/cabeça — reposição
-  soja_esalq?: number | null;        // R$/saca 60kg — insumo dieta
-  ibov?: number | null;              // pontos — aversão a risco macro
-  ibov_delta_pct?: number | null;    // variação % do dia (vem do Yahoo)
+  bezerro_cepea?: number | null;
+  soja_esalq?: number | null;
+  ibov?: number | null;
+  ibov_delta_pct?: number | null;
   timestamp: string | null;
 }
 
-// ── Notícias da Home ("O que moveu a linha hoje") ──────────────
+// ============================================================================
+// Notícias (Home — "O que moveu a linha hoje")
+// ============================================================================
+
 export type NoticiaCategoria =
   | "cambio"
   | "demanda_externa"
@@ -39,7 +72,6 @@ export type NoticiaCategoria =
   | "insumos";
 
 export interface NoticiaDeltaCorrelato {
-  /** Variação % do dia da arroba CEPEA. Null = não relevante para a categoria. */
   arroba_pct: number | null;
   dolar_pct: number | null;
   milho_pct: number | null;
@@ -52,16 +84,13 @@ export interface Noticia {
   url: string;
   imagem: string | null;
   categoria: NoticiaCategoria;
-  /** ISO 8601 com timezone. */
   publicado_em: string;
   delta_correlato: NoticiaDeltaCorrelato;
 }
 
 export interface NoticiasDoDiaResponse {
-  /** Maior ingerido_em do banco (ISO). Null se DB vazio. */
   ultima_atualizacao: string | null;
   noticias: Noticia[];
-  /** Variações do dia globais — frontend usa pra fallback do card 1. */
   delta_dia: {
     arroba_pct: number | null;
     dolar_pct: number | null;
@@ -70,66 +99,235 @@ export interface NoticiasDoDiaResponse {
 }
 
 export interface VolatilidadeArroba {
-  /** Desvio padrao dos retornos log diarios. */
   sigma_diario: number | null;
-  /** sigma_diario * sqrt(252) — volatilidade anualizada. */
   sigma_anualizado: number | null;
-  /** Retorno medio diario (drift). */
   media_diaria: number | null;
-  /** Numero de retornos usados no calculo. */
   n_observations: number;
-  /** Janela em dias uteis usada. */
   period_days: number;
-  /** Fonte do historico (CEPEA, etc) ou null se indisponivel. */
   source: string | null;
 }
 
-export interface TerminacaoPastoRequest {
+// ============================================================================
+// LoteInput — discriminated union por `fase`
+// ============================================================================
+
+export interface LoteInputCria {
+  fase: "cria";
+  sistema: Sistema;
+  nome?: string;
+  data_referencia?: string;
+  num_matrizes: number;
+  taxa_natalidade: number;
+  taxa_desmama: number;
+  peso_desmama_kg: number;
+  custo_nutricao_ua_ano: number;
+  custo_sanidade_ua_ano: number;
+  custo_reproducao_ua_ano: number;
+  custo_mao_obra_ua_ano: number;
+  custo_arrendamento_ua_ano: number;
+  valor_matriz: number;
+  outros_custos_ua_ano?: number;
+}
+
+export interface LoteInputRecria {
+  fase: "recria";
+  sistema: Sistema;
+  nome?: string;
+  data_entrada?: string;
+  num_animais: number;
+  peso_entrada_kg: number;
+  custo_aquisicao_total: number;
+  dias_ciclo: number;
+  peso_saida_estimado_kg: number;
+  custo_nutricao_dia: number;
+  custo_sanidade_dia: number;
+  custo_mao_obra_dia: number;
+  custo_arrendamento_dia: number;
+  outros_custos_dia?: number;
+  custo_frete_entrada?: number;
+  custo_frete_saida?: number;
+}
+
+/**
+ * Terminação — campos sparse por sistema.
+ *
+ * Backend valida (LoteInputTerminacaoSchema.model_validator):
+ *  - sistema=pasto exige custo_suplementacao_dia + custo_arrendamento_dia
+ *  - sistema=confinamento exige consumo_ms_pct_pv + custo_dieta_kg_ms + custo_instalacoes_dia
+ *  - sistema=semiconfinamento exige custo_arrendamento_dia + custo_manutencao_pasto_dia +
+ *    consumo_suplemento_kg_dia + custo_suplemento_kg
+ */
+export interface LoteInputTerminacao {
+  fase: "terminacao";
+  sistema: Sistema;
+  nome?: string;
+  data_entrada?: string;
+
+  // Comuns
   num_animais: number;
   peso_entrada_kg: number;
   custo_reposicao_total: number;
   dias_ciclo: number;
   peso_saida_estimado_kg: number;
-  custo_suplementacao_dia: number;
   custo_sanidade_dia: number;
   custo_mao_obra_dia: number;
-  custo_arrendamento_dia: number;
-  preco_venda: number;
-  rendimento_carcaca?: number;
+
+  // Sparse — PASTO
+  custo_suplementacao_dia?: number | null;
+
+  // Sparse — PASTO + SEMI
+  custo_arrendamento_dia?: number | null;
+
+  // Sparse — CONFINAMENTO
+  consumo_ms_pct_pv?: number | null;
+  custo_dieta_kg_ms?: number | null;
+  custo_instalacoes_dia?: number | null;
+
+  // Sparse — SEMI
+  custo_manutencao_pasto_dia?: number | null;
+  consumo_suplemento_kg_dia?: number | null;
+  custo_suplemento_kg?: number | null;
+
+  // Opcionais comuns
+  rendimento_carcaca?: number | null;
+  outros_custos_dia?: number;
   custo_frete_entrada?: number;
   custo_frete_saida?: number;
   custo_mortalidade_estimada?: number;
-  outros_custos_dia?: number;
+
+  // Hedge / preço
+  preco_venda: number;
   regiao?: string;
   basis_estimado?: number;
   margem_garantia_pct?: number;
 }
 
-export interface ResultTerminacaoPasto {
+export type LoteInput = LoteInputCria | LoteInputRecria | LoteInputTerminacao;
+
+// ============================================================================
+// Resultados de cálculo
+// ============================================================================
+
+export interface ResultCria {
   nome: string;
+  fase: "cria";
+  sistema: Sistema;
+  num_matrizes: number;
+  bezerros_desmamados: number;
+  taxa_natalidade: number;
+  taxa_desmama: number;
+  peso_desmama_kg: number;
+  kg_produzido_por_matriz: number;
+  custo_operacional_ano: number;
+  custo_oportunidade: number;
+  custo_total_ano: number;
+  custo_por_matriz_ano: number;
+  custo_por_bezerro_produzido: number;
+  capital_rebanho: number;
+}
+
+export interface ResultRecria {
+  nome: string;
+  fase: "recria";
+  sistema: Sistema;
   num_animais: number;
   dias_ciclo: number;
+  gmd_estimado: number;
+  kg_ganho_total: number;
+  custo_operacional: number;
+  custo_oportunidade: number;
+  custo_total: number;
+  custo_por_cabeca: number;
+  custo_por_kg_ganho: number;
+  capital_empregado: number;
+}
+
+/**
+ * Resultado unificado da Terminação — campos sparse por sistema.
+ * Indicadores principais sempre presentes; breakdowns específicos só quando
+ * o sistema correspondente.
+ */
+export interface ResultTerminacao {
+  nome: string;
+  fase: "terminacao";
+  sistema: Sistema;
+  num_animais: number;
+  dias_ciclo: number;
+
   arrobas_totais: number;
   gmd_estimado: number;
+  rendimento_carcaca: number;
+
   custo_reposicao: number;
   custo_operacional: number;
   custo_fixo: number;
   custo_oportunidade: number;
   custo_total: number;
+
   custo_por_arroba: number;
   custo_por_cabeca: number;
   break_even_price: number;
   capital_empregado: number;
+
   receita_estimada: number;
   margem_bruta: number;
   margem_percentual: number;
   roi_ciclo: number;
   roi_anualizado: number;
+
   exposicao_preco: number;
   impacto_queda_10pct: number;
   impacto_queda_20pct: number;
+
   margem_apertada: boolean;
   roi_abaixo_cdi: boolean;
+
+  // Breakdowns sparse por sistema (Optional)
+  custo_dieta_total?: number | null;
+  custo_dieta_por_arroba?: number | null;
+  participacao_dieta_pct?: number | null;
+  custo_pastagem?: number | null;
+  custo_suplementacao?: number | null;
+  custo_suplementacao_por_arroba?: number | null;
+}
+
+// ============================================================================
+// Exposure / Impact / Hedge (consumidos só por terminação)
+// ============================================================================
+
+export interface DailySnapshot {
+  dia: number;
+  data: string;
+  peso_medio_kg: number;
+  arrobas_projetadas: number;
+  custo_acumulado: number;
+  custo_diario_lote: number;
+  custo_por_arroba: number;
+  break_even: number;
+}
+
+export interface LotExposure {
+  nome: string;
+  fase: "terminacao";
+  sistema: Sistema;
+  num_animais: number;
+  data_entrada: string;
+  data_venda_projetada: string;
+  dias_ciclo: number;
+  dias_restantes: number;
+  peso_entrada_kg: number;
+  peso_saida_kg: number;
+  rendimento_carcaca: number;
+  arrobas_totais: number;
+  custo_reposicao: number;
+  custo_operacional_total: number;
+  custo_oportunidade: number;
+  custo_total: number;
+  custo_por_arroba: number;
+  break_even: number;
+  exposicao_arrobas: number;
+  exposicao_brl_por_real_arroba: number;
+  timeline?: DailySnapshot[];
 }
 
 export interface ScenarioResult {
@@ -147,7 +345,8 @@ export interface ScenarioResult {
 
 export interface EconomicImpactReport {
   nome: string;
-  sistema: string;
+  fase: "terminacao";
+  sistema: Sistema;
   num_animais: number;
   arrobas_totais: number;
   dias_restantes: number;
@@ -199,215 +398,39 @@ export interface HedgeResult {
   };
 }
 
-export interface LotExposure {
-  nome: string;
-  sistema: string;
-  num_animais: number;
-  arrobas_totais: number;
-  custo_total: number;
-  break_even: number;
-  dias_restantes: number;
-  dias_ciclo: number;
-}
+// ============================================================================
+// Response — discriminated union por `fase`
+// ============================================================================
 
-export interface TerminacaoPastoResponse {
-  resultado: ResultTerminacaoPasto;
-  exposicao: LotExposure;
-  impacto: EconomicImpactReport;
-  hedge: HedgeResult | null;
-  cotacoes: CotacaoMercado;
-}
-
-// --- Confinamento ---
-
-export interface ConfinamentoRequest {
-  num_animais: number;
-  peso_entrada_kg: number;
-  custo_reposicao_total: number;
-  dias_ciclo: number;
-  peso_saida_estimado_kg: number;
-  consumo_ms_pct_pv: number;
-  custo_dieta_kg_ms: number;
-  custo_sanidade_dia: number;
-  custo_mao_obra_dia: number;
-  custo_instalacoes_dia: number;
-  preco_venda: number;
-  rendimento_carcaca?: number;
-  custo_frete_entrada?: number;
-  custo_frete_saida?: number;
-  custo_mortalidade_estimada?: number;
-  regiao?: string;
-  basis_estimado?: number;
-  margem_garantia_pct?: number;
-}
-
-export interface ResultConfinamento {
-  nome: string;
-  num_animais: number;
-  dias_ciclo: number;
-  arrobas_totais: number;
-  gmd_estimado: number;
-  custo_reposicao: number;
-  custo_dieta_total: number;
-  custo_dieta_por_arroba: number;
-  custo_outros_operacional: number;
-  custo_fixo: number;
-  custo_oportunidade: number;
-  custo_total: number;
-  participacao_dieta_pct: number;
-  custo_por_arroba: number;
-  custo_por_cabeca: number;
-  break_even_price: number;
-  capital_empregado: number;
-  receita_estimada: number;
-  margem_bruta: number;
-  margem_percentual: number;
-  roi_ciclo: number;
-  roi_anualizado: number;
-  exposicao_preco: number;
-  impacto_queda_10pct: number;
-  impacto_queda_20pct: number;
-  margem_apertada: boolean;
-  roi_abaixo_cdi: boolean;
-}
-
-export interface ConfinamentoResponse {
-  resultado: ResultConfinamento;
-  exposicao: LotExposure;
-  impacto: EconomicImpactReport;
-  hedge: HedgeResult | null;
-  cotacoes: CotacaoMercado;
-}
-
-// --- Semiconfinamento ---
-
-export interface SemiconfinamentoRequest {
-  num_animais: number;
-  peso_entrada_kg: number;
-  custo_reposicao_total: number;
-  dias_ciclo: number;
-  peso_saida_estimado_kg: number;
-  custo_arrendamento_dia: number;
-  custo_manutencao_pasto_dia: number;
-  consumo_suplemento_kg_dia: number;
-  custo_suplemento_kg: number;
-  custo_sanidade_dia: number;
-  custo_mao_obra_dia: number;
-  preco_venda: number;
-  rendimento_carcaca?: number;
-  regiao?: string;
-  basis_estimado?: number;
-  margem_garantia_pct?: number;
-}
-
-export interface ResultSemiconfinamento {
-  nome: string;
-  num_animais: number;
-  dias_ciclo: number;
-  arrobas_totais: number;
-  gmd_estimado: number;
-  custo_reposicao: number;
-  custo_pastagem: number;
-  custo_suplementacao: number;
-  custo_suplementacao_por_arroba: number;
-  custo_outros: number;
-  custo_oportunidade: number;
-  custo_total: number;
-  custo_por_arroba: number;
-  break_even_price: number;
-  capital_empregado: number;
-  receita_estimada: number;
-  margem_bruta: number;
-  margem_percentual: number;
-  roi_ciclo: number;
-  roi_anualizado: number;
-  exposicao_preco: number;
-  impacto_queda_10pct: number;
-  impacto_queda_20pct: number;
-  margem_apertada: boolean;
-  roi_abaixo_cdi: boolean;
-}
-
-export interface SemiconfinamentoResponse {
-  resultado: ResultSemiconfinamento;
-  exposicao: LotExposure;
-  impacto: EconomicImpactReport;
-  hedge: HedgeResult | null;
-  cotacoes: CotacaoMercado;
-}
-
-// --- Cria ---
-
-export interface CriaRequest {
-  num_matrizes: number;
-  taxa_natalidade: number;
-  taxa_desmama: number;
-  peso_desmama_kg: number;
-  custo_nutricao_ua_ano: number;
-  custo_sanidade_ua_ano: number;
-  custo_reproducao_ua_ano: number;
-  custo_mao_obra_ua_ano: number;
-  custo_arrendamento_ua_ano: number;
-  valor_matriz: number;
-  outros_custos_ua_ano?: number;
-}
-
-export interface ResultCria {
-  nome: string;
-  num_matrizes: number;
-  bezerros_desmamados: number;
-  taxa_natalidade: number;
-  taxa_desmama: number;
-  peso_desmama_kg: number;
-  kg_produzido_por_matriz: number;
-  custo_operacional_ano: number;
-  custo_oportunidade: number;
-  custo_total_ano: number;
-  custo_por_matriz_ano: number;
-  custo_por_bezerro_produzido: number;
-  capital_rebanho: number;
-}
-
-export interface CriaResponse {
+export interface LoteCriaResponse {
+  fase: "cria";
   resultado: ResultCria;
   cotacoes: CotacaoMercado;
 }
 
-// --- Recria ---
-
-export interface RecriaRequest {
-  num_animais: number;
-  peso_entrada_kg: number;
-  custo_aquisicao_total: number;
-  dias_ciclo: number;
-  peso_saida_estimado_kg: number;
-  custo_nutricao_dia: number;
-  custo_sanidade_dia: number;
-  custo_mao_obra_dia: number;
-  custo_arrendamento_dia: number;
-  outros_custos_dia?: number;
-}
-
-export interface ResultRecria {
-  nome: string;
-  num_animais: number;
-  dias_ciclo: number;
-  gmd_estimado: number;
-  kg_ganho_total: number;
-  custo_operacional: number;
-  custo_oportunidade: number;
-  custo_total: number;
-  custo_por_cabeca: number;
-  custo_por_kg_ganho: number;
-  capital_empregado: number;
-}
-
-export interface RecriaResponse {
+export interface LoteRecriaResponse {
+  fase: "recria";
   resultado: ResultRecria;
   cotacoes: CotacaoMercado;
 }
 
-// --- Simulator ---
+export interface LoteTerminacaoResponse {
+  fase: "terminacao";
+  resultado: ResultTerminacao;
+  exposicao: LotExposure;
+  impacto: EconomicImpactReport;
+  hedge: HedgeResult | null;
+  cotacoes: CotacaoMercado;
+}
+
+export type LoteCalculoResponse =
+  | LoteCriaResponse
+  | LoteRecriaResponse
+  | LoteTerminacaoResponse;
+
+// ============================================================================
+// Simulator (inalterado — agnóstico ao sistema)
+// ============================================================================
 
 export interface SimulatorScenarioInput {
   nome: string;

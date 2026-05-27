@@ -1,37 +1,43 @@
 /**
- * Gerador de template CSV/XLSX para import de lotes.
+ * Gerador de template CSV/XLSX para import de lotes (pós-refactor fase/sistema).
  *
- * Estratégia: arquivo único com TODAS as colunas (união dos 5 sistemas).
- * Cada linha-exemplo declara seu sistema em sistema_produtivo; células de
- * campos que não pertencem ao sistema da linha ficam vazias.
+ * Estratégia: arquivo único com TODAS as colunas (união das 9 combinações).
+ * Duas colunas chave: `fase` e `sistema` (snake_case). Cada linha-exemplo
+ * declara sua combinação; células de campos não-aplicáveis ficam vazias.
  *
- * Linhas-exemplo: uma por sistema, com valores dos defaults regionais.
+ * 5 linhas-exemplo (uma por combinação representativa):
+ *  - cria + pasto
+ *  - recria + pasto
+ *  - terminacao + pasto
+ *  - terminacao + confinamento
+ *  - terminacao + semiconfinamento
+ *
+ * Outras combinações (cria + semi, cria + conf, recria + semi, recria + conf)
+ * usam a mesma fórmula sistema-agnóstica — usuário replica a linha cria/recria
+ * trocando o valor da coluna `sistema`.
  */
 
 import * as XLSX from "xlsx";
-import { CAMPOS, type SistemaImport } from "./schema";
-
-const SISTEMAS_ORDEM: SistemaImport[] = [
-  "terminacao_pasto",
-  "confinamento",
-  "semiconfinamento",
-  "cria",
-  "recria",
-];
+import { CAMPOS, COMBINACOES_EXEMPLO } from "./schema";
 
 /** Header: nomes das colunas (snake_case PT). */
 function header(): string[] {
   return CAMPOS.map((c) => c.nome);
 }
 
-/** Uma linha-exemplo por sistema, com valores dos campos aplicáveis. */
+/** Uma linha-exemplo por combinação representativa. */
 function linhasExemplo(): (string | number)[][] {
-  return SISTEMAS_ORDEM.map((sistema) =>
-    CAMPOS.map((c) => {
-      const v = c.exemplo?.[sistema];
+  return COMBINACOES_EXEMPLO.map(({ fase, sistema, nomeLote }) => {
+    const key = `${fase}__${sistema}` as const;
+    return CAMPOS.map((c) => {
+      // Identidade preenchida explicitamente
+      if (c.nome === "nome_lote") return nomeLote;
+      if (c.nome === "fase") return fase;
+      if (c.nome === "sistema") return sistema;
+      const v = c.exemplo?.[key];
       return v ?? "";
-    }),
-  );
+    });
+  });
 }
 
 /** Escape mínimo pra CSV — envolve em "" se tiver vírgula/quebra/aspas. */

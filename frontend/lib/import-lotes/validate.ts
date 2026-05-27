@@ -1,35 +1,39 @@
 /**
- * Validador de linhas importadas.
+ * Validador de linhas importadas (pós-refactor fase/sistema).
  *
  * Para cada LinhaBruta, retorna LinhaValidada com:
- *  - valores parseados (number/string/sistema)
+ *  - fase + sistema detectados (alias-tolerantes)
+ *  - valores parseados
  *  - errosPorCampo: map {nome_campo → mensagem curta} — vazio se OK
- *  - sistema detectado (após resolver alias)
  *
  * Validações:
- *  - sistema_produtivo: obrigatório, alias resolvido
- *  - nome_lote: obrigatório (string não vazia)
- *  - campos obrigatórios do sistema da linha: presentes e válidos
- *  - tipo: parseável como número (vírgula ou ponto), enum reconhecido
+ *  - fase: obrigatória, valor reconhecido (cria/recria/terminacao)
+ *  - sistema: obrigatório, valor reconhecido (pasto/semi/conf)
+ *  - nome_lote: obrigatório
+ *  - campos obrigatórios da combinação `(fase, sistema)`: presentes e válidos
+ *  - tipo: parseável (número aceita BR e US), enum reconhecido
  *  - range: min/max do schema
- *  - campos não aplicáveis ao sistema: se preenchidos, AVISO (silencioso por ora)
+ *  - campos não-aplicáveis preenchidos: tolerados, não geram erro
  */
 
+import type { Fase, Sistema } from "@/lib/types";
 import type { LinhaBruta } from "./parse";
 import {
   CAMPOS,
+  FASE_ALIAS,
   SISTEMA_ALIAS,
   campoAplicavel,
   campoObrigatorio,
   type FieldDef,
-  type SistemaImport,
 } from "./schema";
 
 export interface LinhaValidada {
   /** Linha original do arquivo. */
   linha: number;
-  /** Sistema resolvido (null se não pôde detectar). */
-  sistema: SistemaImport | null;
+  /** Fase resolvida (null se inválida/ausente). */
+  fase: Fase | null;
+  /** Sistema resolvido (null se inválido/ausente). */
+  sistema: Sistema | null;
   /** Valores parseados — chaves do schema. */
   valores: Record<string, string | number>;
   /** Erros: campo → mensagem curta. */
@@ -38,38 +42,28 @@ export interface LinhaValidada {
   ok: boolean;
 }
 
-/** Parse robusto: aceita "1.234,56" (BR), "1234.56" (US), "1234,56", etc. */
+/** Parse robusto: aceita "1.234,56" (BR), "1234.56" (US), "R$ 5.250.000", etc. */
 export function parseNumeroBR(valor: string): number | null {
   const s = valor.trim();
   if (s === "") return null;
-
-  // Remove R$, espaços e %
   let limpo = s.replace(/[R$\s%]/g, "");
 
-  // Detecta separador decimal: se tem vírgula E ponto, o último é decimal
   const temVirgula = limpo.includes(",");
   const temPonto = limpo.includes(".");
 
   if (temVirgula && temPonto) {
-    // Ex: "1.234,56" → último separador é decimal
     const ultimaVirgula = limpo.lastIndexOf(",");
     const ultimoPonto = limpo.lastIndexOf(".");
     if (ultimaVirgula > ultimoPonto) {
-      // BR: ponto é milhar, vírgula é decimal
+      // BR: ponto=milhar, vírgula=decimal
       limpo = limpo.replace(/\./g, "").replace(",", ".");
     } else {
-      // US: vírgula é milhar, ponto é decimal
+      // US: vírgula=milhar, ponto=decimal
       limpo = limpo.replace(/,/g, "");
     }
   } else if (temVirgula) {
-    // Só vírgula → decimal BR
     limpo = limpo.replace(",", ".");
   } else if (temPonto) {
-    // Só ponto: pode ser decimal US (1234.56) ou milhares BR (5.250.000).
-    // Heurística:
-    //  - 2+ pontos → todos são separadores de milhar (impossível ter 2 decimais)
-    //  - 1 ponto seguido de exatamente 3 dígitos → assumir milhar BR (5.250 ≠ 5,25)
-    //  - 1 ponto seguido de 1 ou 2 dígitos → decimal US (padrão do template)
     const pontos = (limpo.match(/\./g) ?? []).length;
     if (pontos >= 2) {
       limpo = limpo.replace(/\./g, "");
@@ -77,13 +71,9 @@ export function parseNumeroBR(valor: string): number | null {
       const idx = limpo.lastIndexOf(".");
       const aposPonto = limpo.length - idx - 1;
       const antesPonto = limpo.slice(0, idx);
-      // Exceção: parte inteira "0" → SEMPRE decimal (0.022 nunca é milhar).
       if (aposPonto === 3 && antesPonto !== "0" && antesPonto !== "") {
-        // Ambíguo. Decisão: milhar BR (cenário comum em planilha de gestora).
-        // Pra forçar decimal US "1.234", escreva "1234.0" ou "1234".
         limpo = limpo.replace(/\./g, "");
       }
-      // 1 ou 2 dígitos após, ou parte inteira "0": já é decimal US válido
     }
   }
 
@@ -91,8 +81,7 @@ export function parseNumeroBR(valor: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Normaliza string p/ matching de alias de sistema. */
-function normalizarSistema(s: string): string {
+function normalizar(s: string): string {
   return s
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -103,96 +92,117 @@ function normalizarSistema(s: string): string {
 function valida1Campo(
   campo: FieldDef,
   valor: string,
-  sistema: SistemaImport,
+  fase: Fase,
+  sistema: Sistema,
 ): { erro?: string; parsed?: string | number } {
   const trimmed = valor.trim();
-  const obrigatorio = campoObrigatorio(campo, sistema);
+  const obrigatorio = campoObrigatorio(campo, fase, sistema);
 
   if (trimmed === "") {
     if (obrigatorio) return { erro: "Obrigatório" };
-    return { parsed: "" }; // opcional vazio = OK, sem parsed
+    return { parsed: "" };
   }
 
   if (campo.tipo === "string") {
     return { parsed: trimmed };
   }
 
+  if (campo.tipo === "fase") {
+    const norm = normalizar(trimmed);
+    const resolvido = FASE_ALIAS[norm];
+    if (!resolvido) return { erro: "Fase inválida. Use: cria, recria, terminacao" };
+    return { parsed: resolvido };
+  }
+
   if (campo.tipo === "sistema") {
-    const norm = normalizarSistema(trimmed);
+    const norm = normalizar(trimmed);
     const resolvido = SISTEMA_ALIAS[norm];
-    if (!resolvido) {
-      return { erro: "Sistema inválido. Use: terminacao_pasto, confinamento, semiconfinamento, cria, recria" };
-    }
+    if (!resolvido) return { erro: "Sistema inválido. Use: pasto, semiconfinamento, confinamento" };
     return { parsed: resolvido };
   }
 
   // number ou percent
   const n = parseNumeroBR(trimmed);
-  if (n === null) {
-    return { erro: "Não é um número válido" };
-  }
-  if (campo.min !== undefined && n < campo.min) {
-    return { erro: `Mínimo ${campo.min}` };
-  }
-  if (campo.max !== undefined && n > campo.max) {
-    return { erro: `Máximo ${campo.max}` };
-  }
+  if (n === null) return { erro: "Não é um número válido" };
+  if (campo.min !== undefined && n < campo.min) return { erro: `Mínimo ${campo.min}` };
+  if (campo.max !== undefined && n > campo.max) return { erro: `Máximo ${campo.max}` };
   return { parsed: n };
 }
 
 /**
- * Valida uma linha. Retorna LinhaValidada com erros por campo.
- *
- * Estratégia:
- *  1. Resolve sistema_produtivo primeiro — sem ele não dá pra saber quais
- *     campos são obrigatórios. Se inválido, marca o erro nele e pula validação
- *     dos demais (não dá pra inferir o que é obrigatório).
- *  2. Valida nome_lote (obrigatório em todos).
- *  3. Pra cada campo APLICÁVEL ao sistema (obrig + opcional), valida.
- *  4. Campos NÃO aplicáveis preenchidos: tolerados, não geram erro
- *     (a planilha tem todas as colunas — é normal).
+ * Valida uma linha. Estratégia:
+ *  1. Resolve `fase` e `sistema` primeiro — sem ambos, não dá pra saber
+ *     o que é obrigatório nos demais.
+ *  2. Valida nome_lote.
+ *  3. Pra cada campo APLICÁVEL à combinação `(fase, sistema)`, valida.
+ *  4. Campos não-aplicáveis preenchidos: silenciosamente ignorados.
  */
 export function validarLinha(linha: LinhaBruta): LinhaValidada {
   const errosPorCampo: Record<string, string> = {};
   const valores: Record<string, string | number> = {};
 
-  // 1. Sistema
-  const sistemaRaw = linha.celulas["sistema_produtivo"] ?? "";
-  const campoSistema = CAMPOS.find((c) => c.nome === "sistema_produtivo")!;
-  const resSistema = valida1Campo(campoSistema, sistemaRaw, "terminacao_pasto"); // sistema dummy só pra entrar
-  let sistema: SistemaImport | null = null;
-  if (resSistema.erro) {
-    errosPorCampo["sistema_produtivo"] = resSistema.erro;
-  } else {
-    sistema = resSistema.parsed as SistemaImport;
-    valores["sistema_produtivo"] = sistema;
+  // 1. Fase
+  const campoFase = CAMPOS.find((c) => c.nome === "fase")!;
+  const resFase = valida1Campo(
+    campoFase,
+    linha.celulas["fase"] ?? "",
+    "terminacao", // dummy
+    "pasto",      // dummy
+  );
+  let fase: Fase | null = null;
+  if (resFase.erro) errosPorCampo["fase"] = resFase.erro;
+  else {
+    fase = resFase.parsed as Fase;
+    valores["fase"] = fase;
   }
 
-  // 2. Sem sistema válido: validamos só nome_lote e paramos (não dá pra saber
-  // o que é obrigatório nos demais campos).
-  const campoNome = CAMPOS.find((c) => c.nome === "nome_lote")!;
-  // Para nome_lote, usa o sistema detectado OU terminacao_pasto como dummy
-  // (nome_lote é obrigatório em TODOS os sistemas).
-  const resNome = valida1Campo(campoNome, linha.celulas["nome_lote"] ?? "", sistema ?? "terminacao_pasto");
-  if (resNome.erro) errosPorCampo["nome_lote"] = resNome.erro;
-  else if (resNome.parsed !== undefined && resNome.parsed !== "") valores["nome_lote"] = resNome.parsed;
+  // 2. Sistema
+  const campoSistema = CAMPOS.find((c) => c.nome === "sistema")!;
+  const resSistema = valida1Campo(
+    campoSistema,
+    linha.celulas["sistema"] ?? "",
+    "terminacao",
+    "pasto",
+  );
+  let sistema: Sistema | null = null;
+  if (resSistema.erro) errosPorCampo["sistema"] = resSistema.erro;
+  else {
+    sistema = resSistema.parsed as Sistema;
+    valores["sistema"] = sistema;
+  }
 
-  if (!sistema) {
+  // 3. nome_lote (obrigatório em todas as combinações)
+  const campoNome = CAMPOS.find((c) => c.nome === "nome_lote")!;
+  const resNome = valida1Campo(
+    campoNome,
+    linha.celulas["nome_lote"] ?? "",
+    fase ?? "terminacao",
+    sistema ?? "pasto",
+  );
+  if (resNome.erro) errosPorCampo["nome_lote"] = resNome.erro;
+  else if (resNome.parsed !== undefined && resNome.parsed !== "") {
+    valores["nome_lote"] = resNome.parsed;
+  }
+
+  // 4. Sem fase ou sistema válidos, paramos aqui (não dá pra saber o que é
+  // obrigatório nos demais campos).
+  if (!fase || !sistema) {
     return {
       linha: linha.linha,
-      sistema: null,
+      fase,
+      sistema,
       valores,
       errosPorCampo,
       ok: Object.keys(errosPorCampo).length === 0,
     };
   }
 
-  // 3. Demais campos aplicáveis ao sistema
+  // 5. Demais campos aplicáveis à combinação
   for (const campo of CAMPOS) {
-    if (campo.nome === "sistema_produtivo" || campo.nome === "nome_lote") continue;
-    if (!campoAplicavel(campo, sistema)) continue;
+    if (campo.nome === "fase" || campo.nome === "sistema" || campo.nome === "nome_lote") continue;
+    if (!campoAplicavel(campo, fase, sistema)) continue;
     const raw = linha.celulas[campo.nome] ?? "";
-    const res = valida1Campo(campo, raw, sistema);
+    const res = valida1Campo(campo, raw, fase, sistema);
     if (res.erro) {
       errosPorCampo[campo.nome] = res.erro;
     } else if (res.parsed !== undefined && res.parsed !== "") {
@@ -202,6 +212,7 @@ export function validarLinha(linha: LinhaBruta): LinhaValidada {
 
   return {
     linha: linha.linha,
+    fase,
     sistema,
     valores,
     errosPorCampo,
@@ -209,12 +220,10 @@ export function validarLinha(linha: LinhaBruta): LinhaValidada {
   };
 }
 
-/** Valida todas as linhas. */
 export function validarTodas(linhas: LinhaBruta[]): LinhaValidada[] {
   return linhas.map(validarLinha);
 }
 
-/** Contagem rápida pra header da preview. */
 export function contar(linhas: LinhaValidada[]): { ok: number; comErro: number } {
   let ok = 0;
   let comErro = 0;

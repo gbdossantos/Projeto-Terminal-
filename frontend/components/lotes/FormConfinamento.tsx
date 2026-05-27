@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { ConfinamentoRequest, ConfinamentoResponse } from "@/lib/types";
-import { calcularConfinamento, fetchCotacoes } from "@/lib/api";
+import type {
+  LoteInputTerminacao, LoteTerminacaoResponse, Sistema,
+} from "@/lib/types";
+import { calcularLote, fetchCotacoes } from "@/lib/api";
 import { fmtBRL, fmtPct } from "@/lib/utils/format";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
@@ -12,7 +14,7 @@ import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaB
 import { PainelHedge } from "@/components/decision/PainelHedge";
 import { Field } from "@/components/lotes/Field";
 import {
-  DEFAULTS_CONFINAMENTO as DEFAULTS,
+  DEFAULTS_CONFINAMENTO,
   EXEMPLO_CONFINAMENTO,
   ZERO_CONFINAMENTO,
 } from "@/lib/defaults-sistema";
@@ -24,37 +26,44 @@ import { HedgeMilhoToggle, type HedgeMilhoState } from "@/components/lotes/Hedge
 
 // Fator de matéria seca do milho grão (~88% MS). Constante zootécnica padrão.
 // Usado pra converter R$/saca natural (60kg) em R$/kg MS que o engine espera.
-// Para dieta majoritariamente milho — em rações balanceadas o fator difere
-// ligeiramente, mas pro MVP é aproximação razoável.
 const FATOR_MS_MILHO = 0.88;
 
-export default function FormConfinamento() {
-  const [form, setForm] = useState(DEFAULTS);
-  const [data, setData] = useState<ConfinamentoResponse | null>(null);
+interface Props {
+  /** Sistema vem do seletor da page — pra FormConfinamento é sempre "confinamento". */
+  sistema: Sistema;
+}
+
+export default function FormConfinamento({ sistema }: Props) {
+  const [form, setForm] = useState<LoteInputTerminacao>({
+    fase: "terminacao",
+    sistema,
+    ...DEFAULTS_CONFINAMENTO,
+  } as LoteInputTerminacao);
+  const [data, setData] = useState<LoteTerminacaoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showExemploBanner, setShowExemploBanner] = useState(false);
   const [hedgeMilho, setHedgeMilho] = useState<HedgeMilhoState>({ tipo: "sem" });
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  // Detecta primeira visita pos-hidratacao (evita mismatch SSR/CSR).
   // Pending load (lote salvo a ser carregado) tem prioridade sobre o exemplo.
   useEffect(() => {
-    const pending = consumePendingLoad<ConfinamentoRequest>("confinamento");
+    const pending = consumePendingLoad<LoteInputTerminacao>("terminacao", sistema);
     if (pending) {
       setForm(pending);
       return;
     }
     if (isFirstVisit()) {
-      setForm(EXEMPLO_CONFINAMENTO);
+      setForm({ fase: "terminacao", sistema, ...EXEMPLO_CONFINAMENTO } as LoteInputTerminacao);
       setShowExemploBanner(true);
     }
-  }, []);
+  }, [sistema]);
 
   const handleSave = (nome: string) => {
     if (!data) return;
     saveLote({
-      sistema: "confinamento",
+      fase: "terminacao",
+      sistema,
       nome,
       inputs: form,
       resultadoCache: data,
@@ -80,10 +89,7 @@ export default function FormConfinamento() {
       .then((c) => {
         setForm((f) => {
           const next = { ...f };
-          // Pré-popula cotação de venda com arroba CEPEA
           if (c.arroba_boi_gordo) next.preco_venda = c.arroba_boi_gordo;
-          // Pré-popula custo da dieta a partir da cotação ESALQ (milho saca 60kg)
-          // Conversão: R$/saca / 60 kg = R$/kg natural; / fator_MS = R$/kg MS
           if (c.milho_esalq) next.custo_dieta_kg_ms = c.milho_esalq / 60 / FATOR_MS_MILHO;
           return next;
         });
@@ -91,11 +97,11 @@ export default function FormConfinamento() {
       .catch(() => {});
   }, []);
 
-  const calculate = useCallback(async (req: ConfinamentoRequest) => {
+  const calculate = useCallback(async (req: LoteInputTerminacao) => {
     setLoading(true);
     setError(null);
     try {
-      setData(await calcularConfinamento(req));
+      setData(await calcularLote(req));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -109,9 +115,8 @@ export default function FormConfinamento() {
     return () => clearTimeout(debounceRef.current);
   }, [form, calculate]);
 
-  const set = (key: keyof ConfinamentoRequest, value: number) => {
+  const set = (key: keyof LoteInputTerminacao, value: number) => {
     setForm((f) => ({ ...f, [key]: value }));
-    // Primeira interacao do usuario apos lote-exemplo: marca flag e some banner.
     if (showExemploBanner) {
       markFirstVisitDone();
       setShowExemploBanner(false);
@@ -119,7 +124,7 @@ export default function FormConfinamento() {
   };
 
   const handleComeceDoZero = () => {
-    setForm(ZERO_CONFINAMENTO);
+    setForm({ fase: "terminacao", sistema, ...ZERO_CONFINAMENTO } as LoteInputTerminacao);
     markFirstVisitDone();
     setShowExemploBanner(false);
   };
@@ -186,11 +191,15 @@ export default function FormConfinamento() {
               Conversao p/ os campos do engine (consumo_ms_pct_pv, custo_dieta_kg_ms)
               acontece no onChange — pesoMedio = (entrada + saida) / 2; fator MS = 0.88. */}
           {(() => {
+            // Campos sparse: em runtime sempre presentes em sistema=confinamento
+            // (defaults preenchidos + validação Pydantic). Fallback 0 só pra agradar o tipo.
+            const consumoMsPctPv = form.consumo_ms_pct_pv ?? 0;
+            const custoDietaKgMs = form.custo_dieta_kg_ms ?? 0;
             const pesoMedio = (form.peso_entrada_kg + form.peso_saida_estimado_kg) / 2;
-            const consumoKgMsCabDia = pesoMedio > 0 ? form.consumo_ms_pct_pv * pesoMedio : 0;
-            const custoSacaMilho = form.custo_dieta_kg_ms * 60 * FATOR_MS_MILHO;
-            const pctPV = (form.consumo_ms_pct_pv * 100).toFixed(2);
-            const rsKgMs = form.custo_dieta_kg_ms.toFixed(2);
+            const consumoKgMsCabDia = pesoMedio > 0 ? consumoMsPctPv * pesoMedio : 0;
+            const custoSacaMilho = custoDietaKgMs * 60 * FATOR_MS_MILHO;
+            const pctPV = (consumoMsPctPv * 100).toFixed(2);
+            const rsKgMs = custoDietaKgMs.toFixed(2);
             return (
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -237,7 +246,7 @@ export default function FormConfinamento() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
             <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
-            <Field label="Instalacoes" value={form.custo_instalacoes_dia} onChange={(v) => set("custo_instalacoes_dia", v)} step={0.1} />
+            <Field label="Instalacoes" value={form.custo_instalacoes_dia ?? 0} onChange={(v) => set("custo_instalacoes_dia", v)} step={0.1} />
           </div>
         </div>
 
@@ -278,7 +287,7 @@ export default function FormConfinamento() {
             <MetricCard label="ROI anualizado" value={fmtPct(r.roi_anualizado)} />
           </div>
 
-          <MetricCard label="Participacao da dieta" value={fmtPct(r.participacao_dieta_pct)} compact />
+          <MetricCard label="Participacao da dieta" value={fmtPct(r.participacao_dieta_pct ?? 0)} compact />
 
           <div className="space-y-4">
             <h2 className="text-sm font-medium text-t-primary">Painel de impacto economico</h2>

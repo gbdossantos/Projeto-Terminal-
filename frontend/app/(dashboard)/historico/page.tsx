@@ -3,12 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { listLotes, deleteLote, setPendingLoad, type LoteSalvo } from "@/lib/lotes-storage";
-import { SISTEMAS_PRODUTIVOS, type SistemaProdutivo } from "@/lib/sistemas";
+import { FASE_LABEL, SISTEMA_LABEL } from "@/lib/types";
 import { fmtPct } from "@/lib/utils/format";
-
-const sistemaLabel: Record<SistemaProdutivo, string> = Object.fromEntries(
-  SISTEMAS_PRODUTIVOS.map((s) => [s.id, s.label]),
-) as Record<SistemaProdutivo, string>;
 
 function fmtData(iso: string): string {
   const d = new Date(iso);
@@ -26,7 +22,7 @@ export default function HistoricoPage() {
   }, []);
 
   const handleAbrir = (lote: LoteSalvo) => {
-    setPendingLoad({ sistema: lote.sistema, inputs: lote.inputs });
+    setPendingLoad({ fase: lote.fase, sistema: lote.sistema, inputs: lote.inputs });
     router.push("/lotes");
   };
 
@@ -80,7 +76,7 @@ export default function HistoricoPage() {
                   borderBottom: "0.5px solid var(--border-subtle)",
                 }}
               >
-                {["Nome", "Sistema", "Salvo em", "Margem", ""].map((h, i) => (
+                {["Nome", "Fase · Sistema", "Salvo em", "Margem", ""].map((h, i) => (
                   <th
                     key={h}
                     className={i === 0 ? "text-left" : i === 4 ? "text-right" : "text-left"}
@@ -134,7 +130,7 @@ export default function HistoricoPage() {
                       color: "var(--text-tertiary)",
                     }}
                   >
-                    {sistemaLabel[l.sistema]}
+                    {FASE_LABEL[l.fase]} · {SISTEMA_LABEL[l.sistema]}
                   </td>
                   <td
                     style={{

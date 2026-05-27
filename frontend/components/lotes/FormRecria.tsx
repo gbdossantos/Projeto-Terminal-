@@ -1,46 +1,55 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { RecriaRequest, RecriaResponse } from "@/lib/types";
-import { calcularRecria, fetchCotacoes } from "@/lib/api";
+import type { LoteInputRecria, LoteRecriaResponse, Sistema } from "@/lib/types";
+import { calcularLote, fetchCotacoes } from "@/lib/api";
 import { fmtBRL } from "@/lib/utils/format";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { PainelMercado } from "@/components/metrics/PainelMercado";
 import { Field } from "@/components/lotes/Field";
-import { DEFAULTS_RECRIA as DEFAULTS } from "@/lib/defaults-sistema";
+import { DEFAULTS_RECRIA } from "@/lib/defaults-sistema";
 import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 
-export default function FormRecria() {
-  const [form, setForm] = useState(DEFAULTS);
-  const [data, setData] = useState<RecriaResponse | null>(null);
+interface Props {
+  /** Sistema é meta-tag em Recria (não entra em cálculo). Vem do seletor. */
+  sistema: Sistema;
+}
+
+export default function FormRecria({ sistema }: Props) {
+  const [form, setForm] = useState<LoteInputRecria>({
+    fase: "recria",
+    sistema,
+    ...DEFAULTS_RECRIA,
+  });
+  const [data, setData] = useState<LoteRecriaResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    const pending = consumePendingLoad<RecriaRequest>("recria");
+    const pending = consumePendingLoad<LoteInputRecria>("recria", sistema);
     if (pending) setForm(pending);
-
     fetchCotacoes().catch(() => {});
-  }, []);
+  }, [sistema]);
 
   const handleSave = (nome: string) => {
     if (!data) return;
     saveLote({
-      sistema: "recria",
+      fase: "recria",
+      sistema,
       nome,
       inputs: form,
       resultadoCache: data,
-      margemPct: null, // Recria nao tem margem percentual (custo/kg ganho)
+      margemPct: null,
     });
   };
 
-  const calculate = useCallback(async (req: RecriaRequest) => {
+  const calculate = useCallback(async (req: LoteInputRecria) => {
     setLoading(true);
     setError(null);
     try {
-      setData(await calcularRecria(req));
+      setData(await calcularLote(req));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -54,7 +63,7 @@ export default function FormRecria() {
     return () => clearTimeout(debounceRef.current);
   }, [form, calculate]);
 
-  const set = (key: keyof RecriaRequest, value: number) =>
+  const set = (key: keyof LoteInputRecria, value: number) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   const r = data?.resultado;
