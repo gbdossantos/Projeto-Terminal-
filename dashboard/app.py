@@ -34,11 +34,8 @@ from models.economic_impact import EconomicImpactEngine
 from models.hedge_engine import HedgeEngine
 from models.constants import BASIS_REGIAO
 from models.production_systems import (
-    InputConfinamento,
-    InputCria,
-    InputRecria,
-    InputSemiconfinamento,
-    InputTerminacaoPasto,
+    Fase, Sistema,
+    LoteInputCria, LoteInputRecria, LoteInputTerminacao,
 )
 
 
@@ -632,7 +629,8 @@ if sistema == "Terminação — Pasto":
         value=float(cotacoes.arroba_boi_gordo or 315.0), step=1.0,
     )
 
-    inp = InputTerminacaoPasto(
+    inp = LoteInputTerminacao(
+        fase=Fase.TERMINACAO, sistema=Sistema.PASTO,
         nome="Terminação Pasto",
         data_entrada=date.today(),
         num_animais=num_animais,
@@ -649,7 +647,7 @@ if sistema == "Terminação — Pasto":
         rendimento_carcaca=rendimento,
     )
     try:
-        r = engine.calcular_terminacao_pasto(inp, preco_venda)
+        r = engine.calcular_terminacao(inp, preco_venda)
     except (ValueError, ZeroDivisionError) as e:
         st.error(f"Erro no cálculo: {e}. Verifique os dados do lote.")
         st.stop()
@@ -756,7 +754,8 @@ elif sistema == "Terminação — Confinamento":
         value=float(cotacoes.arroba_boi_gordo or 315.0), step=1.0,
     )
 
-    inp = InputConfinamento(
+    inp = LoteInputTerminacao(
+        fase=Fase.TERMINACAO, sistema=Sistema.CONFINAMENTO,
         nome="Confinamento",
         data_entrada=date.today(),
         num_animais=num_animais,
@@ -775,7 +774,7 @@ elif sistema == "Terminação — Confinamento":
         rendimento_carcaca=rendimento,
     )
     try:
-        r = engine.calcular_confinamento(inp, preco_venda)
+        r = engine.calcular_terminacao(inp, preco_venda)
     except (ValueError, ZeroDivisionError) as e:
         st.error(f"Erro no cálculo: {e}. Verifique os dados do lote.")
         st.stop()
@@ -869,7 +868,8 @@ elif sistema == "Terminação — Semiconfinamento":
         value=float(cotacoes.arroba_boi_gordo or 315.0), step=1.0,
     )
 
-    inp = InputSemiconfinamento(
+    inp = LoteInputTerminacao(
+        fase=Fase.TERMINACAO, sistema=Sistema.SEMICONFINAMENTO,
         nome="Semiconfinamento",
         data_entrada=date.today(),
         num_animais=num_animais,
@@ -886,7 +886,7 @@ elif sistema == "Terminação — Semiconfinamento":
         rendimento_carcaca=rendimento,
     )
     try:
-        r = engine.calcular_semiconfinamento(inp, preco_venda)
+        r = engine.calcular_terminacao(inp, preco_venda)
     except (ValueError, ZeroDivisionError) as e:
         st.error(f"Erro no cálculo: {e}. Verifique os dados do lote.")
         st.stop()
@@ -981,7 +981,8 @@ elif sistema == "Cria":
         custo_ar  = c5.number_input("Arrendamento", 0, 5000, val_int(ex, "custo_arrendamento_ua_ano", 350), step=10)
         outros    = c6.number_input("Outros", 0, 2000, val_int(ex, "outros_custos_ua_ano", 80), step=10)
 
-    inp = InputCria(
+    inp = LoteInputCria(
+        fase=Fase.CRIA, sistema=Sistema.PASTO,  # sistema é meta-tag (Streamlit legado: default Pasto)
         nome="Cria",
         data_referencia=date.today(),
         num_matrizes=num_matrizes,
@@ -1059,7 +1060,8 @@ elif sistema == "Recria":
         custo_mo   = c3.number_input("Mão de obra", 0.0, 10.0, val_float(ex, "custo_mao_obra_dia", 0.9), step=0.1)
         custo_arrd = c4.number_input("Arrendamento", 0.0, 15.0, val_float(ex, "custo_arrendamento_dia", 1.8), step=0.1)
 
-    inp = InputRecria(
+    inp = LoteInputRecria(
+        fase=Fase.RECRIA, sistema=Sistema.PASTO,  # sistema é meta-tag (Streamlit legado: default Pasto)
         nome="Recria",
         data_entrada=date.today(),
         num_animais=num_animais,

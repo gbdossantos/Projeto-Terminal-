@@ -1,8 +1,10 @@
 """
-Terminal — Exposure Engine
-============================
-Projeta a timeline econômica de um lote de terminação,
-transformando um snapshot estático em um filme contínuo.
+Terminal — Exposure Engine (pós-refactor fase/sistema)
+========================================================
+Projeta a timeline econômica de um lote de TERMINAÇÃO dia a dia.
+
+Cobertura: apenas Fase.TERMINACAO. Cria/Recria não têm exposure path
+(não produzem arrobas — output é R$/bezerro e R$/kg ganho, não R$/@).
 
 Para cada dia do ciclo, calcula:
     - Peso projetado do animal
@@ -11,11 +13,11 @@ Para cada dia do ciclo, calcula:
     - Break-even dinâmico (que muda conforme o custo acumula)
     - Exposição em R$ ao preço de mercado
 
-Consome os Inputs existentes em production_systems.py.
-Não altera nem substitui o cost_model_v2 — complementa.
+Dispatch de fórmulas por sistema vive em `parametros_sistema`. Este engine
+não tem `isinstance` nem `if sistema == ...` — chama `ps.custo_diario_por_cab`
+e ponto.
 
-Princípio: o risco não é estático. Todo dia que passa, o custo
-afundado aumenta e o break-even sobe. O produtor precisa ver isso.
+Convergência com cost_model_v2.calcular_terminacao: 0.00% testada.
 
 Classes:
     DailySnapshot   — estado econômico do lote em um dia específico
@@ -27,29 +29,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from typing import Union
-
-from models.production_systems import (
-    InputConfinamento,
-    InputSemiconfinamento,
-    InputTerminacaoPasto,
-    RENDIMENTO_PASTO,
-    RENDIMENTO_CONFINAMENTO,
-    RENDIMENTO_SEMI,
-)
-
-# ---------------------------------------------------------------------------
-# Constantes
-# ---------------------------------------------------------------------------
 
 from models.constants import KG_POR_ARROBA
-
-# Type alias para os inputs de terminação aceitos
-InputTerminacao = Union[
-    InputTerminacaoPasto,
-    InputConfinamento,
-    InputSemiconfinamento,
-]
+from models.production_systems import (
+    Fase,
+    Sistema,
+    LoteInputTerminacao,
+)
+from models import parametros_sistema as ps
 
 
 # ---------------------------------------------------------------------------
@@ -61,24 +48,24 @@ class DailySnapshot:
     """
     Estado econômico do lote em um dia específico do ciclo.
 
-    Cada snapshot é uma foto: 'se eu vendesse hoje,
-    qual seria minha situação econômica?'
+    Cada snapshot é uma foto: 'se eu vendesse hoje, qual seria minha
+    situação econômica?'
     """
 
     dia: int                            # dia do ciclo (0 = entrada)
     data: date                          # data calendário
 
     # Produção
-    peso_medio_kg: float                # peso médio projetado do animal
-    arrobas_projetadas: float           # arrobas totais do lote na venda
+    peso_medio_kg: float
+    arrobas_projetadas: float
 
     # Custos
-    custo_acumulado: float              # R$ total gasto até este dia
-    custo_diario_lote: float            # R$/dia do lote inteiro
-    custo_por_arroba: float             # custo/@ acumulado até aqui
+    custo_acumulado: float
+    custo_diario_lote: float
+    custo_por_arroba: float
 
-    # Indicadores de decisão
-    break_even: float                   # preço mínimo da @ para empatar
+    # Indicador de decisão
+    break_even: float
 
 
 @dataclass(frozen=True)
@@ -86,59 +73,56 @@ class LotExposure:
     """
     Exposição completa de um lote de terminação.
 
-    Contém a timeline dia a dia e o snapshot consolidado
-    na data projetada de venda.
-
-    Este é o objeto que a Economic Impact Layer consome.
+    Pós-refactor: `fase` e `sistema` são tipados (enum), substituindo o
+    `sistema: str` livre da versão anterior. `fase` é sempre Fase.TERMINACAO
+    enquanto Exposure não cobre cria/recria.
     """
 
     # Identificação
     nome: str
-    sistema: str                        # "pasto" | "confinamento" | "semi"
+    fase: Fase                       # sempre Fase.TERMINACAO
+    sistema: Sistema                 # tipado (substitui str livre antigo)
     num_animais: int
     data_entrada: date
     data_venda_projetada: date
     dias_ciclo: int
-    dias_restantes: int                 # dias até a venda a partir de hoje
+    dias_restantes: int
 
     # Produção projetada na venda
     peso_entrada_kg: float
     peso_saida_kg: float
     rendimento_carcaca: float
-    arrobas_totais: float               # arrobas na data de venda
+    arrobas_totais: float
 
     # Custos consolidados na venda
-    custo_reposicao: float              # capital de compra dos animais
-    custo_operacional_total: float      # custos diários acumulados
-    custo_oportunidade: float           # custo de oportunidade do capital
-    custo_total: float                  # tudo somado
-    custo_por_arroba: float             # custo/@ final
-    break_even: float                   # = custo_por_arroba
+    custo_reposicao: float
+    custo_operacional_total: float
+    custo_oportunidade: float
+    custo_total: float
+    custo_por_arroba: float
+    break_even: float
 
     # Exposição ao preço
-    exposicao_arrobas: float            # = arrobas_totais
-    exposicao_brl_por_real_arroba: float # R$ de impacto por R$1/@ de variação
+    exposicao_arrobas: float
+    exposicao_brl_por_real_arroba: float
 
-    # Timeline completa (1 snapshot por dia)
+    # Timeline (1 snapshot por dia)
     timeline: list[DailySnapshot] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Engine de cálculo
+# Engine
 # ---------------------------------------------------------------------------
 
 class ExposureEngine:
     """
     Projeta a exposição econômica de um lote de terminação ao longo do tempo.
 
-    Stateless — cada chamada é pura, sem efeitos colaterais.
-
-    Aceita qualquer Input de terminação (pasto, confinamento, semi)
-    e retorna um LotExposure completo.
+    Stateless. Aceita apenas LoteInputTerminacao (fase=TERMINACAO).
 
     Uso:
         engine = ExposureEngine()
-        exposure = engine.calcular(lote_input)
+        exposure = engine.calcular(lote_terminacao)
     """
 
     # ------------------------------------------------------------------
@@ -147,66 +131,84 @@ class ExposureEngine:
 
     def calcular(
         self,
-        inp: InputTerminacao,
+        inp: LoteInputTerminacao,
         data_referencia: date | None = None,
     ) -> LotExposure:
         """
         Calcula a exposição completa do lote.
 
-        Args:
-            inp: Input de qualquer sistema de terminação.
-            data_referencia: Data de 'hoje' para cálculo de dias restantes.
-                             Default: date.today().
-
-        Returns:
-            LotExposure com timeline e snapshot consolidado.
+        Validação:
+        - inp.fase deve ser Fase.TERMINACAO (já garantido no __post_init__
+          do LoteInputTerminacao, mas re-validamos pra defesa em profundidade).
         """
+        if inp.fase != Fase.TERMINACAO:
+            raise ValueError(
+                f"ExposureEngine só aceita Fase.TERMINACAO, recebeu {inp.fase}"
+            )
         if data_referencia is None:
             data_referencia = date.today()
 
-        # --- Extrair parâmetros normalizados do input ---
-        params = self._normalizar_input(inp)
+        # Parâmetros — única fonte (parametros_sistema)
+        rendimento = ps.rendimento_carcaca(inp)
+        custo_dia_cab = ps.custo_diario_por_cab(inp)
+        custo_fixo = (
+            inp.custo_frete_entrada
+            + inp.custo_frete_saida
+            + inp.custo_mortalidade_estimada
+        )
 
-        # --- Construir timeline dia a dia ---
-        timeline = self._construir_timeline(params)
-
-        # --- Snapshot consolidado na data de venda ---
+        # Timeline dia a dia
+        timeline = self._construir_timeline(
+            inp=inp, rendimento=rendimento,
+            custo_dia_cab=custo_dia_cab, custo_fixo=custo_fixo,
+        )
         snapshot_final = timeline[-1]
 
-        # --- Custo de oportunidade (mesma base do cost_model_v2) ---
-        # O v2 usa apenas custo_diário × animais × dias como base operacional,
-        # excluindo custo fixo (frete, mortalidade) da base de oportunidade.
-        custo_op_puro = params["custo_dia_cab"] * params["num_animais"] * params["dias_ciclo"]
+        # Custo de oportunidade (base operacional pura — sem custo fixo,
+        # mesma lógica do cost_model_v2 pra convergir 0.00%)
+        custo_op_puro = custo_dia_cab * inp.num_animais * inp.dias_ciclo
         custo_oportunidade = self._custo_oportunidade(
-            capital_base=params["custo_reposicao"],
+            capital_base=inp.custo_reposicao_total,
             custo_operacional=custo_op_puro,
-            taxa_mensal=params["taxa_oportunidade_mensal"],
-            dias=params["dias_ciclo"],
+            taxa_mensal=inp.taxa_oportunidade_mensal,
+            dias=inp.dias_ciclo,
         )
 
         custo_total = snapshot_final.custo_acumulado + custo_oportunidade
-        arrobas = snapshot_final.arrobas_projetadas
+
+        # ⚠️ Precisão de cálculo ≠ precisão de display.
+        # snapshot_final.arrobas_projetadas é round(_, 1) — display da timeline.
+        # Usar isso aqui como divisor injetava ruído no custo_por_arroba quando
+        # `peso × rendimento / 15` cai em dízima (ex: semiconfinamento). Bug
+        # latente no engine antigo, mascarado pela tolerância 0.1% do teste
+        # pré-refactor; exposto pelo critério 0.00% literal.
+        # Correção: recomputar arrobas_brutas direto dos inputs, mesma fórmula
+        # e ordem de operações que cost_model_v2 usa.
+        arrobas = (
+            inp.peso_saida_estimado_kg * rendimento / KG_POR_ARROBA * inp.num_animais
+        )
         custo_por_arroba = custo_total / arrobas if arrobas > 0 else 0.0
 
-        # --- Dias restantes ---
-        data_venda = params["data_entrada"] + timedelta(days=params["dias_ciclo"])
+        # Dias restantes (até data de venda)
+        data_venda = inp.data_entrada + timedelta(days=inp.dias_ciclo)
         dias_restantes = max(0, (data_venda - data_referencia).days)
 
         return LotExposure(
             nome=inp.nome,
-            sistema=params["sistema"],
-            num_animais=params["num_animais"],
-            data_entrada=params["data_entrada"],
+            fase=inp.fase,
+            sistema=inp.sistema,
+            num_animais=inp.num_animais,
+            data_entrada=inp.data_entrada,
             data_venda_projetada=data_venda,
-            dias_ciclo=params["dias_ciclo"],
+            dias_ciclo=inp.dias_ciclo,
             dias_restantes=dias_restantes,
-            peso_entrada_kg=params["peso_entrada_kg"],
-            peso_saida_kg=params["peso_saida_kg"],
-            rendimento_carcaca=params["rendimento"],
+            peso_entrada_kg=inp.peso_entrada_kg,
+            peso_saida_kg=inp.peso_saida_estimado_kg,
+            rendimento_carcaca=rendimento,
             arrobas_totais=round(arrobas, 1),
-            custo_reposicao=round(params["custo_reposicao"], 2),
+            custo_reposicao=round(inp.custo_reposicao_total, 2),
             custo_operacional_total=round(
-                snapshot_final.custo_acumulado - params["custo_reposicao"], 2
+                snapshot_final.custo_acumulado - inp.custo_reposicao_total, 2
             ),
             custo_oportunidade=round(custo_oportunidade, 2),
             custo_total=round(custo_total, 2),
@@ -218,136 +220,28 @@ class ExposureEngine:
         )
 
     # ------------------------------------------------------------------
-    # Normalização de inputs
-    # ------------------------------------------------------------------
-
-    def _normalizar_input(self, inp: InputTerminacao) -> dict:
-        """
-        Extrai parâmetros comuns de qualquer Input de terminação
-        em um dict normalizado.
-
-        Cada sistema tem estrutura de custos diferente, mas todos
-        compartilham: animais, pesos, dias, rendimento, reposição.
-        O custo diário por cabeça é calculado de forma específica.
-        """
-        if isinstance(inp, InputTerminacaoPasto):
-            custo_dia_cab = (
-                inp.custo_suplementacao_dia
-                + inp.custo_sanidade_dia
-                + inp.custo_mao_obra_dia
-                + inp.custo_arrendamento_dia
-                + inp.outros_custos_dia
-            )
-            custo_fixo = (
-                inp.custo_frete_entrada
-                + inp.custo_frete_saida
-                + inp.custo_mortalidade_estimada
-            )
-            return {
-                "sistema": "pasto",
-                "num_animais": inp.num_animais,
-                "data_entrada": inp.data_entrada,
-                "peso_entrada_kg": inp.peso_entrada_kg,
-                "peso_saida_kg": inp.peso_saida_estimado_kg,
-                "dias_ciclo": inp.dias_ciclo,
-                "rendimento": inp.rendimento_carcaca,
-                "custo_reposicao": inp.custo_reposicao_total,
-                "custo_dia_cab": custo_dia_cab,
-                "custo_fixo": custo_fixo,
-                "taxa_oportunidade_mensal": inp.taxa_oportunidade_mensal,
-            }
-
-        elif isinstance(inp, InputConfinamento):
-            # Dieta calculada sobre peso médio do ciclo
-            # (mesma lógica do cost_model_v2.calcular_confinamento)
-            peso_medio = (inp.peso_entrada_kg + inp.peso_saida_estimado_kg) / 2
-            custo_dieta_dia = peso_medio * inp.consumo_ms_pct_pv * inp.custo_dieta_kg_ms
-            custo_dia_cab = (
-                custo_dieta_dia
-                + inp.custo_sanidade_dia
-                + inp.custo_mao_obra_dia
-                + inp.custo_instalacoes_dia
-                + inp.outros_custos_dia
-            )
-            custo_fixo = (
-                inp.custo_frete_entrada
-                + inp.custo_frete_saida
-                + inp.custo_mortalidade_estimada
-            )
-            return {
-                "sistema": "confinamento",
-                "num_animais": inp.num_animais,
-                "data_entrada": inp.data_entrada,
-                "peso_entrada_kg": inp.peso_entrada_kg,
-                "peso_saida_kg": inp.peso_saida_estimado_kg,
-                "dias_ciclo": inp.dias_ciclo,
-                "rendimento": inp.rendimento_carcaca,
-                "custo_reposicao": inp.custo_reposicao_total,
-                "custo_dia_cab": custo_dia_cab,
-                "custo_fixo": custo_fixo,
-                "taxa_oportunidade_mensal": inp.taxa_oportunidade_mensal,
-            }
-
-        elif isinstance(inp, InputSemiconfinamento):
-            custo_dia_cab = (
-                inp.custo_arrendamento_dia
-                + inp.custo_manutencao_pasto_dia
-                + (inp.consumo_suplemento_kg_dia * inp.custo_suplemento_kg)
-                + inp.custo_sanidade_dia
-                + inp.custo_mao_obra_dia
-                + inp.outros_custos_dia
-            )
-            custo_fixo = (
-                inp.custo_frete_entrada
-                + inp.custo_frete_saida
-                + inp.custo_mortalidade_estimada
-            )
-            return {
-                "sistema": "semi",
-                "num_animais": inp.num_animais,
-                "data_entrada": inp.data_entrada,
-                "peso_entrada_kg": inp.peso_entrada_kg,
-                "peso_saida_kg": inp.peso_saida_estimado_kg,
-                "dias_ciclo": inp.dias_ciclo,
-                "rendimento": inp.rendimento_carcaca,
-                "custo_reposicao": inp.custo_reposicao_total,
-                "custo_dia_cab": custo_dia_cab,
-                "custo_fixo": custo_fixo,
-                "taxa_oportunidade_mensal": inp.taxa_oportunidade_mensal,
-            }
-
-        else:
-            raise TypeError(
-                f"Input não suportado: {type(inp).__name__}. "
-                "Use InputTerminacaoPasto, InputConfinamento ou InputSemiconfinamento."
-            )
-
-    # ------------------------------------------------------------------
     # Construção da timeline
     # ------------------------------------------------------------------
 
-    def _construir_timeline(self, params: dict) -> list[DailySnapshot]:
+    def _construir_timeline(
+        self,
+        inp: LoteInputTerminacao,
+        rendimento: float,
+        custo_dia_cab: float,
+        custo_fixo: float,
+    ) -> list[DailySnapshot]:
         """
-        Constrói a timeline dia a dia do lote.
-
         Premissas:
-            - Ganho de peso linear (GMD constante ao longo do ciclo).
-              Simplificação aceitável para projeção econômica — modelos
-              zootécnicos mais precisos usariam curvas sigmoidais, mas
-              o erro na projeção de custo/@ é marginal.
-            - Custos diários constantes (sem sazonalidade de preço de insumo).
+            - Ganho de peso linear (GMD constante). Simplificação aceitável
+              pra projeção econômica; erro marginal em custo/@.
+            - Custos diários constantes (sem sazonalidade de insumo).
             - Custos fixos (frete, mortalidade) rateados linearmente no ciclo.
             - Reposição entra no dia 0 como custo afundado.
         """
-        n = params["num_animais"]
-        dias = params["dias_ciclo"]
-        peso_i = params["peso_entrada_kg"]
-        peso_f = params["peso_saida_kg"]
-        rendimento = params["rendimento"]
-        custo_repos = params["custo_reposicao"]
-        custo_dia_cab = params["custo_dia_cab"]
-        custo_fixo = params["custo_fixo"]
-        data_entrada = params["data_entrada"]
+        n = inp.num_animais
+        dias = inp.dias_ciclo
+        peso_i = inp.peso_entrada_kg
+        peso_f = inp.peso_saida_estimado_kg
 
         if dias <= 0:
             raise ValueError(f"dias_ciclo deve ser > 0, recebeu {dias}")
@@ -357,21 +251,19 @@ class ExposureEngine:
         custo_fixo_diario = custo_fixo / dias
 
         timeline: list[DailySnapshot] = []
-
         for d in range(dias + 1):
             peso_dia = peso_i + gmd * d
             arrobas = (peso_dia * rendimento / KG_POR_ARROBA) * n
 
-            # Custo acumulado: reposição (dia 0) + operacional + fixo rateado
             custo_op_acum = custo_diario_lote * d
             custo_fixo_acum = custo_fixo_diario * d
-            custo_acum = custo_repos + custo_op_acum + custo_fixo_acum
+            custo_acum = inp.custo_reposicao_total + custo_op_acum + custo_fixo_acum
 
             custo_por_arroba = custo_acum / arrobas if arrobas > 0 else 0.0
 
             timeline.append(DailySnapshot(
                 dia=d,
-                data=data_entrada + timedelta(days=d),
+                data=inp.data_entrada + timedelta(days=d),
                 peso_medio_kg=round(peso_dia, 1),
                 arrobas_projetadas=round(arrobas, 1),
                 custo_acumulado=round(custo_acum, 2),
@@ -383,7 +275,7 @@ class ExposureEngine:
         return timeline
 
     # ------------------------------------------------------------------
-    # Custo de oportunidade (replica lógica do cost_model_v2)
+    # Custo de oportunidade (mesma lógica de cost_model_v2 — convergência)
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -393,13 +285,7 @@ class ExposureEngine:
         taxa_mensal: float,
         dias: int,
     ) -> float:
-        """
-        Custo de oportunidade do capital imobilizado.
-
-        Mesma lógica do FarmEconomicsV2._custo_oportunidade:
-        capital operacional entra progressivamente → usa 50% como
-        aproximação do capital médio investido.
-        """
+        """Capital operacional entra progressivamente — 50% como média."""
         capital_medio = capital_base + custo_operacional * 0.5
         meses = dias / 30
         return capital_medio * taxa_mensal * meses

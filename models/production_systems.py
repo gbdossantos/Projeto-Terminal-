@@ -1,16 +1,23 @@
 """
-Terminal — Sistemas de Produção
-================================
-Define os inputs para cada sistema produtivo da pecuária de corte.
-Cada dataclass é imutável (frozen=True) e fortemente tipada.
+Terminal — Sistemas de Produção (v3)
+======================================
+Modelo de lote pós-refactor: `fase` e `sistema` são campos independentes,
+ambos obrigatórios. 9 combinações no contrato; em cálculo, sistema só afeta
+a estrutura de custo da fase de TERMINAÇÃO (cria/recria são sistema-agnósticas).
 
-Sistemas suportados:
-    - InputCria           — vaca + bezerro até desmama
-    - InputRecria         — desmame até categoria
-    - InputTerminacaoPasto — engorda exclusiva em pastagem
-    - InputConfinamento   — engorda intensiva em confinamento
-    - InputSemiconfinamento — pasto + suplementação intensiva
-    - InputCicloCompleto  — cria + recria + terminação integradas
+Estrutura:
+    - Enum Fase: cria | recria | terminacao
+    - Enum Sistema: pasto | semiconfinamento | confinamento
+    - 3 dataclasses (frozen) — uma por fase:
+        - LoteInputCria
+        - LoteInputRecria
+        - LoteInputTerminacao  (união sparse dos 3 sistemas antigos)
+
+Princípio: frozen dataclasses, cálculos puros, sem side effects.
+Validação: __post_init__ confirma que `fase` bate com a classe.
+
+NOTA: "Ciclo Completo" foi REMOVIDO do modelo (briefing GB). Uma fazenda
+em ciclo completo opera N lotes simultâneos em fases diferentes.
 """
 
 from __future__ import annotations
@@ -21,92 +28,107 @@ from enum import Enum
 
 
 # ---------------------------------------------------------------------------
+# Enums
+# ---------------------------------------------------------------------------
+
+class Fase(str, Enum):
+    """Fase do ciclo pecuário."""
+    CRIA       = "cria"
+    RECRIA     = "recria"
+    TERMINACAO = "terminacao"
+
+
+class Sistema(str, Enum):
+    """Sistema de produção (independente da fase)."""
+    PASTO            = "pasto"
+    SEMICONFINAMENTO = "semiconfinamento"
+    CONFINAMENTO     = "confinamento"
+
+
+# ---------------------------------------------------------------------------
 # Constantes de domínio
 # ---------------------------------------------------------------------------
 
-RENDIMENTO_PASTO        = 0.52
-RENDIMENTO_CONFINAMENTO = 0.54
-RENDIMENTO_SEMI         = 0.53
-TAXA_OPORTUNIDADE       = 0.0108   # ~13% a.a. / 1,08% a.m.
-CONSUMO_MS_PV           = 0.025    # 2,5% do peso vivo em matéria seca
+TAXA_OPORTUNIDADE = 0.0108   # ~13% a.a. / 1,08% a.m.
+CONSUMO_MS_PV     = 0.025    # 2,5% do peso vivo em matéria seca (referência)
 
 
 # ---------------------------------------------------------------------------
-# Enum de sistemas produtivos
-# ---------------------------------------------------------------------------
-
-class SistemaProducao(str, Enum):
-    """Sistemas produtivos reconhecidos pelo Terminal."""
-
-    CRIA             = "cria"
-    RECRIA           = "recria"
-    TERMINACAO_PASTO = "terminacao_pasto"
-    CONFINAMENTO     = "confinamento"
-    SEMICONFINAMENTO = "semiconfinamento"
-    CICLO_COMPLETO   = "ciclo_completo"
-
-
-# ---------------------------------------------------------------------------
-# Cria
+# LoteInputCria — fase de cria (acasalamento ao desmame)
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
-class InputCria:
+class LoteInputCria:
     """
-    Fase de cria: do acasalamento ao desmame.
-
-    Produto final: bezerro desmamado (~180–210 kg).
+    Lote em fase de Cria. Produto final: bezerro desmamado (~180-210 kg).
     Indicador central: custo do bezerro produzido (R$/cabeça).
+
+    O campo `sistema` é meta-tag pra contexto/UX/relatório — não entra em
+    nenhum cálculo. Cria é estruturalmente sistema-agnóstica.
     """
 
+    # Discriminadores (obrigatórios)
+    fase: Fase                       # validado == Fase.CRIA
+    sistema: Sistema
+
+    # Identificação
     nome: str
     data_referencia: date
 
     # Rebanho
     num_matrizes: int
-    taxa_natalidade: float          # ex: 0.80 = 80%
-    taxa_desmama: float             # ex: 0.90 = 90%
+    taxa_natalidade: float           # ex: 0.80 = 80%
+    taxa_desmama: float              # ex: 0.90 = 90%
     peso_desmama_kg: float
 
     # Custos anuais por UA
-    custo_nutricao_ua_ano: float    # sal mineral + suplementação
-    custo_sanidade_ua_ano: float    # vacinas + vermifugação
-    custo_reproducao_ua_ano: float  # IATF + touro + material
+    custo_nutricao_ua_ano: float     # sal mineral + suplementação
+    custo_sanidade_ua_ano: float     # vacinas + vermifugação
+    custo_reproducao_ua_ano: float   # IATF + touro + material
     custo_mao_obra_ua_ano: float
     custo_arrendamento_ua_ano: float
 
     # Patrimônio
-    valor_matriz: float             # valor médio de mercado da vaca (R$)
+    valor_matriz: float              # valor médio de mercado da vaca (R$)
 
     # Opcionais com defaults
     outros_custos_ua_ano: float = 0.0
     taxa_oportunidade_mensal: float = TAXA_OPORTUNIDADE
 
+    def __post_init__(self):
+        if self.fase != Fase.CRIA:
+            raise ValueError(
+                f"LoteInputCria exige fase=Fase.CRIA, recebeu {self.fase}"
+            )
+
 
 # ---------------------------------------------------------------------------
-# Recria
+# LoteInputRecria — fase de recria (desmama à categoria)
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
-class InputRecria:
+class LoteInputRecria:
     """
-    Fase de recria: do desmame até categoria.
-
-    Produto final: novilho/novilha pronto para terminação (~300–380 kg).
+    Lote em fase de Recria. Produto: novilho pronto pra terminação (~300-380 kg).
     Indicador central: custo por kg de peso vivo ganho (R$/kg).
+
+    `sistema` é meta-tag — não afeta cálculo. Recria é sistema-agnóstica.
     """
+
+    fase: Fase                       # validado == Fase.RECRIA
+    sistema: Sistema
 
     nome: str
     data_entrada: date
 
     num_animais: int
     peso_entrada_kg: float
-    custo_aquisicao_total: float    # 0 se vem da cria própria
+    custo_aquisicao_total: float     # 0 se vem da cria própria
     dias_ciclo: int
     peso_saida_estimado_kg: float
 
     # Custos diários por cabeça
-    custo_nutricao_dia: float       # pastagem + suplementação proteica
+    custo_nutricao_dia: float        # pastagem + suplementação proteica
     custo_sanidade_dia: float
     custo_mao_obra_dia: float
     custo_arrendamento_dia: float
@@ -117,172 +139,74 @@ class InputRecria:
     custo_frete_saida: float = 0.0
     taxa_oportunidade_mensal: float = TAXA_OPORTUNIDADE
 
+    def __post_init__(self):
+        if self.fase != Fase.RECRIA:
+            raise ValueError(
+                f"LoteInputRecria exige fase=Fase.RECRIA, recebeu {self.fase}"
+            )
+
 
 # ---------------------------------------------------------------------------
-# Terminação em Pasto
+# LoteInputTerminacao — fase de terminação (engorda final)
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
-class InputTerminacaoPasto:
+class LoteInputTerminacao:
     """
-    Terminação exclusiva em pastagem.
+    Lote em fase de Terminação. Produto: boi gordo. Indicador: custo/@.
 
-    Produto final: boi gordo (~16–18 arrobas).
-    Indicador central: custo por arroba produzida (R$/@).
+    `sistema` AFETA cálculo: define a estrutura de custo operacional
+    (suplementacao_dia em pasto, dieta calculada em conf, suplemento+pasto
+    em semi). Campos opcionais são sparse: cada sistema usa um subconjunto.
+
+    Validação de campos requeridos por sistema acontece em
+    parametros_sistema.custo_diario_por_cab — única fonte de truth.
+
+    `rendimento_carcaca` é Optional: se None, default vem de
+    parametros_sistema.RENDIMENTO_CARCACA_POR_SISTEMA[sistema].
     """
+
+    fase: Fase                       # validado == Fase.TERMINACAO
+    sistema: Sistema
 
     nome: str
     data_entrada: date
 
-    num_animais: int
-    peso_entrada_kg: float
-    custo_reposicao_total: float    # 0 se produção própria
-    dias_ciclo: int
-    peso_saida_estimado_kg: float
-
-    # Custos diários por cabeça
-    custo_suplementacao_dia: float  # sal mineral + proteico na seca
-    custo_sanidade_dia: float
-    custo_mao_obra_dia: float
-    custo_arrendamento_dia: float
-
-    # Opcionais com defaults
-    rendimento_carcaca: float = RENDIMENTO_PASTO
-    outros_custos_dia: float = 0.0
-    custo_frete_entrada: float = 0.0
-    custo_frete_saida: float = 0.0
-    custo_mortalidade_estimada: float = 0.0
-    taxa_oportunidade_mensal: float = TAXA_OPORTUNIDADE
-
-
-# ---------------------------------------------------------------------------
-# Confinamento
-# ---------------------------------------------------------------------------
-
-@dataclass(frozen=True)
-class InputConfinamento:
-    """
-    Confinamento intensivo.
-
-    Produto final: boi gordo de alto acabamento (~18–22 arrobas).
-    Indicador central: custo por arroba + participação da dieta (60–70% do custo).
-
-    O giro rápido do capital (90–120 dias) é o principal driver de ROI.
-    """
-
-    nome: str
-    data_entrada: date
-
-    num_animais: int
-    peso_entrada_kg: float
-    custo_reposicao_total: float
-    dias_ciclo: int                 # tipicamente 90–120 dias
-    peso_saida_estimado_kg: float
-
-    # Dieta (componente dominante do custo)
-    consumo_ms_pct_pv: float        # consumo de MS como % do peso vivo
-    custo_dieta_kg_ms: float        # R$ por kg de matéria seca
-
-    # Outros custos diários por cabeça
-    custo_sanidade_dia: float
-    custo_mao_obra_dia: float
-    custo_instalacoes_dia: float    # depreciação do confinamento
-
-    # Opcionais com defaults
-    rendimento_carcaca: float = RENDIMENTO_CONFINAMENTO
-    outros_custos_dia: float = 0.0
-    custo_frete_entrada: float = 0.0
-    custo_frete_saida: float = 0.0
-    custo_mortalidade_estimada: float = 0.0
-    taxa_oportunidade_mensal: float = TAXA_OPORTUNIDADE
-
-
-# ---------------------------------------------------------------------------
-# Semiconfinamento
-# ---------------------------------------------------------------------------
-
-@dataclass(frozen=True)
-class InputSemiconfinamento:
-    """
-    Semiconfinamento: pastagem + suplementação volumosa/concentrada.
-
-    Produto final: boi gordo (~17–19 arrobas).
-    Indicador central: custo incremental da suplementação por arroba.
-    """
-
-    nome: str
-    data_entrada: date
-
+    # Comuns aos 3 sistemas
     num_animais: int
     peso_entrada_kg: float
     custo_reposicao_total: float
     dias_ciclo: int
     peso_saida_estimado_kg: float
-
-    # Pastagem
-    custo_arrendamento_dia: float
-    custo_manutencao_pasto_dia: float   # adubação + reforma rateados
-
-    # Suplementação
-    consumo_suplemento_kg_dia: float    # kg/cab/dia
-    custo_suplemento_kg: float          # R$/kg
-
-    # Outros custos diários
     custo_sanidade_dia: float
     custo_mao_obra_dia: float
 
-    # Opcionais com defaults
-    rendimento_carcaca: float = RENDIMENTO_SEMI
+    # Sparse — específicos de PASTO
+    custo_suplementacao_dia: float | None = None      # obrigatório em pasto
+
+    # Sparse — PASTO + SEMI compartilham arrendamento_dia
+    custo_arrendamento_dia: float | None = None       # pasto + semi
+
+    # Sparse — CONFINAMENTO
+    consumo_ms_pct_pv: float | None = None
+    custo_dieta_kg_ms: float | None = None
+    custo_instalacoes_dia: float | None = None
+
+    # Sparse — SEMICONFINAMENTO
+    custo_manutencao_pasto_dia: float | None = None
+    consumo_suplemento_kg_dia: float | None = None
+    custo_suplemento_kg: float | None = None
+
+    # Opcionais (todos os sistemas)
+    rendimento_carcaca: float | None = None            # default vem do lookup
     outros_custos_dia: float = 0.0
     custo_frete_entrada: float = 0.0
     custo_frete_saida: float = 0.0
     custo_mortalidade_estimada: float = 0.0
     taxa_oportunidade_mensal: float = TAXA_OPORTUNIDADE
 
-
-# ---------------------------------------------------------------------------
-# Ciclo Completo
-# ---------------------------------------------------------------------------
-
-@dataclass(frozen=True)
-class InputCicloCompleto:
-    """
-    Ciclo completo: cria + recria + terminação na mesma operação.
-
-    Produto final: boi gordo produzido do nascimento ao abate.
-    Indicador central: custo total por arroba (nascimento → frigorífico).
-
-    Permite comparar se produzir o bezerro internamente é mais eficiente
-    do que comprar no mercado.
-    """
-
-    nome: str
-    data_referencia: date
-
-    # Fase cria (composição com InputCria)
-    cria: InputCria
-
-    # Fase recria
-    dias_recria: int
-    peso_entrada_recria_kg: float       # = peso ao desmame
-    peso_saida_recria_kg: float
-    custo_nutricao_recria_dia: float
-    custo_sanidade_recria_dia: float
-    custo_mao_obra_recria_dia: float
-    custo_arrendamento_recria_dia: float
-
-    # Fase terminação
-    sistema_terminacao: str             # "pasto" | "confinamento" | "semi"
-    dias_terminacao: int
-    peso_entrada_terminacao_kg: float
-    peso_saida_terminacao_kg: float
-    custo_nutricao_terminacao_dia: float
-    custo_sanidade_terminacao_dia: float
-    custo_mao_obra_terminacao_dia: float
-    custo_arrendamento_terminacao_dia: float
-
-    # Opcionais com defaults
-    rendimento_carcaca: float = RENDIMENTO_PASTO
-    outros_terminacao_dia: float = 0.0
-    custo_frete_saida: float = 0.0
-    taxa_oportunidade_mensal: float = TAXA_OPORTUNIDADE
+    def __post_init__(self):
+        if self.fase != Fase.TERMINACAO:
+            raise ValueError(
+                f"LoteInputTerminacao exige fase=Fase.TERMINACAO, recebeu {self.fase}"
+            )

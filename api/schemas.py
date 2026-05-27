@@ -1,56 +1,267 @@
 """
-Terminal API — Pydantic Schemas
-=================================
+Terminal API — Pydantic Schemas (pós-refactor fase/sistema)
+=============================================================
 Espelham os frozen dataclasses dos models/ para serialização JSON.
-Cada schema tem um classmethod from_dataclass() para conversão.
+
+Pós-refactor (briefing GB):
+  - 3 schemas Request (1 por fase) num discriminated union LoteInputUnion
+  - 1 endpoint POST /lotes/calcular aceita LoteInputUnion
+  - 3 schemas Response (1 por fase) com Literal[fase] como discriminador
+  - LotExposureSchema e EconomicImpactReportSchema ganham `fase` e usam
+    `sistema` como string do enum (snake_case)
+  - REMOVIDOS: TerminacaoPastoRequest/Response, ConfinamentoRequest/Response,
+    SemiconfinamentoRequest/Response (consolidados em LoteInputTerminacaoSchema)
+  - REMOVIDOS: ResultTerminacao{Pasto,Confinamento,Semi}Schema → ResultTerminacaoSchema único
 """
 
 from __future__ import annotations
 
 import dataclasses
-from datetime import date, datetime
-from typing import Optional
+from datetime import date
+from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from models.production_systems import Fase, Sistema
 
 
-# ---------------------------------------------------------------------------
-# Request
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# REQUEST — discriminated union por `fase`
+# ===========================================================================
 
-class TerminacaoPastoRequest(BaseModel):
+class LoteInputCriaSchema(BaseModel):
+    """Lote em fase de Cria. Sistema-agnóstico em cálculo (meta-tag só)."""
+    fase: Literal[Fase.CRIA] = Fase.CRIA
+    sistema: Sistema
+
+    nome: str = "Cria"
+    data_referencia: Optional[date] = None  # default: hoje (set na rota)
+
+    num_matrizes: int = Field(..., gt=0, le=10000)
+    taxa_natalidade: float = Field(..., gt=0, le=1.0)
+    taxa_desmama: float = Field(..., gt=0, le=1.0)
+    peso_desmama_kg: float = Field(..., gt=0, le=300)
+    custo_nutricao_ua_ano: float = Field(..., ge=0)
+    custo_sanidade_ua_ano: float = Field(..., ge=0)
+    custo_reproducao_ua_ano: float = Field(..., ge=0)
+    custo_mao_obra_ua_ano: float = Field(..., ge=0)
+    custo_arrendamento_ua_ano: float = Field(..., ge=0)
+    valor_matriz: float = Field(..., ge=0)
+    outros_custos_ua_ano: float = 0.0
+
+
+class LoteInputRecriaSchema(BaseModel):
+    """Lote em fase de Recria. Sistema-agnóstico em cálculo."""
+    fase: Literal[Fase.RECRIA] = Fase.RECRIA
+    sistema: Sistema
+
+    nome: str = "Recria"
+    data_entrada: Optional[date] = None
+
+    num_animais: int = Field(..., gt=0, le=10000)
+    peso_entrada_kg: float = Field(..., gt=0, le=400)
+    custo_aquisicao_total: float = Field(..., ge=0)
+    dias_ciclo: int = Field(..., gt=0, le=400)
+    peso_saida_estimado_kg: float = Field(..., gt=0, le=500)
+    custo_nutricao_dia: float = Field(..., ge=0)
+    custo_sanidade_dia: float = Field(..., ge=0)
+    custo_mao_obra_dia: float = Field(..., ge=0)
+    custo_arrendamento_dia: float = Field(..., ge=0)
+    outros_custos_dia: float = 0.0
+    custo_frete_entrada: float = 0.0
+    custo_frete_saida: float = 0.0
+
+
+class LoteInputTerminacaoSchema(BaseModel):
+    """
+    Lote em fase de Terminação. Sistema AFETA cálculo (estrutura de custo varia).
+    Campos sparse: cada sistema usa um subconjunto.
+
+    Validação:
+      - sistema PASTO exige custo_suplementacao_dia + custo_arrendamento_dia
+      - sistema CONFINAMENTO exige consumo_ms_pct_pv + custo_dieta_kg_ms + custo_instalacoes_dia
+      - sistema SEMICONFINAMENTO exige custo_arrendamento_dia + custo_manutencao_pasto_dia +
+        consumo_suplemento_kg_dia + custo_suplemento_kg
+    """
+    fase: Literal[Fase.TERMINACAO] = Fase.TERMINACAO
+    sistema: Sistema
+
+    nome: str = "Terminacao"
+    data_entrada: Optional[date] = None
+
+    # Comuns
     num_animais: int = Field(..., gt=0, le=10000)
     peso_entrada_kg: float = Field(..., gt=0, le=600)
     custo_reposicao_total: float = Field(..., ge=0)
     dias_ciclo: int = Field(..., gt=0, le=365)
     peso_saida_estimado_kg: float = Field(..., gt=0, le=700)
-    custo_suplementacao_dia: float = Field(..., ge=0)
     custo_sanidade_dia: float = Field(..., ge=0)
     custo_mao_obra_dia: float = Field(..., ge=0)
-    custo_arrendamento_dia: float = Field(..., ge=0)
-    preco_venda: float = Field(..., gt=0, le=600, description="R$/@ para cálculo")
-    # Opcionais com defaults
-    rendimento_carcaca: float = 0.52
+
+    # Sparse — PASTO
+    custo_suplementacao_dia: Optional[float] = Field(None, ge=0)
+
+    # Sparse — PASTO + SEMI
+    custo_arrendamento_dia: Optional[float] = Field(None, ge=0)
+
+    # Sparse — CONFINAMENTO
+    consumo_ms_pct_pv: Optional[float] = Field(None, gt=0, le=0.10)
+    custo_dieta_kg_ms: Optional[float] = Field(None, ge=0)
+    custo_instalacoes_dia: Optional[float] = Field(None, ge=0)
+
+    # Sparse — SEMI
+    custo_manutencao_pasto_dia: Optional[float] = Field(None, ge=0)
+    consumo_suplemento_kg_dia: Optional[float] = Field(None, ge=0)
+    custo_suplemento_kg: Optional[float] = Field(None, ge=0)
+
+    # Opcionais comuns
+    rendimento_carcaca: Optional[float] = Field(None, gt=0, le=1.0)
+    outros_custos_dia: float = 0.0
     custo_frete_entrada: float = 0.0
     custo_frete_saida: float = 0.0
     custo_mortalidade_estimada: float = 0.0
-    outros_custos_dia: float = 0.0
-    # Hedge
+
+    # Hedge (parâmetros da rota — não vão pro engine)
+    preco_venda: float = Field(..., gt=0, le=600, description="R$/@ para cálculo")
     regiao: str = "MS"
     basis_estimado: float = -5.0
     margem_garantia_pct: float = 0.05
 
+    @model_validator(mode="after")
+    def _validar_campos_por_sistema(self) -> "LoteInputTerminacaoSchema":
+        faltando: list[str] = []
+        if self.sistema == Sistema.PASTO:
+            req = ("custo_suplementacao_dia", "custo_arrendamento_dia")
+        elif self.sistema == Sistema.CONFINAMENTO:
+            req = ("consumo_ms_pct_pv", "custo_dieta_kg_ms", "custo_instalacoes_dia")
+        elif self.sistema == Sistema.SEMICONFINAMENTO:
+            req = (
+                "custo_arrendamento_dia", "custo_manutencao_pasto_dia",
+                "consumo_suplemento_kg_dia", "custo_suplemento_kg",
+            )
+        else:
+            req = ()
+        for campo in req:
+            if getattr(self, campo) is None:
+                faltando.append(campo)
+        if faltando:
+            raise ValueError(
+                f"sistema={self.sistema.value} exige campos: {', '.join(faltando)}"
+            )
+        return self
 
-# ---------------------------------------------------------------------------
-# Response — Cotações
-# ---------------------------------------------------------------------------
+
+# Discriminated union — usado como tipo do request body
+LoteInputUnion = Annotated[
+    Union[LoteInputCriaSchema, LoteInputRecriaSchema, LoteInputTerminacaoSchema],
+    Field(discriminator="fase"),
+]
+
+
+# ===========================================================================
+# RESPONSE — Result schemas
+# ===========================================================================
+
+class ResultCriaSchema(BaseModel):
+    nome: str
+    fase: Fase
+    sistema: Sistema
+    num_matrizes: int
+    bezerros_desmamados: int
+    taxa_natalidade: float
+    taxa_desmama: float
+    peso_desmama_kg: float
+    kg_produzido_por_matriz: float
+    custo_operacional_ano: float
+    custo_oportunidade: float
+    custo_total_ano: float
+    custo_por_matriz_ano: float
+    custo_por_bezerro_produzido: float
+    capital_rebanho: float
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class ResultRecriaSchema(BaseModel):
+    nome: str
+    fase: Fase
+    sistema: Sistema
+    num_animais: int
+    dias_ciclo: int
+    gmd_estimado: float
+    kg_ganho_total: float
+    custo_operacional: float
+    custo_oportunidade: float
+    custo_total: float
+    custo_por_cabeca: float
+    custo_por_kg_ganho: float
+    capital_empregado: float
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class ResultTerminacaoSchema(BaseModel):
+    """Resultado unificado da terminação. Breakdowns sparse por sistema."""
+    nome: str
+    fase: Fase
+    sistema: Sistema
+    num_animais: int
+    dias_ciclo: int
+
+    arrobas_totais: float
+    gmd_estimado: float
+    rendimento_carcaca: float
+
+    custo_reposicao: float
+    custo_operacional: float
+    custo_fixo: float
+    custo_oportunidade: float
+    custo_total: float
+
+    custo_por_arroba: float
+    custo_por_cabeca: float
+    break_even_price: float
+    capital_empregado: float
+
+    receita_estimada: float
+    margem_bruta: float
+    margem_percentual: float
+    roi_ciclo: float
+    roi_anualizado: float
+
+    exposicao_preco: float
+    impacto_queda_10pct: float
+    impacto_queda_20pct: float
+
+    margem_apertada: bool
+    roi_abaixo_cdi: bool
+
+    # Breakdowns sparse
+    custo_dieta_total: Optional[float] = None
+    custo_dieta_por_arroba: Optional[float] = None
+    participacao_dieta_pct: Optional[float] = None
+    custo_pastagem: Optional[float] = None
+    custo_suplementacao: Optional[float] = None
+    custo_suplementacao_por_arroba: Optional[float] = None
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+# ===========================================================================
+# Cotações (inalterado)
+# ===========================================================================
 
 class CotacaoMercadoSchema(BaseModel):
     arroba_boi_gordo: Optional[float] = None
     dolar_ptax: Optional[float] = None
     milho_esalq: Optional[float] = None
     cdi_anual: Optional[float] = None
-    # extras (ticker da Home)
     bezerro_cepea: Optional[float] = None
     soja_esalq: Optional[float] = None
     ibov: Optional[float] = None
@@ -72,44 +283,9 @@ class CotacaoMercadoSchema(BaseModel):
         )
 
 
-# ---------------------------------------------------------------------------
-# Response — Resultado Terminação Pasto
-# ---------------------------------------------------------------------------
-
-class ResultTerminacaoPastoSchema(BaseModel):
-    nome: str
-    num_animais: int
-    dias_ciclo: int
-    arrobas_totais: float
-    gmd_estimado: float
-    custo_reposicao: float
-    custo_operacional: float
-    custo_fixo: float
-    custo_oportunidade: float
-    custo_total: float
-    custo_por_arroba: float
-    custo_por_cabeca: float
-    break_even_price: float
-    capital_empregado: float
-    receita_estimada: float
-    margem_bruta: float
-    margem_percentual: float
-    roi_ciclo: float
-    roi_anualizado: float
-    exposicao_preco: float
-    impacto_queda_10pct: float
-    impacto_queda_20pct: float
-    margem_apertada: bool
-    roi_abaixo_cdi: bool
-
-    @classmethod
-    def from_dataclass(cls, dc):
-        return cls(**dataclasses.asdict(dc))
-
-
-# ---------------------------------------------------------------------------
-# Response — Exposure
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Exposure (fase + sistema tipados)
+# ===========================================================================
 
 class DailySnapshotSchema(BaseModel):
     dia: int
@@ -124,7 +300,8 @@ class DailySnapshotSchema(BaseModel):
 
 class LotExposureSchema(BaseModel):
     nome: str
-    sistema: str
+    fase: Fase
+    sistema: Sistema
     num_animais: int
     data_entrada: str
     data_venda_projetada: str
@@ -161,6 +338,7 @@ class LotExposureSchema(BaseModel):
                 ))
         return cls(
             nome=dc.nome,
+            fase=dc.fase,
             sistema=dc.sistema,
             num_animais=dc.num_animais,
             data_entrada=dc.data_entrada.isoformat(),
@@ -183,9 +361,9 @@ class LotExposureSchema(BaseModel):
         )
 
 
-# ---------------------------------------------------------------------------
-# Response — Economic Impact
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Economic Impact (fase + sistema tipados)
+# ===========================================================================
 
 class ScenarioResultSchema(BaseModel):
     label: str
@@ -206,7 +384,8 @@ class ScenarioResultSchema(BaseModel):
 
 class EconomicImpactReportSchema(BaseModel):
     nome: str
-    sistema: str
+    fase: Fase
+    sistema: Sistema
     num_animais: int
     arrobas_totais: float
     dias_restantes: int
@@ -222,6 +401,7 @@ class EconomicImpactReportSchema(BaseModel):
         cenarios = [ScenarioResultSchema.from_dataclass(c) for c in dc.cenarios]
         return cls(
             nome=dc.nome,
+            fase=dc.fase,
             sistema=dc.sistema,
             num_animais=dc.num_animais,
             arrobas_totais=dc.arrobas_totais,
@@ -235,9 +415,9 @@ class EconomicImpactReportSchema(BaseModel):
         )
 
 
-# ---------------------------------------------------------------------------
-# Response — Hedge
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Hedge (inalterado — agnóstico ao sistema)
+# ===========================================================================
 
 class ContratoFuturoSchema(BaseModel):
     codigo: str
@@ -339,241 +519,40 @@ class HedgeResultSchema(BaseModel):
         )
 
 
-# ---------------------------------------------------------------------------
-# Response composta — tudo de uma vez
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# RESPONSE — discriminated union por `fase`
+# ===========================================================================
 
-class TerminacaoPastoResponse(BaseModel):
-    resultado: ResultTerminacaoPastoSchema
-    exposicao: LotExposureSchema
-    impacto: EconomicImpactReportSchema
-    hedge: Optional[HedgeResultSchema] = None
-    cotacoes: CotacaoMercadoSchema
-
-
-# ---------------------------------------------------------------------------
-# Request — Confinamento
-# ---------------------------------------------------------------------------
-
-class ConfinamentoRequest(BaseModel):
-    num_animais: int = Field(..., gt=0, le=10000)
-    peso_entrada_kg: float = Field(..., gt=0, le=600)
-    custo_reposicao_total: float = Field(..., ge=0)
-    dias_ciclo: int = Field(..., gt=0, le=365)
-    peso_saida_estimado_kg: float = Field(..., gt=0, le=700)
-    consumo_ms_pct_pv: float = Field(..., gt=0, le=0.10)
-    custo_dieta_kg_ms: float = Field(..., ge=0)
-    custo_sanidade_dia: float = Field(..., ge=0)
-    custo_mao_obra_dia: float = Field(..., ge=0)
-    custo_instalacoes_dia: float = Field(..., ge=0)
-    preco_venda: float = Field(..., gt=0, le=600)
-    rendimento_carcaca: float = 0.54
-    outros_custos_dia: float = 0.0
-    custo_frete_entrada: float = 0.0
-    custo_frete_saida: float = 0.0
-    custo_mortalidade_estimada: float = 0.0
-    regiao: str = "MS"
-    basis_estimado: float = -5.0
-    margem_garantia_pct: float = 0.05
-
-
-class ResultConfinamentoSchema(BaseModel):
-    nome: str
-    num_animais: int
-    dias_ciclo: int
-    arrobas_totais: float
-    gmd_estimado: float
-    custo_reposicao: float
-    custo_dieta_total: float
-    custo_dieta_por_arroba: float
-    custo_outros_operacional: float
-    custo_fixo: float
-    custo_oportunidade: float
-    custo_total: float
-    participacao_dieta_pct: float
-    custo_por_arroba: float
-    custo_por_cabeca: float
-    break_even_price: float
-    capital_empregado: float
-    receita_estimada: float
-    margem_bruta: float
-    margem_percentual: float
-    roi_ciclo: float
-    roi_anualizado: float
-    exposicao_preco: float
-    impacto_queda_10pct: float
-    impacto_queda_20pct: float
-    margem_apertada: bool
-    roi_abaixo_cdi: bool
-
-    @classmethod
-    def from_dataclass(cls, dc):
-        return cls(**dataclasses.asdict(dc))
-
-
-class ConfinamentoResponse(BaseModel):
-    resultado: ResultConfinamentoSchema
-    exposicao: LotExposureSchema
-    impacto: EconomicImpactReportSchema
-    hedge: Optional[HedgeResultSchema] = None
-    cotacoes: CotacaoMercadoSchema
-
-
-# ---------------------------------------------------------------------------
-# Request — Semiconfinamento
-# ---------------------------------------------------------------------------
-
-class SemiconfinamentoRequest(BaseModel):
-    num_animais: int = Field(..., gt=0, le=10000)
-    peso_entrada_kg: float = Field(..., gt=0, le=600)
-    custo_reposicao_total: float = Field(..., ge=0)
-    dias_ciclo: int = Field(..., gt=0, le=365)
-    peso_saida_estimado_kg: float = Field(..., gt=0, le=700)
-    custo_arrendamento_dia: float = Field(..., ge=0)
-    custo_manutencao_pasto_dia: float = Field(..., ge=0)
-    consumo_suplemento_kg_dia: float = Field(..., ge=0)
-    custo_suplemento_kg: float = Field(..., ge=0)
-    custo_sanidade_dia: float = Field(..., ge=0)
-    custo_mao_obra_dia: float = Field(..., ge=0)
-    preco_venda: float = Field(..., gt=0, le=600)
-    rendimento_carcaca: float = 0.53
-    outros_custos_dia: float = 0.0
-    custo_frete_entrada: float = 0.0
-    custo_frete_saida: float = 0.0
-    custo_mortalidade_estimada: float = 0.0
-    regiao: str = "MS"
-    basis_estimado: float = -5.0
-    margem_garantia_pct: float = 0.05
-
-
-class ResultSemiconfinamentoSchema(BaseModel):
-    nome: str
-    num_animais: int
-    dias_ciclo: int
-    arrobas_totais: float
-    gmd_estimado: float
-    custo_reposicao: float
-    custo_pastagem: float
-    custo_suplementacao: float
-    custo_suplementacao_por_arroba: float
-    custo_outros: float
-    custo_oportunidade: float
-    custo_total: float
-    custo_por_arroba: float
-    break_even_price: float
-    capital_empregado: float
-    receita_estimada: float
-    margem_bruta: float
-    margem_percentual: float
-    roi_ciclo: float
-    roi_anualizado: float
-    exposicao_preco: float
-    impacto_queda_10pct: float
-    impacto_queda_20pct: float
-    margem_apertada: bool
-    roi_abaixo_cdi: bool
-
-    @classmethod
-    def from_dataclass(cls, dc):
-        return cls(**dataclasses.asdict(dc))
-
-
-class SemiconfinamentoResponse(BaseModel):
-    resultado: ResultSemiconfinamentoSchema
-    exposicao: LotExposureSchema
-    impacto: EconomicImpactReportSchema
-    hedge: Optional[HedgeResultSchema] = None
-    cotacoes: CotacaoMercadoSchema
-
-
-# ---------------------------------------------------------------------------
-# Request — Cria
-# ---------------------------------------------------------------------------
-
-class CriaRequest(BaseModel):
-    num_matrizes: int = Field(..., gt=0, le=10000)
-    taxa_natalidade: float = Field(..., gt=0, le=1.0)
-    taxa_desmama: float = Field(..., gt=0, le=1.0)
-    peso_desmama_kg: float = Field(..., gt=0, le=300)
-    custo_nutricao_ua_ano: float = Field(..., ge=0)
-    custo_sanidade_ua_ano: float = Field(..., ge=0)
-    custo_reproducao_ua_ano: float = Field(..., ge=0)
-    custo_mao_obra_ua_ano: float = Field(..., ge=0)
-    custo_arrendamento_ua_ano: float = Field(..., ge=0)
-    valor_matriz: float = Field(..., ge=0)
-    outros_custos_ua_ano: float = 0.0
-
-
-class ResultCriaSchema(BaseModel):
-    nome: str
-    num_matrizes: int
-    bezerros_desmamados: int
-    taxa_natalidade: float
-    taxa_desmama: float
-    peso_desmama_kg: float
-    kg_produzido_por_matriz: float
-    custo_operacional_ano: float
-    custo_oportunidade: float
-    custo_total_ano: float
-    custo_por_matriz_ano: float
-    custo_por_bezerro_produzido: float
-    capital_rebanho: float
-
-    @classmethod
-    def from_dataclass(cls, dc):
-        return cls(**dataclasses.asdict(dc))
-
-
-class CriaResponse(BaseModel):
+class LoteCriaResponse(BaseModel):
+    fase: Literal[Fase.CRIA] = Fase.CRIA
     resultado: ResultCriaSchema
     cotacoes: CotacaoMercadoSchema
 
 
-# ---------------------------------------------------------------------------
-# Request — Recria
-# ---------------------------------------------------------------------------
-
-class RecriaRequest(BaseModel):
-    num_animais: int = Field(..., gt=0, le=10000)
-    peso_entrada_kg: float = Field(..., gt=0, le=400)
-    custo_aquisicao_total: float = Field(..., ge=0)
-    dias_ciclo: int = Field(..., gt=0, le=400)
-    peso_saida_estimado_kg: float = Field(..., gt=0, le=500)
-    custo_nutricao_dia: float = Field(..., ge=0)
-    custo_sanidade_dia: float = Field(..., ge=0)
-    custo_mao_obra_dia: float = Field(..., ge=0)
-    custo_arrendamento_dia: float = Field(..., ge=0)
-    outros_custos_dia: float = 0.0
-    custo_frete_entrada: float = 0.0
-    custo_frete_saida: float = 0.0
-
-
-class ResultRecriaSchema(BaseModel):
-    nome: str
-    num_animais: int
-    dias_ciclo: int
-    gmd_estimado: float
-    kg_ganho_total: float
-    custo_operacional: float
-    custo_oportunidade: float
-    custo_total: float
-    custo_por_cabeca: float
-    custo_por_kg_ganho: float
-    capital_empregado: float
-
-    @classmethod
-    def from_dataclass(cls, dc):
-        return cls(**dataclasses.asdict(dc))
-
-
-class RecriaResponse(BaseModel):
+class LoteRecriaResponse(BaseModel):
+    fase: Literal[Fase.RECRIA] = Fase.RECRIA
     resultado: ResultRecriaSchema
     cotacoes: CotacaoMercadoSchema
 
 
-# ---------------------------------------------------------------------------
-# Simulator
-# ---------------------------------------------------------------------------
+class LoteTerminacaoResponse(BaseModel):
+    fase: Literal[Fase.TERMINACAO] = Fase.TERMINACAO
+    resultado: ResultTerminacaoSchema
+    exposicao: LotExposureSchema
+    impacto: EconomicImpactReportSchema
+    hedge: Optional[HedgeResultSchema] = None
+    cotacoes: CotacaoMercadoSchema
+
+
+LoteCalculoResponse = Annotated[
+    Union[LoteCriaResponse, LoteRecriaResponse, LoteTerminacaoResponse],
+    Field(discriminator="fase"),
+]
+
+
+# ===========================================================================
+# Simulator (inalterado — agnóstico)
+# ===========================================================================
 
 class SimulatorScenarioInput(BaseModel):
     nome: str
@@ -587,17 +566,14 @@ class SimulatorScenarioInput(BaseModel):
 
 
 class SimulatorRequest(BaseModel):
-    # Lote
     arrobas_totais: float = Field(..., gt=0)
     custo_total: float = Field(..., gt=0)
     dias_ciclo: int = Field(..., gt=0)
     custo_dieta_total: float = Field(..., ge=0)
     custo_nao_dieta: float = Field(..., ge=0)
-    # Precos atuais
     preco_arroba: float = Field(..., gt=0)
     preco_milho_saca: float = Field(..., gt=0)
     dolar_ptax: float = Field(..., gt=0)
-    # Cenarios
     cenarios: list[SimulatorScenarioInput]
 
 

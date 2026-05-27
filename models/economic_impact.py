@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from models.exposure_engine import LotExposure
+from models.production_systems import Fase, Sistema
 
 
 # ---------------------------------------------------------------------------
@@ -83,9 +84,10 @@ class EconomicImpactReport:
     e a 'pergunta invertida' para o painel de decisão.
     """
 
-    # Identificação do lote
+    # Identificação do lote (fase/sistema tipados — antes era str livre)
     nome: str
-    sistema: str
+    fase: Fase
+    sistema: Sistema
     num_animais: int
     arrobas_totais: float
     dias_restantes: int
@@ -229,6 +231,7 @@ class EconomicImpactEngine:
 
         return EconomicImpactReport(
             nome=exposure.nome,
+            fase=exposure.fase,
             sistema=exposure.sistema,
             num_animais=exposure.num_animais,
             arrobas_totais=exposure.arrobas_totais,

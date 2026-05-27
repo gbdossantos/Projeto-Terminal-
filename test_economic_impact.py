@@ -16,8 +16,7 @@ sys.path.insert(0, ROOT)
 
 from datetime import date
 from models.production_systems import (
-    InputTerminacaoPasto,
-    InputConfinamento,
+    Fase, Sistema, LoteInputTerminacao,
 )
 from models.exposure_engine import ExposureEngine
 from models.economic_impact import EconomicImpactEngine
@@ -38,7 +37,8 @@ print("\n╔══════════════════════�
 print("║  IMPACTO: TERMINAÇÃO EM PASTAGEM     ║")
 print("╚══════════════════════════════════════╝")
 
-inp_pasto = InputTerminacaoPasto(
+inp_pasto = LoteInputTerminacao(
+    fase=Fase.TERMINACAO, sistema=Sistema.PASTO,
     nome="Terminação Pastagem — Nelore",
     data_entrada=date(2025, 6, 1),
     num_animais=280,
@@ -89,7 +89,8 @@ print("\n╔══════════════════════�
 print("║  IMPACTO: CONFINAMENTO               ║")
 print("╚══════════════════════════════════════╝")
 
-inp_conf = InputConfinamento(
+inp_conf = LoteInputTerminacao(
+    fase=Fase.TERMINACAO, sistema=Sistema.CONFINAMENTO,
     nome="Confinamento — Cruzado",
     data_entrada=date(2025, 3, 1),
     num_animais=500,

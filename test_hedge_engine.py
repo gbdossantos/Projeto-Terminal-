@@ -19,7 +19,7 @@ sys.path.insert(0, ROOT)
 from datetime import date, datetime
 from models.exposure_engine import ExposureEngine, LotExposure
 from models.hedge_engine import HedgeEngine, HedgeResult, ContratoFuturo, CurvaFuturos
-from models.production_systems import InputTerminacaoPasto
+from models.production_systems import Fase, Sistema, LoteInputTerminacao
 from models.constants import ARROBAS_POR_CONTRATO
 
 hedge_engine = HedgeEngine()
@@ -110,7 +110,8 @@ print("║  TESTE 3: ECONOMIA DO HEDGE          ║")
 print("╚══════════════════════════════════════╝")
 
 # Criar exposure de teste com valores conhecidos
-inp = InputTerminacaoPasto(
+inp = LoteInputTerminacao(
+    fase=Fase.TERMINACAO, sistema=Sistema.PASTO,
     nome="Teste Hedge",
     data_entrada=date(2026, 6, 1),
     num_animais=280,
