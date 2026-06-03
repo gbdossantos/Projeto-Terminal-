@@ -479,3 +479,74 @@ export interface SimulatorResponse {
   pior_cenario: SimulatorScenarioOutput;
   melhor_cenario: SimulatorScenarioOutput;
 }
+
+// ============================================================================
+// Simulador histórico (redesign /simulador) — CONTRATO frontend-define
+// ============================================================================
+//
+// O frontend é só apresentacional: NÃO recalcula margem. O backend (engine
+// refatorado, ainda não existente) recomputa cada cenário via cost_model_v2/
+// simulator_engine — honra "model first / convergência testada". Em dado
+// ausente: `indisponivel = true` no preset, ou erro no endpoint → estado de
+// erro explícito na UI. Nunca número inventado (§10.6).
+//
+// PORTÃO: a janela temporal dos eventos é decisão do BACKEND — `periodo` é
+// uma string opaca aqui; o frontend não decide pico/média/N-meses.
+
+/** Um preset histórico — comparação temporal OU evento marcante curado. */
+export interface HistoricoPreset {
+  id: string;
+  tipo: "temporal" | "evento";
+  /** Título seco da situação: "Junho 2023", "Seca 2021". */
+  titulo: string;
+  /** Janela do período (rótulo decidido pelo backend). */
+  periodo: string;
+  /** Narrativa curta; Selic pode aparecer aqui (não como controle). */
+  narrativa: string | null;
+  /** Preço da arroba no período (R$/@). */
+  arroba: number;
+  /** Preço do milho no período (R$/sc 60kg). */
+  milho: number;
+  /** Dado agro cru — entregue sem disclaimer. null se indisponível. */
+  precipitacao_mm: number | null;
+  temperatura_c: number | null;
+  /** Margem do cenário recomputada pelo engine (R$/@) — valor do hero. */
+  margem_cenario: number;
+  /** Margem total do cenário (R$) — contexto secundário. */
+  margem_cenario_brl: number;
+  /** Margem percentual do cenário (0-1). */
+  margem_pct: number;
+  /** Nota honesta do card de evento climático (Canal 1: efeito via preço). */
+  footnote: string | null;
+  /** true → backend não conseguiu montar este preset; card vira estado de erro. */
+  indisponivel: boolean;
+}
+
+export interface SimuladorHistoricoResponse {
+  unidade: "R$/@";
+  /** Break-even do lote (R$/@) — âncora fixa da barra-hero. */
+  break_even: number;
+  /** Margem no spot atual (R$/@) — referência de "hoje". */
+  margem_atual: number;
+  presets: {
+    /** Comparações temporais — mesmo mês de anos anteriores (até 4). */
+    temporais: HistoricoPreset[];
+    /** Eventos marcantes curados — secas/El Niño, choques (até 2). */
+    eventos: HistoricoPreset[];
+  };
+}
+
+/** Situação custom — apenas arroba + milho em valor absoluto (PORTÃO). */
+export interface SimuladorCustomRequest {
+  inputs: LoteInputTerminacao;
+  arroba: number;
+  milho: number;
+}
+
+export interface SimuladorCustomResponse {
+  unidade: "R$/@";
+  break_even: number;
+  margem_cenario: number;
+  margem_cenario_brl: number;
+  margem_pct: number;
+}

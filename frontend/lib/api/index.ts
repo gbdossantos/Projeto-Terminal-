@@ -14,6 +14,8 @@ import type {
   SimulatorResponse,
   VolatilidadeArroba,
   NoticiasDoDiaResponse,
+  SimuladorHistoricoResponse,
+  SimuladorCustomResponse,
 } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -105,6 +107,48 @@ export async function simularCenarios(req: SimulatorRequest): Promise<SimulatorR
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Erro: ${res.status}`);
+  }
+  return res.json();
+}
+
+// ============================================================================
+// Simulador histórico (redesign /simulador)
+// ============================================================================
+//
+// Consome o engine refatorado (série multi-ano + presets + clima). Enquanto o
+// backend não existir, estes fetchers fazem `throw` → a UI cai no estado de
+// erro explícito (§10.6). Nunca fabricam número.
+
+/** Presets históricos (4 temporais + 2 eventos) recomputados pro lote. */
+export async function fetchSimuladorHistorico(
+  inputs: LoteInputTerminacao,
+): Promise<SimuladorHistoricoResponse> {
+  const res = await fetch(`${BASE}/simulador/historico`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ inputs }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Simulador histórico: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Situação custom — arroba + milho em valor absoluto, recomputada no engine. */
+export async function fetchSimuladorCustom(
+  inputs: LoteInputTerminacao,
+  arroba: number,
+  milho: number,
+): Promise<SimuladorCustomResponse> {
+  const res = await fetch(`${BASE}/simulador/historico/custom`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ inputs, arroba, milho }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Simulador custom: ${res.status}`);
   }
   return res.json();
 }
