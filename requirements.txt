@@ -9,3 +9,4 @@ pydantic>=2.5.0
 cachetools>=5.3.0
 feedparser>=6.0.11
 apscheduler>=3.10.4
+xlrd>=2.0.1  # dev-only: scripts/gerar_historico_cepea.py (lê .xls do CEPEA)

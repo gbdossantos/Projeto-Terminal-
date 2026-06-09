@@ -31,6 +31,33 @@ RENDIMENTO_CARCACA_POR_SISTEMA: dict[Sistema, float] = {
 
 
 # ---------------------------------------------------------------------------
+# Fator milho-na-dieta — sensibilidade do custo do insumo ao preço do milho
+# ---------------------------------------------------------------------------
+#
+# Fração do custo unitário do insumo energético/concentrado determinada pelo
+# preço do milho. Usado pelo simulador histórico para projetar o custo de
+# dieta sob um preço de milho diferente do atual:
+#
+#     delta_custo_insumo = (milho_cenario / milho_atual - 1) * fator
+#
+# Valores aprovados na Fase 1 (Portão 1, GB). Ancorados em:
+#   - CONFINAMENTO 0.55: ração de terminação ~70-80% concentrado, do qual o
+#     milho grão é ~55-65% do custo. EMBRAPA Gado de Corte (Sistema de Produção 1);
+#     referência ABIEC/JBS de custo de confinamento 2022-2023. Range 0.45-0.65.
+#   - SEMICONFINAMENTO 0.45: suplemento concentrado ~35-55% milho por custo.
+#     EMBRAPA Gado de Corte (Circular Técnica 14); Scot Consultoria. Range 0.35-0.55.
+#   - PASTO 0.0: suplementação é proteico-mineral (ureia + sal), sem milho
+#     energético na definição padrão de pasto extensivo. EMBRAPA Circular Técnica 37.
+#
+# ►►► PONTO DE AJUSTE: GB pode revisar estes valores sem tocar em engine. ◄◄◄
+FATOR_MILHO_NA_DIETA: dict[Sistema, float] = {
+    Sistema.PASTO:            0.00,
+    Sistema.SEMICONFINAMENTO: 0.45,
+    Sistema.CONFINAMENTO:     0.55,
+}
+
+
+# ---------------------------------------------------------------------------
 # Lookups
 # ---------------------------------------------------------------------------
 
@@ -44,6 +71,17 @@ def rendimento_carcaca(inp: LoteInputTerminacao) -> float:
     if inp.rendimento_carcaca is not None:
         return inp.rendimento_carcaca
     return RENDIMENTO_CARCACA_POR_SISTEMA[inp.sistema]
+
+
+def fator_milho_na_dieta(sistema: Sistema) -> float:
+    """
+    Fração do custo do insumo concentrado/energético atribuível ao milho.
+
+    Usado pelo simulador histórico para sensibilizar o custo da dieta ao
+    preço do milho de um período. Pasto retorna 0.0 (sem milho na fórmula).
+    Ver FATOR_MILHO_NA_DIETA para fontes e ranges.
+    """
+    return FATOR_MILHO_NA_DIETA[sistema]
 
 
 # ---------------------------------------------------------------------------
