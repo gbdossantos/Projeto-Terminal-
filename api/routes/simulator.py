@@ -1,13 +1,24 @@
-"""Endpoint do simulador de cenarios multi-variavel."""
+"""Endpoints do simulador: stress test multi-variavel + simulador historico."""
 
-from fastapi import APIRouter
+from datetime import date
 
+from fastapi import APIRouter, HTTPException
+
+from api.deps import get_cotacoes
+from api.routes.lotes import _to_terminacao
 from api.schemas import (
     SimulatorRequest,
     SimulatorResponse,
     SimulatorScenarioOutput,
+    SimuladorHistoricoRequest,
+    SimuladorHistoricoResponse,
+    SimuladorHistoricoPresets,
+    HistoricoPresetSchema,
+    SimuladorCustomRequest,
+    SimuladorCustomResponse,
 )
 from models.simulator_engine import SimulatorEngine, SimulatorInput, ScenarioInput
+from models import simulador_historico as sh
 
 router = APIRouter()
 sim_engine = SimulatorEngine()
@@ -49,4 +60,71 @@ def simular(req: SimulatorRequest):
         cenario_base=SimulatorScenarioOutput.from_dataclass(report.cenario_base),
         pior_cenario=SimulatorScenarioOutput.from_dataclass(report.pior_cenario),
         melhor_cenario=SimulatorScenarioOutput.from_dataclass(report.melhor_cenario),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Simulador Histórico — lote real × situação histórica (redesign /simulador)
+# ---------------------------------------------------------------------------
+
+def _milho_atual_ou_erro() -> float:
+    """
+    Preço atual do milho (R$/sc 60kg) das cotações de mercado — denominador
+    do delta de cenário. §10.6: fonte sistêmica indisponível → erro tipado,
+    nunca número fabricado/stale.
+    """
+    milho = get_cotacoes().milho_esalq
+    if milho is None or milho <= 0:
+        raise HTTPException(
+            status_code=503,
+            detail="cotacao_milho_indisponivel: sem preço atual de milho para "
+                   "ancorar os cenários históricos. Tente novamente em instantes.",
+        )
+    return float(milho)
+
+
+@router.post("/simulador/historico", response_model=SimuladorHistoricoResponse)
+def simulador_historico(req: SimuladorHistoricoRequest):
+    """
+    Gera os presets históricos (até 4 temporais + até 2 eventos) para um lote
+    real de terminação. Margem de cada cenário recomputada no engine.
+    """
+    inp = _to_terminacao(req.inputs)
+    regiao = req.inputs.regiao
+    milho_atual = _milho_atual_ou_erro()
+
+    # "Hoje" = margem no spot atual do lote (arroba=preco_venda, milho=atual).
+    atual = sh.calcular_cenario(inp, req.inputs.preco_venda, milho_atual, milho_atual)
+
+    temporais = sh.gerar_presets_temporais(inp, milho_atual, date.today(), regiao)
+    eventos = sh.gerar_presets_eventos(inp, milho_atual, regiao)
+
+    return SimuladorHistoricoResponse(
+        unidade="R$/@",
+        break_even=atual.break_even,
+        margem_atual=atual.margem_cenario,
+        presets=SimuladorHistoricoPresets(
+            temporais=[HistoricoPresetSchema.from_dataclass(p) for p in temporais],
+            eventos=[HistoricoPresetSchema.from_dataclass(p) for p in eventos],
+        ),
+    )
+
+
+@router.post("/simulador/historico/custom", response_model=SimuladorCustomResponse)
+def simulador_historico_custom(req: SimuladorCustomRequest):
+    """
+    Cenário custom: arroba + milho em valor absoluto. Margem recomputada no
+    engine (mesmo núcleo dos presets).
+    """
+    inp = _to_terminacao(req.inputs)
+    milho_atual = _milho_atual_ou_erro()
+
+    cenario = sh.calcular_cenario(inp, req.arroba, req.milho, milho_atual)
+
+    return SimuladorCustomResponse(
+        unidade="R$/@",
+        break_even=cenario.break_even,
+        margem_cenario=cenario.margem_cenario,
+        margem_cenario_brl=cenario.margem_cenario_brl,
+        margem_pct=cenario.margem_pct,
     )

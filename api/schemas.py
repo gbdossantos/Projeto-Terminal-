@@ -604,3 +604,60 @@ class SimulatorResponse(BaseModel):
     cenario_base: SimulatorScenarioOutput
     pior_cenario: SimulatorScenarioOutput
     melhor_cenario: SimulatorScenarioOutput
+
+
+# ===========================================================================
+# Simulador Histórico (redesign /simulador) — contrato definido pelo Frontend
+# Espelha frontend/lib/types/index.ts (HistoricoPreset, SimuladorHistorico*).
+# Apenas TERMINAÇÃO (recebe LoteInputTerminacaoSchema, não o union).
+# ===========================================================================
+
+class HistoricoPresetSchema(BaseModel):
+    id: str
+    tipo: Literal["temporal", "evento"]
+    titulo: str
+    periodo: str
+    narrativa: Optional[str] = None
+    arroba: float
+    milho: float
+    precipitacao_mm: Optional[float] = None
+    temperatura_c: Optional[float] = None
+    margem_cenario: float
+    margem_cenario_brl: float
+    margem_pct: float
+    footnote: Optional[str] = None
+    indisponivel: bool
+
+    @classmethod
+    def from_dataclass(cls, dc):
+        return cls(**dataclasses.asdict(dc))
+
+
+class SimuladorHistoricoPresets(BaseModel):
+    temporais: list[HistoricoPresetSchema] = []
+    eventos: list[HistoricoPresetSchema] = []
+
+
+class SimuladorHistoricoRequest(BaseModel):
+    inputs: LoteInputTerminacaoSchema
+
+
+class SimuladorHistoricoResponse(BaseModel):
+    unidade: Literal["R$/@"] = "R$/@"
+    break_even: float
+    margem_atual: float
+    presets: SimuladorHistoricoPresets
+
+
+class SimuladorCustomRequest(BaseModel):
+    inputs: LoteInputTerminacaoSchema
+    arroba: float = Field(..., gt=0, le=2000)
+    milho: float = Field(..., gt=0, le=1000)
+
+
+class SimuladorCustomResponse(BaseModel):
+    unidade: Literal["R$/@"] = "R$/@"
+    break_even: float
+    margem_cenario: float
+    margem_cenario_brl: float
+    margem_pct: float
