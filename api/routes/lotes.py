@@ -121,7 +121,7 @@ def _to_terminacao(req: LoteInputTerminacaoSchema) -> LoteInputTerminacao:
     )
 
 
-def _calcular_hedge(exposicao, preco_venda, basis, cdi, margem_pct):
+def _calcular_hedge(exposicao, preco_venda, basis, cdi, margem_pct, corretagem):
     """Cadeia de hedge — reaproveita exposure; só pra terminação."""
     if exposicao.arrobas_totais < 165:
         return None
@@ -133,6 +133,7 @@ def _calcular_hedge(exposicao, preco_venda, basis, cdi, margem_pct):
         exposure=exposicao, contrato=contrato,
         preco_spot=preco_venda, basis_estimado=basis,
         cdi_anual=cdi, margem_garantia_pct=margem_pct,
+        corretagem_por_contrato=corretagem,
     )
 
 
@@ -190,6 +191,7 @@ def calcular_lote(req: LoteInputUnion = Body(...)):
     )
     hedge_result = _calcular_hedge(
         exposicao, req.preco_venda, req.basis_estimado, cdi, req.margem_garantia_pct,
+        req.corretagem_por_contrato,
     )
 
     return LoteTerminacaoResponse(

@@ -126,6 +126,7 @@ class LoteInputTerminacaoSchema(BaseModel):
     regiao: str = "MS"
     basis_estimado: float = -5.0
     margem_garantia_pct: float = 0.05
+    corretagem_por_contrato: float = Field(0.0, ge=0)
 
     @model_validator(mode="after")
     def _validar_campos_por_sistema(self) -> "LoteInputTerminacaoSchema":
@@ -471,6 +472,14 @@ class HedgeResultSchema(BaseModel):
     margem_hedgeada_brl: float
     margem_hedgeada_pct: float
     roi_hedgeado_anualizado: float
+    custo_oportunidade_margem: float
+    custo_liquidacao: float
+    custo_emolumentos: float
+    custo_corretagem: float
+    capital_risco_diario: float
+    aviso_basis: str
+    aviso_rolagem: str
+    aviso_corretagem: str
     receita_spot: float
     margem_spot_brl: float
     margem_spot_pct: float
@@ -502,6 +511,14 @@ class HedgeResultSchema(BaseModel):
             margem_hedgeada_brl=dc.margem_hedgeada_brl,
             margem_hedgeada_pct=dc.margem_hedgeada_pct,
             roi_hedgeado_anualizado=dc.roi_hedgeado_anualizado,
+            custo_oportunidade_margem=dc.custo_oportunidade_margem,
+            custo_liquidacao=dc.custo_liquidacao,
+            custo_emolumentos=dc.custo_emolumentos,
+            custo_corretagem=dc.custo_corretagem,
+            capital_risco_diario=dc.capital_risco_diario,
+            aviso_basis=dc.aviso_basis,
+            aviso_rolagem=dc.aviso_rolagem,
+            aviso_corretagem=dc.aviso_corretagem,
             receita_spot=dc.receita_spot,
             margem_spot_brl=dc.margem_spot_brl,
             margem_spot_pct=dc.margem_spot_pct,
