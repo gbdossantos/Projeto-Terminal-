@@ -233,6 +233,72 @@ print("  ✅ Cenários do gráfico OK")
 
 
 # ═══════════════════════════════════════════════════════════════
+# TESTE 7: CUSTOS REAIS (liquidação, emolumentos, corretagem) E
+#          RISCO DE CAIXA (capital_risco_diario)
+# ═══════════════════════════════════════════════════════════════
+print("\n╔══════════════════════════════════════╗")
+print("║  TESTE 7: CUSTOS REAIS + RISCO DE CAIXA║")
+print("╚══════════════════════════════════════╝")
+
+# custo_hedge deve ser a soma exata do breakdown
+soma_breakdown = (
+    result.custo_oportunidade_margem
+    + result.custo_liquidacao
+    + result.custo_emolumentos
+    + result.custo_corretagem
+)
+assert abs(result.custo_hedge - soma_breakdown) < 0.01, (
+    f"custo_hedge ({result.custo_hedge}) deveria ser a soma do breakdown "
+    f"({soma_breakdown})"
+)
+
+# Sem corretagem informada (default) → custo_corretagem é zero
+assert result.custo_corretagem == 0.0, "Sem corretagem informada, deveria ser R$0"
+
+# Com corretagem informada → soma proporcionalmente aos contratos
+r_com_corretagem = hedge_engine.calcular(
+    exposure=exposure, contrato=contrato,
+    preco_spot=preco_spot, basis_estimado=basis,
+    cdi_anual=0.14, margem_garantia_pct=0.05,
+    corretagem_por_contrato=10.0,
+)
+assert r_com_corretagem.custo_corretagem == round(10.0 * result.contratos_necessarios, 2)
+assert r_com_corretagem.custo_hedge > result.custo_hedge, (
+    "Custo do hedge com corretagem informada deve ser maior"
+)
+
+# Liquidação e emolumentos são tabelados — não dependem do preço nem do CDI
+assert result.custo_liquidacao == round(2.08 * result.contratos_necessarios, 2)
+assert result.custo_emolumentos == round(2.74 * result.contratos_necessarios, 2)
+
+# Capital de risco diário deve ser positivo e proporcional às arrobas hedgeadas
+assert result.capital_risco_diario > 0, "Capital de risco diário deve ser positivo"
+esperado = round(result.arrobas_hedgeadas * contrato.preco_ajuste * 0.045, 2)
+assert abs(result.capital_risco_diario - esperado) < 0.01, (
+    f"capital_risco_diario esperado {esperado}, obtido {result.capital_risco_diario}"
+)
+
+# Avisos de transparência devem estar presentes e não vazios
+assert result.aviso_basis and "basis" in result.aviso_basis.lower()
+assert result.aviso_rolagem and "rolagem" in result.aviso_rolagem.lower()
+assert result.aviso_corretagem and "corretagem" in result.aviso_corretagem.lower()
+assert result.aviso_capital_risco_diario and "regulatório" in result.aviso_capital_risco_diario.lower()
+assert "não" in result.aviso_capital_risco_diario.lower(), (
+    "Aviso deve deixar claro que não é previsão de mercado"
+)
+
+# Nenhuma das mudanças pode ter alterado o preço travado (aditivo, não invasivo)
+assert result.preco_travado == 340.0, "preco_travado não deveria mudar com custos reais"
+
+print(f"  Custo oportunidade margem: R$ {result.custo_oportunidade_margem:,.2f}")
+print(f"  Custo liquidação:          R$ {result.custo_liquidacao:,.2f}")
+print(f"  Custo emolumentos:         R$ {result.custo_emolumentos:,.2f}")
+print(f"  Custo corretagem:          R$ {result.custo_corretagem:,.2f}")
+print(f"  Capital risco diário:      R$ {result.capital_risco_diario:,.2f}")
+print("  ✅ Custos reais e risco de caixa OK")
+
+
+# ═══════════════════════════════════════════════════════════════
 # RESUMO
 # ═══════════════════════════════════════════════════════════════
 print("\n╔══════════════════════════════════════════════════════╗")

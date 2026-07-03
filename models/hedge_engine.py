@@ -21,8 +21,33 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
 
-from models.constants import ARROBAS_POR_CONTRATO, MARGEM_GARANTIA_PCT_DEFAULT
+from models.constants import (
+    ARROBAS_POR_CONTRATO,
+    EMOLUMENTOS_BGI_ADV_1_5,
+    LIMITE_OSCILACAO_DIARIA_BGI_PCT,
+    MARGEM_GARANTIA_PCT_DEFAULT,
+    TAXA_LIQUIDACAO_BGI,
+)
 from models.exposure_engine import LotExposure
+
+AVISO_BASIS = (
+    "Este número assume basis estável até o vencimento e não inclui "
+    "custo de ajuste diário adverso."
+)
+AVISO_ROLAGEM = (
+    "Custo de rolagem é variável e definido pelo mercado no momento da "
+    "operação — não incluído neste número."
+)
+AVISO_CORRETAGEM = (
+    "Corretagem real varia por corretora; se não informada, foi tratada "
+    "como R$ 0."
+)
+AVISO_CAPITAL_RISCO_DIARIO = (
+    "Este valor usa o limite regulatório de oscilação diária do BGI "
+    "(teto máximo permitido em um pregão pela B3), não a variação "
+    "típica esperada — é um cenário extremo de chamada de margem, "
+    "não uma previsão de mercado."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -84,10 +109,27 @@ class HedgeResult:
     # --- Economia COM hedge ---
     receita_hedgeada: float
     custo_total: float
-    custo_hedge: float              # custo de oportunidade da margem
+    custo_hedge: float              # soma de todos os componentes abaixo
     margem_hedgeada_brl: float
     margem_hedgeada_pct: float
     roi_hedgeado_anualizado: float
+
+    # --- Breakdown do custo_hedge (transparência, auditável) ---
+    custo_oportunidade_margem: float  # oportunidade do capital em garantia
+    custo_liquidacao: float           # taxa de liquidação B3 (tabelada)
+    custo_emolumentos: float          # emolumentos B3 (tabelados)
+    custo_corretagem: float           # corretagem informada (default R$0)
+
+    # --- Risco de caixa (ajuste diário / chamada de margem) ---
+    # Capital necessário para suportar a variação diária máxima permitida
+    # pela bolsa (hard limit), não uma previsão de quanto o preço vai mexer.
+    capital_risco_diario: float
+
+    # --- Avisos de transparência (não alteram nenhum cálculo acima) ---
+    aviso_basis: str
+    aviso_rolagem: str
+    aviso_corretagem: str
+    aviso_capital_risco_diario: str
 
     # --- Economia SEM hedge (comparação) ---
     receita_spot: float
@@ -174,6 +216,7 @@ class HedgeEngine:
         basis_estimado: float = 0.0,
         cdi_anual: float = 0.1415,
         margem_garantia_pct: float = MARGEM_GARANTIA_PCT_DEFAULT,
+        corretagem_por_contrato: float = 0.0,
     ) -> HedgeResult:
         """
         Calcula a economia completa de hedge vs não-hedge.
@@ -185,6 +228,10 @@ class HedgeEngine:
             basis_estimado: Desconto da praça local vs SP (R$/@, negativo).
             cdi_anual: CDI a.a. para custo de oportunidade.
             margem_garantia_pct: % do nocional exigido como margem.
+            corretagem_por_contrato: Corretagem cobrada pela corretora do
+                produtor (R$/contrato). Varia por corretora — muitas zeram
+                essa taxa em futuros de commodities. Default R$0 se o
+                produtor não informar.
 
         Returns:
             HedgeResult com comparativo completo.
@@ -203,12 +250,30 @@ class HedgeEngine:
         # --- Pricing ---
         preco_travado = contrato.preco_ajuste - abs(basis_estimado)
 
-        # --- Custo do hedge (oportunidade da margem de garantia) ---
+        # --- Custo do hedge (breakdown completo, não só oportunidade) ---
         margem_garantia_total = (
             contrato.preco_ajuste * arrobas_hedgeadas * margem_garantia_pct
         )
-        custo_hedge = self._custo_oportunidade_margem(
+        custo_oportunidade_margem = self._custo_oportunidade_margem(
             margem_garantia_total, cdi_anual, dias,
+        )
+        custo_liquidacao = TAXA_LIQUIDACAO_BGI * contratos
+        custo_emolumentos = EMOLUMENTOS_BGI_ADV_1_5 * contratos
+        custo_corretagem = corretagem_por_contrato * contratos
+        custo_hedge = (
+            custo_oportunidade_margem
+            + custo_liquidacao
+            + custo_emolumentos
+            + custo_corretagem
+        )
+
+        # --- Risco de caixa: capital pra suportar ajuste diário adverso ---
+        # arrobas_hedgeadas * limite de oscilação diária do BGI (hard limit
+        # da bolsa) * preço do contrato = pior variação de um pregão.
+        capital_risco_diario = (
+            arrobas_hedgeadas
+            * contrato.preco_ajuste
+            * LIMITE_OSCILACAO_DIARIA_BGI_PCT
         )
 
         # --- Economia COM hedge ---
@@ -298,6 +363,15 @@ class HedgeEngine:
             margem_hedgeada_brl=round(margem_hedge_brl, 2),
             margem_hedgeada_pct=round(margem_hedge_pct, 4),
             roi_hedgeado_anualizado=round(roi_hedge_anual, 4),
+            custo_oportunidade_margem=round(custo_oportunidade_margem, 2),
+            custo_liquidacao=round(custo_liquidacao, 2),
+            custo_emolumentos=round(custo_emolumentos, 2),
+            custo_corretagem=round(custo_corretagem, 2),
+            capital_risco_diario=round(capital_risco_diario, 2),
+            aviso_basis=AVISO_BASIS,
+            aviso_rolagem=AVISO_ROLAGEM,
+            aviso_corretagem=AVISO_CORRETAGEM,
+            aviso_capital_risco_diario=AVISO_CAPITAL_RISCO_DIARIO,
             receita_spot=round(receita_spot, 2),
             margem_spot_brl=round(margem_spot_brl, 2),
             margem_spot_pct=round(margem_spot_pct, 4),
