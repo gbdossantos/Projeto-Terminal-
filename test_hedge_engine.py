@@ -273,7 +273,7 @@ assert result.custo_emolumentos == round(2.74 * result.contratos_necessarios, 2)
 
 # Capital de risco diário deve ser positivo e proporcional às arrobas hedgeadas
 assert result.capital_risco_diario > 0, "Capital de risco diário deve ser positivo"
-esperado = round(result.arrobas_hedgeadas * contrato.preco_ajuste * 0.0385, 2)
+esperado = round(result.arrobas_hedgeadas * contrato.preco_ajuste * 0.045, 2)
 assert abs(result.capital_risco_diario - esperado) < 0.01, (
     f"capital_risco_diario esperado {esperado}, obtido {result.capital_risco_diario}"
 )

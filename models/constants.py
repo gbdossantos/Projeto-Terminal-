@@ -55,11 +55,15 @@ TAXA_LIQUIDACAO_BGI = 2.08  # R$/contrato
 # modelado separadamente via `corretagem_por_contrato`.
 EMOLUMENTOS_BGI_ADV_1_5 = 2.74  # R$/contrato ("tarifa única", ADV 1-5)
 
-# Limite de oscilação diária do BGI — B3, "Oscilação Diária de Negociação"
-# (documento vigente 21/11/2025): 3,85% sobre o preço de ajuste do dia
-# anterior. É o hard limit da bolsa para um único pregão, não uma previsão
-# de volatilidade realizada — usado apenas como referência conservadora
-# para estimar o capital necessário para suportar um ajuste diário adverso
-# (risco de chamada de margem), nunca como estimativa de risco de preço.
-# https://www.b3.com.br/data/files/57/31/0B/84/577BA9105B12E5A9AC094EA8/Oscilacao%20Maxima%20Diaria%20-%20PT%20-%2021112025.pdf
-LIMITE_OSCILACAO_DIARIA_BGI_PCT = 0.0385
+# Limite de oscilação diária do BGI — B3, documento "Oscilação Diária de
+# Negociação" (versão canônica, atualizada in-place pela B3 — não a versão
+# arquivada com data no nome do arquivo). Vigência confirmada 04/05/2026 na
+# página oficial de Regras de Negociação do PUMA Trading System: 4,5% sobre
+# o preço de ajuste do dia anterior. É o hard limit da bolsa para um único
+# pregão, não uma previsão de volatilidade realizada — usado apenas como
+# referência conservadora para estimar o capital necessário para suportar
+# um ajuste diário adverso (risco de chamada de margem), nunca como
+# estimativa de risco de preço.
+# https://www.b3.com.br/data/files/FC/42/52/0E/97B6E610B60806E6AC094EA8/Oscila%C3%A7%C3%A3o%20Di%C3%A1ria%20de%20Negocia%C3%A7%C3%A3o.pdf
+# https://www.b3.com.br/pt_br/solucoes/plataformas/puma-trading-system/para-participantes-e-traders/regras-e-parametros-de-negociacao/regras-de-negociacao/
+LIMITE_OSCILACAO_DIARIA_BGI_PCT = 0.045
