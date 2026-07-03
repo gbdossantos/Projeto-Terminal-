@@ -86,6 +86,9 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         FRONTEND_URL,
     ],
+    # Cobre producao (projeto-terminal.vercel.app) e previews
+    # (projeto-terminal-git-<branch>-<team>.vercel.app, projeto-terminal-<hash>-<team>.vercel.app)
+    allow_origin_regex=r"^https://projeto-terminal(-[a-z0-9]+)*\.vercel\.app$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
