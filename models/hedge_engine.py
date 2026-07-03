@@ -42,6 +42,12 @@ AVISO_CORRETAGEM = (
     "Corretagem real varia por corretora; se não informada, foi tratada "
     "como R$ 0."
 )
+AVISO_CAPITAL_RISCO_DIARIO = (
+    "Este valor usa o limite regulatório de oscilação diária do BGI "
+    "(teto máximo permitido em um pregão pela B3), não a variação "
+    "típica esperada — é um cenário extremo de chamada de margem, "
+    "não uma previsão de mercado."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -123,6 +129,7 @@ class HedgeResult:
     aviso_basis: str
     aviso_rolagem: str
     aviso_corretagem: str
+    aviso_capital_risco_diario: str
 
     # --- Economia SEM hedge (comparação) ---
     receita_spot: float
@@ -364,6 +371,7 @@ class HedgeEngine:
             aviso_basis=AVISO_BASIS,
             aviso_rolagem=AVISO_ROLAGEM,
             aviso_corretagem=AVISO_CORRETAGEM,
+            aviso_capital_risco_diario=AVISO_CAPITAL_RISCO_DIARIO,
             receita_spot=round(receita_spot, 2),
             margem_spot_brl=round(margem_spot_brl, 2),
             margem_spot_pct=round(margem_spot_pct, 4),

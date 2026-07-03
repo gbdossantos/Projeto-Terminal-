@@ -43,11 +43,17 @@ BASIS_REGIAO = {
 # Tarifa de liquidação — valor fixo por contrato, cobrado no vencimento.
 TAXA_LIQUIDACAO_BGI = 2.08  # R$/contrato
 
-# Emolumentos (tarifa de negociação/registro) — tabela degressiva por ADV
-# (volume médio diário do cliente, em contratos). Usamos a faixa ADV 1-5,
-# a mais cara: é o perfil do produto (fazenda hedgeando poucos contratos,
-# esporadicamente), e é a escolha conservadora (nunca subestima custo).
-EMOLUMENTOS_BGI_ADV_1_5 = 2.74  # R$/contrato
+# "Tarifa única" (emolumentos + tarifa de registro combinados) — tabela
+# degressiva por ADV mensal do INVESTIDOR (p.12, seção 1.3.2.1: apurado por
+# CPF/CNPJ, consolidado entre todas as corretoras onde ele opera — não é
+# volume da corretora, não sofre markup por essa via). A B3 rateia
+# internamente 35% emolumentos / 65% tarifa de registro (p.15, seção
+# 1.3.2.5), mas o valor total cobrado do investidor é a tarifa única cheia.
+# Usamos a faixa ADV 1-5, a mais cara: é o perfil do produto (fazenda
+# hedgeando poucos contratos, esporadicamente), escolha conservadora que
+# nunca subestima custo. Corretagem da corretora é custo à parte, já
+# modelado separadamente via `corretagem_por_contrato`.
+EMOLUMENTOS_BGI_ADV_1_5 = 2.74  # R$/contrato ("tarifa única", ADV 1-5)
 
 # Limite de oscilação diária do BGI — B3, "Oscilação Diária de Negociação"
 # (documento vigente 21/11/2025): 3,85% sobre o preço de ajuste do dia

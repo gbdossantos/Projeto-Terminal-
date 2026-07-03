@@ -282,6 +282,10 @@ assert abs(result.capital_risco_diario - esperado) < 0.01, (
 assert result.aviso_basis and "basis" in result.aviso_basis.lower()
 assert result.aviso_rolagem and "rolagem" in result.aviso_rolagem.lower()
 assert result.aviso_corretagem and "corretagem" in result.aviso_corretagem.lower()
+assert result.aviso_capital_risco_diario and "regulatório" in result.aviso_capital_risco_diario.lower()
+assert "não" in result.aviso_capital_risco_diario.lower(), (
+    "Aviso deve deixar claro que não é previsão de mercado"
+)
 
 # Nenhuma das mudanças pode ter alterado o preço travado (aditivo, não invasivo)
 assert result.preco_travado == 340.0, "preco_travado não deveria mudar com custos reais"

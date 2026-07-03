@@ -480,6 +480,7 @@ class HedgeResultSchema(BaseModel):
     aviso_basis: str
     aviso_rolagem: str
     aviso_corretagem: str
+    aviso_capital_risco_diario: str
     receita_spot: float
     margem_spot_brl: float
     margem_spot_pct: float
@@ -519,6 +520,7 @@ class HedgeResultSchema(BaseModel):
             aviso_basis=dc.aviso_basis,
             aviso_rolagem=dc.aviso_rolagem,
             aviso_corretagem=dc.aviso_corretagem,
+            aviso_capital_risco_diario=dc.aviso_capital_risco_diario,
             receita_spot=dc.receita_spot,
             margem_spot_brl=dc.margem_spot_brl,
             margem_spot_pct=dc.margem_spot_pct,
