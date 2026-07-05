@@ -53,7 +53,7 @@ export function CurvaBGIChart({ contratos, spotPrice, fonte }: CurvaBGIChartProp
             Curva de futuros B3 — boi gordo (BGI)
           </h2>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--text-tertiary)" }}>
-            Precos de ajuste por vencimento vs spot CEPEA
+            Preços de ajuste por vencimento vs spot CEPEA
           </p>
         </div>
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--text-tertiary)" }}>
@@ -127,8 +127,8 @@ export function CurvaBGIChart({ contratos, spotPrice, fonte }: CurvaBGIChartProp
           <span className="rounded-full" style={{ width: 6, height: 6, background: "var(--brand)", display: "inline-block" }} />
           <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 500, color: "var(--brand)" }}>
             {isBackwardation
-              ? `Backwardation — mercado precifica queda de R$${backDiff}/@${lastContract ? ` ate ${lastContract.contrato}` : ""}`
-              : "Contango — mercado precifica alta nos proximos meses"}
+              ? `Backwardation — mercado precifica queda de R$${backDiff}/@${lastContract ? ` até ${lastContract.contrato}` : ""}`
+              : "Contango — mercado precifica alta nos próximos meses"}
           </span>
         </div>
 

@@ -110,11 +110,11 @@ export function resolveCotacao(
 export function formatRelativeTime(iso: string | null): string {
   if (!iso) return "—";
   const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 30_000) return "agora ha pouco";
+  if (ms < 30_000) return "agora há pouco";
   const min = Math.floor(ms / 60_000);
-  if (min < 60) return `ha ${min}min`;
+  if (min < 60) return `há ${min}min`;
   const h = Math.floor(min / 60);
-  if (h < 24) return `ha ${h}h`;
+  if (h < 24) return `há ${h}h`;
   const d = Math.floor(h / 24);
-  return `ha ${d}d`;
+  return `há ${d}d`;
 }

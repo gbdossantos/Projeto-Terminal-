@@ -14,7 +14,7 @@ export interface MargemClassification {
 
 const VERDE: MargemClassification = {
   tier: "verde",
-  label: "margem saudavel",
+  label: "margem saudável",
   color: "var(--gain)",
   bg: "rgba(22, 163, 74, 0.10)",
   textColor: "var(--gain-2)",
@@ -32,7 +32,7 @@ const AMBER: MargemClassification = {
 
 const VERMELHO: MargemClassification = {
   tier: "vermelho",
-  label: "margem critica",
+  label: "margem crítica",
   color: "var(--loss)",
   bg: "rgba(220, 38, 38, 0.10)",
   textColor: "var(--loss-2)",

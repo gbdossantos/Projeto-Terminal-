@@ -111,21 +111,21 @@ export default function FormSemi({ sistema }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Field label="Animais" value={form.num_animais} onChange={(v) => set("num_animais", v)} />
           <Field label="Peso entrada (kg)" value={form.peso_entrada_kg} onChange={(v) => set("peso_entrada_kg", v)} />
-          <Field label="Peso saida (kg)" value={form.peso_saida_estimado_kg} onChange={(v) => set("peso_saida_estimado_kg", v)} />
+          <Field label="Peso saída (kg)" value={form.peso_saida_estimado_kg} onChange={(v) => set("peso_saida_estimado_kg", v)} />
           <Field label="Dias de ciclo" value={form.dias_ciclo} onChange={(v) => set("dias_ciclo", v)} />
-          <Field label="Rendimento carcaca (%)" value={(form.rendimento_carcaca ?? 0.53) * 100} onChange={(v) => set("rendimento_carcaca", v / 100)} />
-          <Field label="Reposicao total (R$)" value={form.custo_reposicao_total} onChange={(v) => set("custo_reposicao_total", v)} step={5000} />
+          <Field label="Rendimento carcaça (%)" value={(form.rendimento_carcaca ?? 0.53) * 100} onChange={(v) => set("rendimento_carcaca", v / 100)} />
+          <Field label="Reposição total (R$)" value={form.custo_reposicao_total} onChange={(v) => set("custo_reposicao_total", v)} step={5000} />
         </div>
 
         <div className="border-t border-border pt-4">
           <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Custos (R$/cab/dia)</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Field label="Arrendamento" value={form.custo_arrendamento_dia ?? 0} onChange={(v) => set("custo_arrendamento_dia", v)} step={0.1} />
-            <Field label="Manutencao pasto" value={form.custo_manutencao_pasto_dia ?? 0} onChange={(v) => set("custo_manutencao_pasto_dia", v)} step={0.1} />
+            <Field label="Manutenção pasto" value={form.custo_manutencao_pasto_dia ?? 0} onChange={(v) => set("custo_manutencao_pasto_dia", v)} step={0.1} />
             <Field label="Consumo suplemento (kg/dia)" value={form.consumo_suplemento_kg_dia ?? 0} onChange={(v) => set("consumo_suplemento_kg_dia", v)} step={0.1} />
             <Field label="Custo suplemento (R$/kg)" value={form.custo_suplemento_kg ?? 0} onChange={(v) => set("custo_suplemento_kg", v)} step={0.05} />
             <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
-            <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
+            <Field label="Mão de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
           </div>
         </div>
 
@@ -137,7 +137,7 @@ export default function FormSemi({ sistema }: Props) {
 
         <div className="border-t border-border pt-4">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Cotacao arroba (R$/@)" value={form.preco_venda} onChange={(v) => set("preco_venda", v)} />
+            <Field label="Cotação arroba (R$/@)" value={form.preco_venda} onChange={(v) => set("preco_venda", v)} />
             <Field label="Mortalidade (R$)" value={form.custo_mortalidade_estimada ?? 0} onChange={(v) => set("custo_mortalidade_estimada", v)} step={100} />
           </div>
         </div>
@@ -158,7 +158,7 @@ export default function FormSemi({ sistema }: Props) {
         <>
           <Semaforo
             status={form.preco_venda < r.break_even_price ? "vermelho" : r.margem_percentual < 0.08 ? "amarelo" : "verde"}
-            titulo={form.preco_venda < r.break_even_price ? "Abaixo do break-even" : r.margem_percentual < 0.08 ? "Margem apertada" : "Margem saudavel"}
+            titulo={form.preco_venda < r.break_even_price ? "Abaixo do break-even" : r.margem_percentual < 0.08 ? "Margem apertada" : "Margem saudável"}
             detalhe={`Margem de ${fmtPct(r.margem_percentual)} — spread de ${fmtBRL(form.preco_venda - r.break_even_price)}/@ sobre o break-even`}
           />
 
@@ -171,16 +171,16 @@ export default function FormSemi({ sistema }: Props) {
             <MetricCard label="ROI anualizado" value={fmtPct(r.roi_anualizado)} />
           </div>
 
-          <MetricCard label="Suplementacao por arroba" value={fmtBRL(r.custo_suplementacao_por_arroba ?? 0, 2) + "/@"} compact />
+          <MetricCard label="Suplementação por arroba" value={fmtBRL(r.custo_suplementacao_por_arroba ?? 0, 2) + "/@"} compact />
 
           <div className="space-y-4">
-            <h2 className="text-sm font-medium text-t-primary">Painel de impacto economico</h2>
+            <h2 className="text-sm font-medium text-t-primary">Painel de impacto econômico</h2>
             <PerguntaInvertidaBlock impacto={data.impacto} margemBruta={r.margem_bruta} />
             <TabelaCenarios cenarios={data.impacto.cenarios} />
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-sm font-medium text-t-primary">Protecao com futuros B3</h2>
+            <h2 className="text-sm font-medium text-t-primary">Proteção com futuros B3</h2>
             <PainelHedge hedge={data.hedge} />
           </div>
 

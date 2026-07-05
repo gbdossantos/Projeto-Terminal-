@@ -18,7 +18,7 @@ const dmMono = DM_Mono({
 
 export const metadata: Metadata = {
   title: "Terminal — Boi gordo",
-  description: "Clareza economica da operacao antes de qualquer decisao financeira",
+  description: "Clareza econômica da operação antes de qualquer decisão financeira",
 };
 
 export default function RootLayout({

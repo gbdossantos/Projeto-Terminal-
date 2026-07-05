@@ -44,7 +44,7 @@ export function PainelMercado({ cotacoes, breakEven }: Props) {
           delta={breakEven ? `BE: R$ ${breakEven.toFixed(0)}/@` : undefined}
         />
         <MetricWithStatus
-          label="Dolar PTAX"
+          label="Dólar PTAX"
           status={dolar}
           format={(v) => v.toFixed(2)}
         />

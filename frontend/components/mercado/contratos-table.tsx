@@ -23,13 +23,13 @@ function getBusinessDaysUntil(dateStr: string): number {
 }
 
 function getSpreadBadge(spread: number): { label: string; bg: string; color: string } {
-  if (spread > 0) return { label: "em premio", bg: "var(--success-bg)", color: "var(--green-2)" };
+  if (spread > 0) return { label: "em prêmio", bg: "var(--success-bg)", color: "var(--green-2)" };
   if (spread >= -5) return { label: "leve desc.", bg: "var(--warning-bg)", color: "var(--amber)" };
   return { label: "desconto", bg: "var(--danger-bg)", color: "var(--red-2)" };
 }
 
 export function ContratosTable({ contratos, spotPrice }: ContratosTableProps) {
-  const headers = ["Contrato", "Vencimento", "Preco ajuste", "Spread vs spot", "Dias uteis", "Status"];
+  const headers = ["Contrato", "Vencimento", "Preço ajuste", "Spread vs spot", "Dias úteis", "Status"];
 
   return (
     <div style={{ borderTop: "0.5px solid var(--border-subtle)" }}>

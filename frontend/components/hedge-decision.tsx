@@ -11,7 +11,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
   if (!hedge) return (
     <div className="rounded-xl px-5 py-4 text-[12px]"
       style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)", color: "var(--ink-3)" }}>
-      Lote pequeno demais para hedge com futuros B3 (minimo ~165@)
+      Lote pequeno demais para hedge com futuros B3 (mínimo ~165@)
     </div>
   );
 
@@ -22,7 +22,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
         style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
           <p className="font-display text-base italic" style={{ color: "var(--ink-3)" }}>
-            &ldquo;Qual risco voce aceita ao nao proteger este lote?&rdquo;
+            &ldquo;Qual risco você aceita ao não proteger este lote?&rdquo;
           </p>
 
           <TooltipProvider>
@@ -59,13 +59,13 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
             <p className="text-[9px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--gain-2)" }}>
               Se travar — {hedge.contrato_selecionado.codigo}
             </p>
-            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Preco garantido</p>
+            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Preço garantido</p>
             <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.preco_travado)}/@
             </p>
             <AvisoInline>{hedge.aviso_basis}</AvisoInline>
 
-            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Voce garante</p>
+            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Você garante</p>
             <p className="font-mono text-[17px] font-medium mt-0.5" style={{ color: "var(--gain-2)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.margem_hedgeada_brl)} de lucro
             </p>
@@ -89,7 +89,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
                   <AccordionContent className="pb-0 pt-2">
                     <div className="space-y-1">
                       <Row label="Oportunidade da margem" value={fmtBRL(hedge.custo_oportunidade_margem)} />
-                      <Row label="Liquidacao B3" value={fmtBRL(hedge.custo_liquidacao)} />
+                      <Row label="Liquidação B3" value={fmtBRL(hedge.custo_liquidacao)} />
                       <Row label="Tarifa B3 (emolumentos)" value={fmtBRL(hedge.custo_emolumentos)} />
                       <Row label="Corretagem" value={fmtBRL(hedge.custo_corretagem)} />
                     </div>
@@ -104,13 +104,13 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
           <div className="rounded-[10px] p-4"
             style={{ background: "rgba(220, 38, 38, 0.10)", border: "0.5px solid rgba(220, 38, 38, 0.27)" }}>
             <p className="text-[9px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--loss-2)" }}>
-              Se nao travar
+              Se não travar
             </p>
-            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Preco atual</p>
+            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Preço atual</p>
             <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.preco_spot)}/@
             </p>
-            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Cenarios de queda</p>
+            <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>Cenários de queda</p>
             <div className="mt-2 space-y-0">
               {hedge.cenarios_grafico.filter(c => c.cenario.includes("cai") || c.cenario.includes("sobe")).map((c, i) => (
                 <div key={i} className="flex justify-between py-1.5 text-[11px] font-mono"
@@ -123,7 +123,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
               ))}
             </div>
             <p className="text-[10px] mt-3" style={{ color: "var(--ink-3)" }}>
-              {hedge.arrobas_totais.toFixed(0)} arrobas sem protecao alguma
+              {hedge.arrobas_totais.toFixed(0)} arrobas sem proteção alguma
             </p>
           </div>
         </div>

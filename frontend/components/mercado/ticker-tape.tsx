@@ -21,7 +21,7 @@ function buildItems(cotacoes: CotacaoMercado | null, contratos: ContratoFuturo[]
     items.push({ label: "ARROBA", value: `R$${cotacoes.arroba_boi_gordo.toFixed(2)}/@` });
   }
   if (cotacoes?.dolar_ptax != null) {
-    items.push({ label: "DOLAR", value: `R$${cotacoes.dolar_ptax.toFixed(2)}` });
+    items.push({ label: "DÓLAR", value: `R$${cotacoes.dolar_ptax.toFixed(2)}` });
   }
   if (cotacoes?.milho_esalq != null) {
     items.push({ label: "MILHO", value: `R$${cotacoes.milho_esalq.toFixed(2)}/sc` });

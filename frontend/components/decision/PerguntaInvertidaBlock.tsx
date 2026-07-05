@@ -48,7 +48,7 @@ export function PerguntaInvertidaBlock({ impacto, margemBruta }: Props) {
           margin: 0,
         }}
       >
-        Ao nao proteger este lote, voce aceita um risco de{" "}
+        Ao não proteger este lote, você aceita um risco de{" "}
         <span
           style={{
             fontFamily: "'JetBrains Mono', monospace",
@@ -59,7 +59,7 @@ export function PerguntaInvertidaBlock({ impacto, margemBruta }: Props) {
         >
           {fmtBRL(perda)}
         </span>{" "}
-        em caso de queda de 20% no preco da arroba.
+        em caso de queda de 20% no preço da arroba.
       </p>
       {pctDaMargem != null && (
         <p

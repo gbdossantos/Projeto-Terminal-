@@ -84,10 +84,10 @@ export default function FormCria({ sistema }: Props) {
         <div className="border-t border-border pt-4">
           <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Custos anuais (R$/UA/ano)</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Field label="Nutricao" value={form.custo_nutricao_ua_ano} onChange={(v) => set("custo_nutricao_ua_ano", v)} step={10} />
+            <Field label="Nutrição" value={form.custo_nutricao_ua_ano} onChange={(v) => set("custo_nutricao_ua_ano", v)} step={10} />
             <Field label="Sanidade" value={form.custo_sanidade_ua_ano} onChange={(v) => set("custo_sanidade_ua_ano", v)} step={10} />
-            <Field label="Reproducao" value={form.custo_reproducao_ua_ano} onChange={(v) => set("custo_reproducao_ua_ano", v)} step={10} />
-            <Field label="Mao de obra" value={form.custo_mao_obra_ua_ano} onChange={(v) => set("custo_mao_obra_ua_ano", v)} step={10} />
+            <Field label="Reprodução" value={form.custo_reproducao_ua_ano} onChange={(v) => set("custo_reproducao_ua_ano", v)} step={10} />
+            <Field label="Mão de obra" value={form.custo_mao_obra_ua_ano} onChange={(v) => set("custo_mao_obra_ua_ano", v)} step={10} />
             <Field label="Arrendamento" value={form.custo_arrendamento_ua_ano} onChange={(v) => set("custo_arrendamento_ua_ano", v)} step={10} />
             <Field label="Outros" value={form.outros_custos_ua_ano ?? 0} onChange={(v) => set("outros_custos_ua_ano", v)} step={10} />
           </div>

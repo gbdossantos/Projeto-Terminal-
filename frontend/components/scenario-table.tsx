@@ -14,7 +14,7 @@ export function ScenarioTable({ cenarios }: { cenarios: ScenarioResult[] }) {
       <div className="grid grid-cols-[20px_1fr_1fr_1fr_80px_80px] gap-0 px-3.5 py-2.5"
         style={{ background: "var(--paper-3)", borderBottom: "0.5px solid var(--rule)" }}>
         <span />
-        {["Cenario", "Arroba", "Margem R$", "Margem %", "ROI"].map((h, i) => (
+        {["Cenário", "Arroba", "Margem R$", "Margem %", "ROI"].map((h, i) => (
           <span key={h} className={`text-[9px] font-medium uppercase tracking-[0.08em] ${i > 0 ? "text-right" : ""}`}
             style={{ color: "var(--ink-3)" }}>{h}</span>
         ))}

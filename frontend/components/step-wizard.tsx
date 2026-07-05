@@ -7,16 +7,16 @@ interface StepWizardProps {
 
 const steps = [
   { n: 1, label: "Dados do lote" },
-  { n: 2, label: "Analise economica" },
-  { n: 3, label: "Decisao de hedge" },
+  { n: 2, label: "Análise econômica" },
+  { n: 3, label: "Decisão de hedge" },
 ];
 
 function SemaphoreBadge({ margemPct }: { margemPct: number }) {
   const s = margemPct >= 0.15
-    ? { bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.27)", dot: "var(--gain)", text: "var(--gain-2)", label: "Margem saudavel" }
+    ? { bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.27)", dot: "var(--gain)", text: "var(--gain-2)", label: "Margem saudável" }
     : margemPct >= 0.05
     ? { bg: "rgba(217, 119, 6, 0.10)", border: "rgba(217, 119, 6, 0.27)", dot: "var(--amber)", text: "var(--amber)", label: "Margem apertada" }
-    : { bg: "rgba(220, 38, 38, 0.10)", border: "rgba(220, 38, 38, 0.27)", dot: "var(--loss)", text: "var(--loss-2)", label: "Margem critica" };
+    : { bg: "rgba(220, 38, 38, 0.10)", border: "rgba(220, 38, 38, 0.27)", dot: "var(--loss)", text: "var(--loss-2)", label: "Margem crítica" };
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
