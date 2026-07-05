@@ -17,6 +17,7 @@ import { DEFAULTS_TERMINACAO_PASTO } from "@/lib/defaults-sistema";
 import { PerguntaInvertidaBlock } from "@/components/decision/PerguntaInvertidaBlock";
 import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
+import { useProfile } from "@/lib/use-profile";
 
 interface Props {
   /** Sistema vem do seletor da page — pra FormPasto é sempre "pasto". */
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export default function FormPasto({ sistema }: Props) {
+  const { profile } = useProfile();
   // DEFAULTS_TERMINACAO_PASTO ainda tem o shape antigo — adapta no useState inicial.
   const [form, setForm] = useState<LoteInputTerminacao>({
     fase: "terminacao",
@@ -47,6 +49,12 @@ export default function FormPasto({ sistema }: Props) {
     }).catch(() => {});
   }, [sistema]);
 
+  // Mortalidade estimada — default sobrescrevível: herda do histórico da
+  // fazenda (perfil), mas o produtor pode ajustar por lote específico.
+  useEffect(() => {
+    setForm((f) => ({ ...f, custo_mortalidade_estimada: f.custo_reposicao_total * profile.mortalidade_hist }));
+  }, [profile.mortalidade_hist]);
+
   const handleSave = (nome: string) => {
     if (!data) return;
     saveLote({
@@ -65,13 +73,13 @@ export default function FormPasto({ sistema }: Props) {
   const calculate = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const result = await calcularLote(form);
+      const result = await calcularLote({ ...form, regiao: profile.estado, basis_estimado: profile.basis_valor });
       setData(result);
       setStep(2);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro");
     } finally { setLoading(false); }
-  }, [form]);
+  }, [form, profile.estado, profile.basis_valor]);
 
   const r = data?.resultado;
   const margemPct = r?.margem_percentual;

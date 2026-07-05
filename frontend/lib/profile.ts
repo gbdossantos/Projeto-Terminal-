@@ -7,8 +7,6 @@
  * Hook reativo: useProfile() em "@/lib/use-profile".
  */
 
-import type { Sistema } from "@/lib/types";
-
 export interface FarmProfile {
   // ── Perfil ────────────────────────────────────────────────────
   nome_produtor: string;
@@ -20,10 +18,6 @@ export interface FarmProfile {
   basis_valor: number;       // R$/@ — desconto local sobre o BGI
 
   // ── Operação ─────────────────────────────────────────────────
-  // Sistema de produção preferido (não é mais a antiga string única com 6
-  // valores; agora reflete o novo modelo fase/sistema — só sistema, fase é
-  // sempre escolhida fresca em /lotes). "Ciclo Completo" foi removido.
-  sistema_padrao: Sistema;
   break_even_medio: number;  // R$/@
   mortalidade_hist: number;  // decimal (0.02 = 2%)
 
@@ -49,7 +43,6 @@ export const DEFAULT_PROFILE: FarmProfile = {
   estado: "MS",
   municipio: "Três Lagoas",
   basis_valor: -5,
-  sistema_padrao: "pasto",
   break_even_medio: 286.50,
   mortalidade_hist: 0.02,
   theme: "light",
@@ -116,14 +109,6 @@ export const FAIXAS_FATURAMENTO = [
   { value: "15m_40m", label: "R$ 15M — R$ 40M" },
   { value: "40m_80m", label: "R$ 40M — R$ 80M" },
   { value: "acima_80m", label: "Acima de R$ 80M" },
-];
-
-// Pós-refactor: só os 3 sistemas (Pasto, Semi, Confinamento). Ciclo Completo
-// foi removido do modelo. Fase é escolhida fresca em /lotes (não mora no perfil).
-export const SISTEMAS_OPCOES: Array<{ value: FarmProfile["sistema_padrao"]; label: string }> = [
-  { value: "pasto", label: "Pasto" },
-  { value: "semiconfinamento", label: "Semiconfinamento" },
-  { value: "confinamento", label: "Confinamento" },
 ];
 
 /**
