@@ -34,9 +34,9 @@ export default function HistoricoPage() {
   return (
     <div className="space-y-7">
       <div>
-        <h1 className="font-display text-3xl font-semibold text-t-primary">Historico</h1>
+        <h1 className="font-display text-3xl font-semibold text-t-primary">Histórico</h1>
         <p className="text-sm text-t-secondary mt-1">
-          Lotes salvos localmente nesta sessao. Persistencia em banco vem com auth.
+          Lotes salvos localmente nesta sessão. Persistência em banco vem com auth.
         </p>
       </div>
 

@@ -45,7 +45,7 @@ export function CotacaoStatusBadge({ status, size = "sm" }: Props) {
           letterSpacing: 0.1,
         }}
       >
-        Fonte indisponivel · ultima {formatRelativeTime(status.lastUpdateIso)}
+        Fonte indisponível · última {formatRelativeTime(status.lastUpdateIso)}
       </span>
     );
   }
@@ -63,7 +63,7 @@ export function CotacaoStatusBadge({ status, size = "sm" }: Props) {
         letterSpacing: 0.1,
       }}
     >
-      Cotacao indisponivel
+      Cotação indisponível
     </span>
   );
 }

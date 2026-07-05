@@ -28,7 +28,7 @@ export async function fetchFuturos(): Promise<CurvaFuturos> {
 
 export async function fetchHistoricoDolar(dias = 30): Promise<HistoricoDolarEntry[]> {
   const res = await fetch(`${BASE}/historico-dolar?dias=${dias}`);
-  if (!res.ok) throw new Error(`Historico dolar: ${res.status}`);
+  if (!res.ok) throw new Error(`Histórico dólar: ${res.status}`);
   return res.json();
 }
 
@@ -46,7 +46,7 @@ export async function fetchHistoricoMilho(): Promise<HistoricoDolarEntry[]> {
 
 export async function fetchCotacoes(): Promise<CotacaoMercado> {
   const res = await fetch(`${BASE}/cotacoes`);
-  if (!res.ok) throw new Error(`Cotacoes: ${res.status}`);
+  if (!res.ok) throw new Error(`Cotações: ${res.status}`);
   return res.json();
 }
 

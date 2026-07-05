@@ -75,17 +75,17 @@ export default function FormRecria({ sistema }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Field label="Animais" value={form.num_animais} onChange={(v) => set("num_animais", v)} />
           <Field label="Peso entrada (kg)" value={form.peso_entrada_kg} onChange={(v) => set("peso_entrada_kg", v)} />
-          <Field label="Peso saida (kg)" value={form.peso_saida_estimado_kg} onChange={(v) => set("peso_saida_estimado_kg", v)} />
+          <Field label="Peso saída (kg)" value={form.peso_saida_estimado_kg} onChange={(v) => set("peso_saida_estimado_kg", v)} />
           <Field label="Dias de ciclo" value={form.dias_ciclo} onChange={(v) => set("dias_ciclo", v)} />
-          <Field label="Custo aquisicao (R$) — 0 se proprio" value={form.custo_aquisicao_total} onChange={(v) => set("custo_aquisicao_total", v)} step={1000} />
+          <Field label="Custo aquisição (R$) — 0 se próprio" value={form.custo_aquisicao_total} onChange={(v) => set("custo_aquisicao_total", v)} step={1000} />
         </div>
 
         <div className="border-t border-border pt-4">
           <p className="text-xs font-medium text-t-secondary uppercase tracking-wider mb-3">Custos (R$/cab/dia)</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Field label="Nutricao" value={form.custo_nutricao_dia} onChange={(v) => set("custo_nutricao_dia", v)} step={0.1} />
+            <Field label="Nutrição" value={form.custo_nutricao_dia} onChange={(v) => set("custo_nutricao_dia", v)} step={0.1} />
             <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
-            <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
+            <Field label="Mão de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
             <Field label="Arrendamento" value={form.custo_arrendamento_dia} onChange={(v) => set("custo_arrendamento_dia", v)} step={0.1} />
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function FormRecria({ sistema }: Props) {
             <MetricCard label="GMD estimado" value={`${r.gmd_estimado}`} unit="kg/dia" />
             <MetricCard label="Kg ganho total" value={`${r.kg_ganho_total.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`} unit="kg" />
             <MetricCard label="Custo por kg ganho" value={`${r.custo_por_kg_ganho.toFixed(2)}`} unit="/kg" />
-            <MetricCard label="Custo por cabeca" value={fmtBRL(r.custo_por_cabeca)} />
+            <MetricCard label="Custo por cabeça" value={fmtBRL(r.custo_por_cabeca)} />
           </div>
 
           <MetricCard label="Custo total da fase" value={fmtBRL(r.custo_total)} compact />

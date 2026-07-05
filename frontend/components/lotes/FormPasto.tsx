@@ -106,10 +106,10 @@ export default function FormPasto({ sistema }: Props) {
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Animais" value={form.num_animais} onChange={(v) => set("num_animais", v)} />
                 <Field label="Peso entrada (kg)" value={form.peso_entrada_kg} onChange={(v) => set("peso_entrada_kg", v)} />
-                <Field label="Peso saida (kg)" value={form.peso_saida_estimado_kg} onChange={(v) => set("peso_saida_estimado_kg", v)} />
+                <Field label="Peso saída (kg)" value={form.peso_saida_estimado_kg} onChange={(v) => set("peso_saida_estimado_kg", v)} />
                 <Field label="Dias de ciclo" value={form.dias_ciclo} onChange={(v) => set("dias_ciclo", v)} />
-                <Field label="Rendimento carcaca (%)" value={(form.rendimento_carcaca ?? 0.52) * 100} onChange={(v) => set("rendimento_carcaca", v / 100)} />
-                <Field label="Reposicao total (R$)" value={form.custo_reposicao_total} onChange={(v) => set("custo_reposicao_total", v)} step={1000} />
+                <Field label="Rendimento carcaça (%)" value={(form.rendimento_carcaca ?? 0.52) * 100} onChange={(v) => set("rendimento_carcaca", v / 100)} />
+                <Field label="Reposição total (R$)" value={form.custo_reposicao_total} onChange={(v) => set("custo_reposicao_total", v)} step={1000} />
               </div>
 
               <div className="pt-4" style={{ borderTop: "0.5px solid var(--rule)" }}>
@@ -117,20 +117,20 @@ export default function FormPasto({ sistema }: Props) {
                   Custos operacionais (R$/cab/dia)
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Suplementacao" value={form.custo_suplementacao_dia ?? 0} onChange={(v) => set("custo_suplementacao_dia", v)} step={0.1} />
+                  <Field label="Suplementação" value={form.custo_suplementacao_dia ?? 0} onChange={(v) => set("custo_suplementacao_dia", v)} step={0.1} />
                   <Field label="Sanidade" value={form.custo_sanidade_dia} onChange={(v) => set("custo_sanidade_dia", v)} step={0.1} />
-                  <Field label="Mao de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
+                  <Field label="Mão de obra" value={form.custo_mao_obra_dia} onChange={(v) => set("custo_mao_obra_dia", v)} step={0.1} />
                   <Field label="Arrendamento" value={form.custo_arrendamento_dia ?? 0} onChange={(v) => set("custo_arrendamento_dia", v)} step={0.1} />
                 </div>
               </div>
 
               <div className="pt-4" style={{ borderTop: "0.5px solid var(--rule)" }}>
                 <p className="text-[11px] font-medium uppercase tracking-[0.1em] mb-3" style={{ color: "var(--ink-3)" }}>
-                  Mercado e logistica
+                  Mercado e logística
                 </p>
                 <div className="grid grid-cols-3 gap-3">
-                  <Field label="Cotacao arroba (R$/@)" value={form.preco_venda} onChange={(v) => set("preco_venda", v)} />
-                  <Field label="Frete frigorifico (R$)" value={form.custo_frete_saida ?? 0} onChange={(v) => set("custo_frete_saida", v)} step={100} />
+                  <Field label="Cotação arroba (R$/@)" value={form.preco_venda} onChange={(v) => set("preco_venda", v)} />
+                  <Field label="Frete frigorífico (R$)" value={form.custo_frete_saida ?? 0} onChange={(v) => set("custo_frete_saida", v)} step={100} />
                   <Field label="Mortalidade (R$)" value={form.custo_mortalidade_estimada ?? 0} onChange={(v) => set("custo_mortalidade_estimada", v)} step={100} />
                 </div>
               </div>
@@ -141,12 +141,12 @@ export default function FormPasto({ sistema }: Props) {
               {/* Cotacoes */}
               <div className="rounded-xl p-4" style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}>
                 <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-3" style={{ color: "var(--ink-3)" }}>
-                  Cotacoes de mercado
+                  Cotações de mercado
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { l: "Arroba CEPEA/SP", v: cotacoes?.arroba_boi_gordo, u: "/@" },
-                    { l: "Dolar PTAX", v: cotacoes?.dolar_ptax, u: "" },
+                    { l: "Dólar PTAX", v: cotacoes?.dolar_ptax, u: "" },
                     { l: "Milho ESALQ", v: cotacoes?.milho_esalq, u: "/sc" },
                     { l: "CDI", v: cotacoes?.cdi_anual ? cotacoes.cdi_anual * 100 : null, u: "% a.a." },
                   ].map((c) => (
@@ -230,7 +230,7 @@ export default function FormPasto({ sistema }: Props) {
               <div>
                 <p className="text-[12px] font-medium"
                   style={{ color: r.margem_percentual >= 0.15 ? "var(--gain-2)" : r.margem_percentual >= 0.05 ? "var(--amber)" : "var(--loss-2)" }}>
-                  {r.margem_percentual >= 0.15 ? "Margem saudavel" : r.margem_percentual >= 0.05 ? "Margem apertada" : "Margem critica"}
+                  {r.margem_percentual >= 0.15 ? "Margem saudável" : r.margem_percentual >= 0.05 ? "Margem apertada" : "Margem crítica"}
                 </p>
                 <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
                   Margem de {fmtPct(r.margem_percentual)} — spread de {fmtBRL(form.preco_venda - r.break_even_price)}/@ sobre o break-even
@@ -241,16 +241,16 @@ export default function FormPasto({ sistema }: Props) {
             {/* Grid: impacto + custos */}
             <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
               <div>
-                <p className="font-display text-[13px] mb-2.5" style={{ color: "var(--ink)" }}>Painel de impacto economico</p>
+                <p className="font-display text-[13px] mb-2.5" style={{ color: "var(--ink)" }}>Painel de impacto econômico</p>
                 <PerguntaInvertidaBlock impacto={data.impacto} margemBruta={r.margem_bruta} />
                 <ScenarioTable cenarios={data.impacto.cenarios} />
               </div>
 
               <div>
-                <p className="font-display text-[13px] mb-2.5" style={{ color: "var(--ink)" }}>Composicao de custos</p>
+                <p className="font-display text-[13px] mb-2.5" style={{ color: "var(--ink)" }}>Composição de custos</p>
                 <div className="space-y-2">
                   {[
-                    { l: "Reposicao", v: r.custo_reposicao },
+                    { l: "Reposição", v: r.custo_reposicao },
                     { l: "Operacional", v: r.custo_operacional },
                     { l: "Fixos", v: r.custo_fixo },
                     { l: "Oportunidade", v: r.custo_oportunidade },
@@ -282,7 +282,7 @@ export default function FormPasto({ sistema }: Props) {
                 <button onClick={() => setStep(3)}
                   className="text-[12px] font-medium px-4 py-2 rounded-lg"
                   style={{ background: "var(--grafite-2)", color: "var(--paper)" }}>
-                  Ver decisao de hedge &rarr;
+                  Ver decisão de hedge &rarr;
                 </button>
               </div>
             </div>
@@ -299,7 +299,7 @@ export default function FormPasto({ sistema }: Props) {
                 { l: "Custo/@", v: `${r.custo_por_arroba.toFixed(0)}` },
                 { l: "Break-even", v: `${r.break_even_price.toFixed(0)}` },
                 { l: "Margem", v: fmtPct(r.margem_percentual), c: "var(--gain-2)" },
-                { l: "Exposicao", v: fmtBRL(r.arrobas_totais * form.preco_venda) },
+                { l: "Exposição", v: fmtBRL(r.arrobas_totais * form.preco_venda) },
               ].map((k) => (
                 <div key={k.l} className="px-3 py-2.5" style={{ borderRight: "0.5px solid var(--rule)" }}>
                   <p className="text-[9px] uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>{k.l}</p>
@@ -319,13 +319,13 @@ export default function FormPasto({ sistema }: Props) {
               <button onClick={() => setStep(2)}
                 className="text-[12px] px-4 py-2 rounded-lg transition-colors"
                 style={{ border: "0.5px solid var(--rule)", color: "var(--ink-3)" }}>
-                &larr; Analise economica
+                &larr; Análise econômica
               </button>
               <button
                 className="text-[12px] font-medium px-4 py-2 rounded-lg"
                 style={{ background: "var(--grafite-2)", color: "var(--paper)" }}
                 onClick={() => { /* TODO: implementar geracao de PDF */ }}>
-                Exportar relatorio PDF &rarr;
+                Exportar relatório PDF &rarr;
               </button>
             </div>
           </>

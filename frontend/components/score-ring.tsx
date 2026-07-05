@@ -18,7 +18,7 @@ const radii = { sm: 15, md: 34, lg: 34 };
 const strokes = { sm: 4, md: 7, lg: 7 };
 
 const NEUTRAL_COLOR = "var(--ink-3)";
-const NEUTRAL_LABEL = { text: "aguardando calculo", bg: "var(--rule)18", color: "var(--ink-3)" };
+const NEUTRAL_LABEL = { text: "aguardando cálculo", bg: "var(--rule)18", color: "var(--ink-3)" };
 
 function getColorByTier(tier: MargemTier): string {
   if (tier === "verde") return "var(--gain)";
@@ -27,9 +27,9 @@ function getColorByTier(tier: MargemTier): string {
 }
 
 function getLabelByTier(tier: MargemTier) {
-  if (tier === "verde") return { text: "margem saudavel", bg: "rgba(22, 163, 74, 0.10)", color: "var(--gain-2)" };
+  if (tier === "verde") return { text: "margem saudável", bg: "rgba(22, 163, 74, 0.10)", color: "var(--gain-2)" };
   if (tier === "amber") return { text: "margem apertada", bg: "rgba(217, 119, 6, 0.10)", color: "var(--amber)" };
-  return { text: "margem critica", bg: "rgba(220, 38, 38, 0.10)", color: "var(--loss-2)" };
+  return { text: "margem crítica", bg: "rgba(220, 38, 38, 0.10)", color: "var(--loss-2)" };
 }
 
 export function ScoreRing({ score, tier, size, showDetails, details }: ScoreRingProps) {
@@ -90,7 +90,7 @@ export function ScoreRing({ score, tier, size, showDetails, details }: ScoreRing
             <div className="space-y-1 mt-1">
               {[
                 { l: "Margem", v: details.margem, c: "var(--gain-2)" },
-                { l: "Exposicao", v: details.exposicao, c: "var(--ink)" },
+                { l: "Exposição", v: details.exposicao, c: "var(--ink)" },
                 { l: "Venc. BGI", v: details.vencBGI, c: "var(--amber)" },
               ].map((d) => (
                 <div key={d.l} className="flex justify-between gap-4 text-[10px]">

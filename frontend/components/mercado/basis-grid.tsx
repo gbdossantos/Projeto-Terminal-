@@ -36,7 +36,7 @@ export function BasisGrid({ spotPrice }: BasisGridProps) {
     <div style={{ padding: "14px 22px 18px" }}>
       <div className="flex items-baseline gap-2" style={{ marginBottom: 10 }}>
         <h3 style={{ fontFamily: "'Source Serif 4', serif", fontSize: 12, color: "var(--text-primary)" }}>
-          Basis por regiao
+          Basis por região
         </h3>
         <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "var(--text-tertiary)" }}>
           Desconto local vs indicador CEPEA/SP (R$/@)
@@ -102,7 +102,7 @@ function CellContent({ regiao, precoEfetivo, basis, isSP, deltaColor }: { regiao
         R${Math.round(precoEfetivo)}
       </span>
       <span className="block mt-1" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: deltaColor }}>
-        {isSP ? "referencia" : `${basis}/@`}
+        {isSP ? "referência" : `${basis}/@`}
       </span>
     </>
   );

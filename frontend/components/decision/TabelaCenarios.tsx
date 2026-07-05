@@ -32,11 +32,11 @@ export function TabelaCenarios({ cenarios }: Props) {
         style={{ background: "var(--paper-3)", borderBottom: "0.5px solid var(--rule)" }}
       >
         <span />
-        {["Cenario", "Arroba", "Margem", "Margem %", "ROI anual"].map((h) => (
+        {["Cenário", "Arroba", "Margem", "Margem %", "ROI anual"].map((h) => (
           <span
             key={h}
             className={`text-[10px] font-medium uppercase tracking-[0.08em] ${
-              h !== "Cenario" ? "text-right" : ""
+              h !== "Cenário" ? "text-right" : ""
             }`}
             style={{ color: "var(--ink-3)" }}
           >

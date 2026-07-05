@@ -30,7 +30,7 @@ function generateAlertas({ cotacoes, contratos, spotPrice, histArroba, histMilho
     } else if (spread < -3) {
       alertas.push({ timestamp: ts, categoria: "Futuros", texto: `${midContract.codigo} com desconto moderado de R$${Math.abs(spread).toFixed(0)}/@ vs spot`, cor: "var(--brand)" });
     } else {
-      alertas.push({ timestamp: ts, categoria: "Futuros", texto: `Curva BGI proxima do spot — sem distorcao significativa`, cor: "var(--brand)" });
+      alertas.push({ timestamp: ts, categoria: "Futuros", texto: `Curva BGI próxima do spot — sem distorção significativa`, cor: "var(--brand)" });
     }
   }
 
@@ -39,9 +39,9 @@ function generateAlertas({ cotacoes, contratos, spotPrice, histArroba, histMilho
     const avg = recent.reduce((s, d) => s + d.valor, 0) / recent.length;
     const diff = spotPrice - avg;
     if (diff > 0) {
-      alertas.push({ timestamp: ts, categoria: "Arroba", texto: `CEPEA/SP acima da media 30d em R$${diff.toFixed(1)}/@ — momento favoravel para travamento`, cor: "var(--green)" });
+      alertas.push({ timestamp: ts, categoria: "Arroba", texto: `CEPEA/SP acima da média 30d em R$${diff.toFixed(1)}/@ — momento favorável para travamento`, cor: "var(--green)" });
     } else {
-      alertas.push({ timestamp: ts, categoria: "Arroba", texto: `CEPEA/SP abaixo da media 30d em R$${Math.abs(diff).toFixed(1)}/@ — mercado pressionado`, cor: "var(--green)" });
+      alertas.push({ timestamp: ts, categoria: "Arroba", texto: `CEPEA/SP abaixo da média 30d em R$${Math.abs(diff).toFixed(1)}/@ — mercado pressionado`, cor: "var(--green)" });
     }
   }
 
@@ -55,7 +55,7 @@ function generateAlertas({ cotacoes, contratos, spotPrice, histArroba, histMilho
     const last = histMilho[histMilho.length - 1].valor;
     const weekAgo = histMilho[Math.max(0, histMilho.length - 6)].valor;
     const varPct = ((last - weekAgo) / weekAgo) * 100;
-    alertas.push({ timestamp: ts, categoria: "Milho", texto: `Variacao semanal ${varPct >= 0 ? "+" : ""}${varPct.toFixed(1)}% — ${varPct >= 0 ? "pressao nos custos de dieta" : "alivio nos custos de dieta"}`, cor: "var(--amber)" });
+    alertas.push({ timestamp: ts, categoria: "Milho", texto: `Variação semanal ${varPct >= 0 ? "+" : ""}${varPct.toFixed(1)}% — ${varPct >= 0 ? "pressão nos custos de dieta" : "alívio nos custos de dieta"}`, cor: "var(--amber)" });
   }
 
   // TODO: gerar alertas via AI Interpretation Layer (Claude API)

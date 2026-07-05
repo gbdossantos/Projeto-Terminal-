@@ -17,9 +17,9 @@ interface Props {
 }
 
 const semaforoMap: Record<string, { dot: string; text: string; bg: string; border: string; label: string }> = {
-  recomendado: { dot: "var(--loss)", text: "var(--loss-2)", bg: "rgba(220, 38, 38, 0.10)", border: "rgba(220, 38, 38, 0.27)", label: "Protecao recomendada" },
-  opcional: { dot: "var(--amber)", text: "var(--amber)", bg: "rgba(217, 119, 6, 0.10)", border: "rgba(217, 119, 6, 0.27)", label: "Protecao opcional" },
-  desnecessario: { dot: "var(--gain)", text: "var(--gain-2)", bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.27)", label: "Margem confortavel" },
+  recomendado: { dot: "var(--loss)", text: "var(--loss-2)", bg: "rgba(220, 38, 38, 0.10)", border: "rgba(220, 38, 38, 0.27)", label: "Proteção recomendada" },
+  opcional: { dot: "var(--amber)", text: "var(--amber)", bg: "rgba(217, 119, 6, 0.10)", border: "rgba(217, 119, 6, 0.27)", label: "Proteção opcional" },
+  desnecessario: { dot: "var(--gain)", text: "var(--gain-2)", bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.27)", label: "Margem confortável" },
 };
 
 function AvisoInline({ children }: { children: React.ReactNode }) {
@@ -51,7 +51,7 @@ export function PainelHedge({ hedge }: Props) {
         className="px-5 py-4 rounded-xl text-[13px]"
         style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)", color: "var(--ink-3)" }}
       >
-        Lote pequeno demais para hedge com futuros B3 (minimo ~165@, 1 contrato = 330@)
+        Lote pequeno demais para hedge com futuros B3 (mínimo ~165@, 1 contrato = 330@)
       </div>
     );
   }
@@ -108,7 +108,7 @@ export function PainelHedge({ hedge }: Props) {
         style={{ background: "var(--paper-2)", border: "0.5px solid var(--rule)" }}
       >
         <p className="text-[13px] font-medium mb-4" style={{ color: "var(--ink)" }}>
-          Seu lote em 3 cenarios
+          Seu lote em 3 cenários
         </p>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart
@@ -177,14 +177,14 @@ export function PainelHedge({ hedge }: Props) {
             Se travar
           </p>
           <div className="mt-4">
-            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Preco garantido</p>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Preço garantido</p>
             <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.preco_travado)}/@
             </p>
             <AvisoInline>{hedge.aviso_basis}</AvisoInline>
           </div>
           <div className="mt-4">
-            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Voce garante</p>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Você garante</p>
             <p className="font-mono text-lg font-medium mt-0.5" style={{ color: "var(--grafite-2)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.margem_hedgeada_brl)} de lucro
             </p>
@@ -204,7 +204,7 @@ export function PainelHedge({ hedge }: Props) {
                 <AccordionContent className="pb-0 pt-2">
                   <div className="space-y-1">
                     <CustoRow label="Oportunidade da margem" value={hedge.custo_oportunidade_margem} />
-                    <CustoRow label="Liquidacao B3" value={hedge.custo_liquidacao} />
+                    <CustoRow label="Liquidação B3" value={hedge.custo_liquidacao} />
                     <CustoRow label="Tarifa B3 (emolumentos)" value={hedge.custo_emolumentos} />
                     <CustoRow label="Corretagem" value={hedge.custo_corretagem} />
                   </div>
@@ -229,10 +229,10 @@ export function PainelHedge({ hedge }: Props) {
           style={{ background: "rgba(100, 116, 139, 0.08)", border: "0.5px solid rgba(100, 116, 139, 0.27)" }}
         >
           <p className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "#475569" }}>
-            Se nao travar
+            Se não travar
           </p>
           <div className="mt-4">
-            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Preco atual</p>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Preço atual</p>
             <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.preco_spot)}/@
             </p>

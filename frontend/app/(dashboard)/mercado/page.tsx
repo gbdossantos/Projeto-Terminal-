@@ -130,7 +130,7 @@ export default function MercadoPage() {
         </div>
         <div className="relative">
           <CotacaoCard
-            label="Dolar PTAX"
+            label="Dólar PTAX"
             value={dolarStatus.value != null ? `R$ ${dolarStatus.value.toFixed(2)}` : "—"}
           />
           <div className="absolute bottom-2 left-3">
@@ -192,7 +192,7 @@ export default function MercadoPage() {
                 color: "var(--text-tertiary)",
               }}
             >
-              Dados de futuros indisponiveis no momento
+              Dados de futuros indisponíveis no momento
             </div>
           )}
         </div>
@@ -320,8 +320,8 @@ export default function MercadoPage() {
               }}
             >
               {isBackwardation
-                ? "Mercado em backwardation — futuros abaixo do spot. Janela favoravel para travar precos se break-even esta coberto. Avaliar cenarios no Simulador."
-                : "Mercado em contango — futuros acima do spot. Custo de carrego embutido nos premios. Avaliar necessidade de protecao vs custo de oportunidade."}
+                ? "Mercado em backwardation — futuros abaixo do spot. Janela favorável para travar preços se break-even está coberto. Avaliar cenários no Simulador."
+                : "Mercado em contango — futuros acima do spot. Custo de carrego embutido nos prêmios. Avaliar necessidade de proteção vs custo de oportunidade."}
             </span>
           </div>
         </div>
