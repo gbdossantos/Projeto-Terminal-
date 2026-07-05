@@ -377,6 +377,15 @@ export interface HedgeResult {
   receita_hedgeada: number;
   custo_total: number;
   custo_hedge: number;
+  custo_oportunidade_margem: number;
+  custo_liquidacao: number;
+  custo_emolumentos: number;
+  custo_corretagem: number;
+  capital_risco_diario: number;
+  aviso_basis: string;
+  aviso_rolagem: string;
+  aviso_corretagem: string;
+  aviso_capital_risco_diario: string;
   margem_hedgeada_brl: number;
   margem_hedgeada_pct: number;
   roi_hedgeado_anualizado: number;

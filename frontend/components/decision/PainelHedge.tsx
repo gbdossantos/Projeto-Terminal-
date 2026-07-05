@@ -3,8 +3,14 @@
 import type { HedgeResult } from "@/lib/types";
 import { fmtBRL, fmtPct } from "@/lib/utils/format";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ReferenceLine, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, Tooltip as ChartTooltip, Legend, ReferenceLine, ResponsiveContainer, CartesianGrid,
 } from "recharts";
+import { badgeVariants } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   hedge: HedgeResult | null;
@@ -15,6 +21,28 @@ const semaforoMap: Record<string, { dot: string; text: string; bg: string; borde
   opcional: { dot: "var(--amber)", text: "var(--amber)", bg: "rgba(217, 119, 6, 0.10)", border: "rgba(217, 119, 6, 0.27)", label: "Protecao opcional" },
   desnecessario: { dot: "var(--gain)", text: "var(--gain-2)", bg: "rgba(22, 163, 74, 0.10)", border: "rgba(22, 163, 74, 0.27)", label: "Margem confortavel" },
 };
+
+function AvisoInline({ children }: { children: React.ReactNode }) {
+  return (
+    <Alert className="mt-2 gap-x-1.5 rounded-none border-none bg-transparent p-0">
+      <Info className="size-3 shrink-0 translate-y-[3px]" style={{ color: "var(--ink-3)" }} />
+      <AlertDescription className="text-[10.5px] leading-snug" style={{ color: "var(--ink-3)" }}>
+        {children}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function CustoRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex justify-between text-[10.5px]">
+      <span style={{ color: "var(--ink-3)" }}>{label}</span>
+      <span className="font-mono" style={{ color: "var(--ink-2)", fontVariantNumeric: "tabular-nums" }}>
+        {fmtBRL(value)}
+      </span>
+    </div>
+  );
+}
 
 export function PainelHedge({ hedge }: Props) {
   if (!hedge) {
@@ -32,18 +60,46 @@ export function PainelHedge({ hedge }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Semaforo */}
-      <div
-        className="flex items-center gap-3.5 px-[18px] py-3.5 rounded-[10px]"
-        style={{ background: s.bg, border: `0.5px solid ${s.border}` }}
-      >
-        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.dot }} />
-        <div>
-          <p className="text-[13px] font-medium" style={{ color: s.text }}>{s.label}</p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--ink-3)" }}>
-            {hedge.contrato_selecionado.codigo} · {hedge.contratos_necessarios} contrato(s) · {fmtPct(hedge.cobertura_pct, 0)} coberto
-          </p>
+      {/* Semaforo + badge de risco de caixa */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div
+          className="flex-1 flex items-center gap-3.5 px-[18px] py-3.5 rounded-[10px]"
+          style={{ background: s.bg, border: `0.5px solid ${s.border}` }}
+        >
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.dot }} />
+          <div>
+            <p className="text-[13px] font-medium" style={{ color: s.text }}>{s.label}</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--ink-3)" }}>
+              {hedge.contrato_selecionado.codigo} · {hedge.contratos_necessarios} contrato(s) · {fmtPct(hedge.cobertura_pct, 0)} coberto
+            </p>
+          </div>
         </div>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span
+                  className={cn(
+                    badgeVariants({ variant: "outline" }),
+                    "h-auto shrink-0 self-start sm:self-center cursor-default gap-1.5 px-3 py-2 rounded-[10px]"
+                  )}
+                  style={{ background: "var(--warning-bg)", borderColor: "rgba(217, 119, 6, 0.27)" }}
+                />
+              }
+            >
+              <span className="text-[9px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--warning)" }}>
+                Risco de caixa/dia
+              </span>
+              <span className="font-mono text-[13px] font-medium" style={{ color: "var(--warning)", fontVariantNumeric: "tabular-nums" }}>
+                {fmtBRL(hedge.capital_risco_diario)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[260px] text-left">
+              {hedge.aviso_capital_risco_diario}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Chart */}
@@ -71,7 +127,7 @@ export function PainelHedge({ hedge }: Props) {
               type="category" dataKey="cenario" width={110}
               stroke="var(--ink-3)" fontSize={11} tickLine={false} axisLine={false}
             />
-            <Tooltip
+            <ChartTooltip
               formatter={(value) => fmtBRL(Number(value))}
               contentStyle={{
                 background: "var(--paper-2)", border: "0.5px solid var(--rule)",
@@ -125,6 +181,7 @@ export function PainelHedge({ hedge }: Props) {
             <p className="font-mono text-[22px] font-medium mt-0.5" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.preco_travado)}/@
             </p>
+            <AvisoInline>{hedge.aviso_basis}</AvisoInline>
           </div>
           <div className="mt-4">
             <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>Voce garante</p>
@@ -132,12 +189,38 @@ export function PainelHedge({ hedge }: Props) {
               {fmtBRL(hedge.margem_hedgeada_brl)} de lucro
             </p>
           </div>
+
+          <div className="mt-4 pt-3" style={{ borderTop: "0.5px solid rgba(99, 102, 241, 0.20)" }}>
+            <Accordion>
+              <AccordionItem value="custo" className="border-none">
+                <AccordionTrigger className="py-0 text-[11px] font-normal hover:no-underline" style={{ color: "var(--ink-3)" }}>
+                  <span>
+                    Custo do hedge{" "}
+                    <span className="font-mono" style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
+                      {fmtBRL(hedge.custo_hedge)}
+                    </span>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="pb-0 pt-2">
+                  <div className="space-y-1">
+                    <CustoRow label="Oportunidade da margem" value={hedge.custo_oportunidade_margem} />
+                    <CustoRow label="Liquidacao B3" value={hedge.custo_liquidacao} />
+                    <CustoRow label="Tarifa B3 (emolumentos)" value={hedge.custo_emolumentos} />
+                    <CustoRow label="Corretagem" value={hedge.custo_corretagem} />
+                  </div>
+                  <AvisoInline>{hedge.aviso_corretagem}</AvisoInline>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
           <p
             className="text-[11px] mt-3 pt-3"
             style={{ color: "var(--ink-3)", borderTop: "0.5px solid rgba(99, 102, 241, 0.20)" }}
           >
             {hedge.contrato_selecionado.codigo} · {hedge.contratos_necessarios} contrato(s) ({hedge.arrobas_hedgeadas.toFixed(0)}@)
           </p>
+          <AvisoInline>{hedge.aviso_rolagem}</AvisoInline>
         </div>
 
         {/* Se nao travar — slate (status quo, sem juizo) */}
