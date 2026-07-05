@@ -6,7 +6,6 @@ import {
   getProfile,
   saveProfile,
   ESTADOS,
-  SISTEMAS_OPCOES,
   BASIS_VALOR_POR_ESTADO,
   type FarmProfile,
 } from "@/lib/profile";
@@ -212,19 +211,7 @@ export default function ConfiguracoesPage() {
 
       {/* Seção 3 — Operação */}
       <Card titulo="Operação">
-        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 16 }}>
-          <div>
-            <Label texto="Sistema produtivo padrão" />
-            <select
-              value={profile.sistema_padrao}
-              onChange={(e) => set("sistema_padrao", e.target.value as FarmProfile["sistema_padrao"])}
-              style={selectStyle}
-            >
-              {SISTEMAS_OPCOES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 16 }}>
           <Campo
             label="Break-even médio histórico (R$/@)"
             value={String(profile.break_even_medio)}
@@ -349,17 +336,6 @@ function Card({ titulo, children }: { titulo: string; children: React.ReactNode 
     </section>
   );
 }
-
-const selectStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: 13,
-  padding: "8px 12px",
-  background: "var(--paper-2)",
-  color: "var(--ink)",
-  border: "1px solid var(--rule)",
-  borderRadius: 7,
-  width: "100%",
-};
 
 const erroStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)",

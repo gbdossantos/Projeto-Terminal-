@@ -18,12 +18,14 @@ import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 import { saveDecisao } from "@/lib/decisoes-storage";
 import { HedgeMilhoToggle, type HedgeMilhoState } from "@/components/lotes/HedgeMilhoToggle";
+import { useProfile } from "@/lib/use-profile";
 
 interface Props {
   sistema: Sistema;
 }
 
 export default function FormSemi({ sistema }: Props) {
+  const { profile } = useProfile();
   const [form, setForm] = useState<LoteInputTerminacao>({
     fase: "terminacao",
     sistema,
@@ -51,6 +53,12 @@ export default function FormSemi({ sistema }: Props) {
       .catch(() => {});
   }, [sistema]);
 
+  // Mortalidade estimada — default sobrescrevível: herda do histórico da
+  // fazenda (perfil), mas o produtor pode ajustar por lote específico.
+  useEffect(() => {
+    setForm((f) => ({ ...f, custo_mortalidade_estimada: f.custo_reposicao_total * profile.mortalidade_hist }));
+  }, [profile.mortalidade_hist]);
+
   const handleSave = (nome: string) => {
     if (!data) return;
     saveLote({
@@ -77,13 +85,13 @@ export default function FormSemi({ sistema }: Props) {
     setLoading(true);
     setError(null);
     try {
-      setData(await calcularLote(req));
+      setData(await calcularLote({ ...req, regiao: profile.estado, basis_estimado: profile.basis_valor }));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile.estado, profile.basis_valor]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -128,7 +136,10 @@ export default function FormSemi({ sistema }: Props) {
         </div>
 
         <div className="border-t border-border pt-4">
-          <Field label="Cotacao arroba (R$/@)" value={form.preco_venda} onChange={(v) => set("preco_venda", v)} />
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Cotacao arroba (R$/@)" value={form.preco_venda} onChange={(v) => set("preco_venda", v)} />
+            <Field label="Mortalidade (R$)" value={form.custo_mortalidade_estimada ?? 0} onChange={(v) => set("custo_mortalidade_estimada", v)} step={100} />
+          </div>
         </div>
       </div>
 

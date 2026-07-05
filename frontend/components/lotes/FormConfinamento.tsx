@@ -23,6 +23,7 @@ import { SaveLoteButton } from "@/components/lotes/SaveLoteButton";
 import { saveLote, consumePendingLoad } from "@/lib/lotes-storage";
 import { saveDecisao } from "@/lib/decisoes-storage";
 import { HedgeMilhoToggle, type HedgeMilhoState } from "@/components/lotes/HedgeMilhoToggle";
+import { useProfile } from "@/lib/use-profile";
 
 // Fator de matéria seca do milho grão (~88% MS). Constante zootécnica padrão.
 // Usado pra converter R$/saca natural (60kg) em R$/kg MS que o engine espera.
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export default function FormConfinamento({ sistema }: Props) {
+  const { profile } = useProfile();
   const [form, setForm] = useState<LoteInputTerminacao>({
     fase: "terminacao",
     sistema,
@@ -58,6 +60,12 @@ export default function FormConfinamento({ sistema }: Props) {
       setShowExemploBanner(true);
     }
   }, [sistema]);
+
+  // Mortalidade estimada — default sobrescrevível: herda do histórico da
+  // fazenda (perfil), mas o produtor pode ajustar por lote específico.
+  useEffect(() => {
+    setForm((f) => ({ ...f, custo_mortalidade_estimada: f.custo_reposicao_total * profile.mortalidade_hist }));
+  }, [profile.mortalidade_hist]);
 
   const handleSave = (nome: string) => {
     if (!data) return;
@@ -101,13 +109,13 @@ export default function FormConfinamento({ sistema }: Props) {
     setLoading(true);
     setError(null);
     try {
-      setData(await calcularLote(req));
+      setData(await calcularLote({ ...req, regiao: profile.estado, basis_estimado: profile.basis_valor }));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile.estado, profile.basis_valor]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
