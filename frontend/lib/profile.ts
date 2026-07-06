@@ -1,11 +1,11 @@
 /**
- * Perfil do produtor + fazenda — persistido em localStorage.
- *
- * Fonte única do estado do usuário. Quando auth/banco chegar, migra para API
- * mantendo a interface FarmProfile + funções get/save.
+ * Perfil do produtor + fazenda — persistido no Supabase (`perfil_fazenda`), 1
+ * linha por usuário, RLS scoped por auth.uid() = user_id.
  *
  * Hook reativo: useProfile() em "@/lib/use-profile".
  */
+
+import { createClient } from "@/lib/supabase/client";
 
 export interface FarmProfile {
   // ── Perfil ────────────────────────────────────────────────────
@@ -33,21 +33,18 @@ export interface FarmProfile {
   moeda_display: string;
 }
 
-const STORAGE_KEY = "terminal_farm_profile";
-
-// Defaults — Fazenda Santa Luzia / Guilherme Barreto / Três Lagoas-MS.
-// Substituidos quando o usuário editar em /configuracoes.
+// Usado como placeholder até o perfil real carregar do Supabase — não é mais
+// persistido em lugar nenhum, só evita layout vazio no primeiro render.
 export const DEFAULT_PROFILE: FarmProfile = {
-  nome_produtor: "Guilherme Barreto",
-  nome_fazenda: "Fazenda Santa Luzia",
+  nome_produtor: "",
+  nome_fazenda: "",
   estado: "MS",
-  municipio: "Três Lagoas",
+  municipio: "",
   basis_valor: -5,
-  break_even_medio: 286.50,
+  break_even_medio: 0,
   mortalidade_hist: 0.02,
   theme: "light",
   densidade: "normal",
-  // Legados (mantém compat com /configuracoes antigo)
   area_hectares: 0,
   sistemas_produtivos: ["terminacao_pasto"],
   faturamento_estimado: "",
@@ -55,45 +52,43 @@ export const DEFAULT_PROFILE: FarmProfile = {
   moeda_display: "BRL",
 };
 
-export function getProfile(): FarmProfile {
-  if (typeof window === "undefined") return DEFAULT_PROFILE;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return { ...DEFAULT_PROFILE, ...JSON.parse(stored) };
-    }
-  } catch {
-    // corrupted
-  }
-  return DEFAULT_PROFILE;
+export async function getProfile(): Promise<FarmProfile> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return DEFAULT_PROFILE;
+
+  const { data, error } = await supabase
+    .from("perfil_fazenda")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !data) return DEFAULT_PROFILE;
+  return { ...DEFAULT_PROFILE, ...data };
 }
 
 const CHANGE_EVENT = "terminal:profile-changed";
 
-export function saveProfile(profile: FarmProfile): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    // Notifica todos os hooks useProfile() no mesmo tab (storage event
-    // não dispara na própria janela que escreveu — só em outras tabs).
-    window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
-  } catch {
-    // quota cheia ou modo privado — ignora
-  }
+export async function saveProfile(profile: FarmProfile): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("perfil_fazenda")
+    .upsert({ ...profile, user_id: user.id, updated_at: new Date().toISOString() });
+
+  // Notifica todos os hooks useProfile() no mesmo tab.
+  window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
 }
 
-export function hasProfile(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const p = JSON.parse(stored);
-      return Boolean(p.nome_fazenda);
-    }
-  } catch {
-    // ignore
-  }
-  return false;
+export async function hasProfile(): Promise<boolean> {
+  const profile = await getProfile();
+  return Boolean(profile.nome_fazenda);
 }
 
 // ── Tabelas auxiliares ──────────────────────────────────────────

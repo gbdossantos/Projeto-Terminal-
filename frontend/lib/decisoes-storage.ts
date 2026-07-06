@@ -1,11 +1,11 @@
-// Persistencia local das decisoes simuladas no /simulador.
-// Quando auth + banco entrarem, migra para tabela `decisoes` no Postgres.
+// Persistência das decisões simuladas no /simulador — Supabase
+// (`decisoes_simulador`), RLS scoped por auth.uid() = user_id.
 //
 // Schema desenhado para virar dado estrategico (intencao de hedge × cenario
 // vs resultado real depois). Por isso captura: lote, % hedge, cenario simulado,
 // preco travado de referencia, e intencao do usuario (travaria sim/nao).
 
-const STORAGE_KEY = "terminal_decisoes_simulador";
+import { createClient } from "@/lib/supabase/client";
 
 export type IntencaoHedge = "travaria" | "nao_travaria" | null;
 
@@ -20,48 +20,37 @@ export interface DecisaoSimulador {
   criado_em: string;           // ISO timestamp
 }
 
-function generateId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+export async function listDecisoes(): Promise<DecisaoSimulador[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("decisoes_simulador")
+    .select("*")
+    .order("criado_em", { ascending: false });
+
+  if (error || !data) return [];
+  return data as DecisaoSimulador[];
 }
 
-export function listDecisoes(): DecisaoSimulador[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as DecisaoSimulador[];
-  } catch {
-    return [];
-  }
-}
-
-export function saveDecisao(
+export async function saveDecisao(
   data: Omit<DecisaoSimulador, "id" | "criado_em">,
-): DecisaoSimulador {
-  const nova: DecisaoSimulador = {
-    ...data,
-    id: generateId(),
-    criado_em: new Date().toISOString(),
-  };
-  const list = listDecisoes();
-  list.unshift(nova);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // quota cheia ou modo privado — falha silenciosa
-  }
-  return nova;
+): Promise<DecisaoSimulador | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: inserted, error } = await supabase
+    .from("decisoes_simulador")
+    .insert({ ...data, user_id: user.id })
+    .select("*")
+    .single();
+
+  if (error || !inserted) return null;
+  return inserted as DecisaoSimulador;
 }
 
-export function deleteDecisao(id: string): void {
-  if (typeof window === "undefined") return;
-  const filtered = listDecisoes().filter((d) => d.id !== id);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  } catch {}
+export async function deleteDecisao(id: string): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("decisoes_simulador").delete().eq("id", id);
 }

@@ -33,9 +33,9 @@ export default function FormCria({ sistema }: Props) {
     fetchCotacoes().catch(() => {});
   }, [sistema]);
 
-  const handleSave = (nome: string) => {
+  const handleSave = async (nome: string) => {
     if (!data) return;
-    saveLote({
+    await saveLote({
       fase: "cria",
       sistema,
       nome,

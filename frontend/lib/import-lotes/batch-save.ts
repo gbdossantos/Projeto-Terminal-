@@ -116,7 +116,7 @@ async function processar1(linha: LinhaValidada): Promise<void> {
 
   if (payload.fase === "cria") {
     const res = await calcularLote(payload);
-    saveLote({
+    await saveLote({
       fase: "cria",
       sistema: payload.sistema,
       nome: payload.nome ?? `Lote ${linha.linha}`,
@@ -129,7 +129,7 @@ async function processar1(linha: LinhaValidada): Promise<void> {
 
   if (payload.fase === "recria") {
     const res = await calcularLote(payload);
-    saveLote({
+    await saveLote({
       fase: "recria",
       sistema: payload.sistema,
       nome: payload.nome ?? `Lote ${linha.linha}`,
@@ -142,7 +142,7 @@ async function processar1(linha: LinhaValidada): Promise<void> {
 
   // terminacao
   const res = await calcularLote(payload);
-  saveLote({
+  await saveLote({
     fase: "terminacao",
     sistema: payload.sistema,
     nome: payload.nome ?? `Lote ${linha.linha}`,

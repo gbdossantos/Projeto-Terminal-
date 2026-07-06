@@ -67,9 +67,9 @@ export default function FormConfinamento({ sistema }: Props) {
     setForm((f) => ({ ...f, custo_mortalidade_estimada: f.custo_reposicao_total * profile.mortalidade_hist }));
   }, [profile.mortalidade_hist]);
 
-  const handleSave = (nome: string) => {
+  const handleSave = async (nome: string) => {
     if (!data) return;
-    saveLote({
+    await saveLote({
       fase: "terminacao",
       sistema,
       nome,
@@ -81,7 +81,7 @@ export default function FormConfinamento({ sistema }: Props) {
     // Engine não usa esse campo — quando Simulador absorver milho (camada 3),
     // vira input do cálculo.
     if (hedgeMilho.tipo !== "sem") {
-      saveDecisao({
+      await saveDecisao({
         lote_id: `confinamento-${nome}`,
         lote_nome: `${nome} · hedge milho ${hedgeMilho.tipo}${hedgeMilho.tipo === "parcial" ? ` ${hedgeMilho.pct}%` : ""}`,
         hedge_pct: hedgeMilho.tipo === "total" ? 1 : hedgeMilho.tipo === "parcial" ? hedgeMilho.pct / 100 : 0,

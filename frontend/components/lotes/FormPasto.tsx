@@ -55,9 +55,9 @@ export default function FormPasto({ sistema }: Props) {
     setForm((f) => ({ ...f, custo_mortalidade_estimada: f.custo_reposicao_total * profile.mortalidade_hist }));
   }, [profile.mortalidade_hist]);
 
-  const handleSave = (nome: string) => {
+  const handleSave = async (nome: string) => {
     if (!data) return;
-    saveLote({
+    await saveLote({
       fase: "terminacao",
       sistema,
       nome,
