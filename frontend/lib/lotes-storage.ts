@@ -1,12 +1,11 @@
-// Persistência local de lotes calculados em /lotes (localStorage).
+// Persistência de lotes calculados em /lotes — Supabase (`lotes`), RLS scoped
+// por auth.uid() = user_id.
 //
-// Pós-refactor fase/sistema: cada LoteSalvo carrega `fase` + `sistema` como
-// campos independentes, sempre vindos do payload tipado da API.
-//
-// Migração: lotes em formato antigo (sem `fase`/`sistema` no topo) são
-// filtrados silenciosamente em `listLotes()` — sem banner, sem mensagem,
-// sem tentativa de conversão. Quebra limpa conforme briefing GB.
+// `PendingLoad` continua em localStorage: é só um buffer efêmero pra passar
+// dados entre páginas no mesmo navegador (não é dado de usuário que precise
+// de RLS ou sincronizar entre dispositivos).
 
+import { createClient } from "@/lib/supabase/client";
 import type {
   Fase, Sistema,
   LoteInput, LoteInputCria, LoteInputRecria, LoteInputTerminacao,
@@ -42,73 +41,82 @@ export type LoteSalvo =
       resultadoCache: LoteTerminacaoResponse;
     });
 
-const STORAGE_KEY = "terminal_lotes";
+interface LoteRow {
+  id: string;
+  nome: string;
+  fase: Fase;
+  sistema: Sistema;
+  margem_pct: number | null;
+  inputs: LoteInput;
+  resultado_cache: unknown;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+function rowToLoteSalvo(row: LoteRow): LoteSalvo {
+  return {
+    id: row.id,
+    nome: row.nome,
+    criadoEm: row.criado_em,
+    atualizadoEm: row.atualizado_em,
+    margemPct: row.margem_pct,
+    fase: row.fase,
+    sistema: row.sistema,
+    inputs: row.inputs,
+    resultadoCache: row.resultado_cache,
+  } as LoteSalvo;
+}
+
 const PENDING_LOAD_KEY = "terminal_pending_load_lote";
 
-function generateId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+export async function listLotes(): Promise<LoteSalvo[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("lotes")
+    .select("*")
+    .order("criado_em", { ascending: false });
+
+  if (error || !data) return [];
+  return (data as LoteRow[]).map(rowToLoteSalvo);
 }
 
-/** True se o item tem o shape novo (fase + sistema no topo). */
-function isLoteSalvoNovo(item: unknown): item is LoteSalvo {
-  if (!item || typeof item !== "object") return false;
-  const r = item as Record<string, unknown>;
-  return (
-    typeof r.fase === "string" &&
-    typeof r.sistema === "string" &&
-    typeof r.id === "string"
-  );
-}
-
-export function listLotes(): LoteSalvo[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    // Filtra silenciosamente lotes do formato antigo (sem `fase`/`sistema`).
-    return parsed.filter(isLoteSalvoNovo);
-  } catch {
-    return [];
-  }
-}
-
-export function saveLote(
+export async function saveLote(
   data: Omit<LoteSalvo, "id" | "criadoEm" | "atualizadoEm">,
-): LoteSalvo {
-  const now = new Date().toISOString();
-  const novo = {
-    ...data,
-    id: generateId(),
-    criadoEm: now,
-    atualizadoEm: now,
-  } as LoteSalvo;
-  const list = listLotes();
-  list.unshift(novo);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // quota cheia ou modo privado — falha silenciosa
-  }
-  return novo;
+): Promise<LoteSalvo | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: inserted, error } = await supabase
+    .from("lotes")
+    .insert({
+      user_id: user.id,
+      nome: data.nome,
+      fase: data.fase,
+      sistema: data.sistema,
+      margem_pct: data.margemPct,
+      inputs: data.inputs,
+      resultado_cache: data.resultadoCache,
+    })
+    .select("*")
+    .single();
+
+  if (error || !inserted) return null;
+  return rowToLoteSalvo(inserted as LoteRow);
 }
 
-export function deleteLote(id: string): void {
-  if (typeof window === "undefined") return;
-  const filtered = listLotes().filter((l) => l.id !== id);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  } catch {
-    // ignore
-  }
+export async function deleteLote(id: string): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("lotes").delete().eq("id", id);
 }
 
-export function getLote(id: string): LoteSalvo | null {
-  return listLotes().find((l) => l.id === id) ?? null;
+export async function getLote(id: string): Promise<LoteSalvo | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("lotes").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return rowToLoteSalvo(data as LoteRow);
 }
 
 // ─── Pending load — usado quando o usuário "abre" um lote salvo ─────

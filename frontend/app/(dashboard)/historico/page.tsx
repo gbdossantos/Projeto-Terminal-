@@ -17,8 +17,10 @@ export default function HistoricoPage() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setLotes(listLotes());
-    setHydrated(true);
+    listLotes().then((l) => {
+      setLotes(l);
+      setHydrated(true);
+    });
   }, []);
 
   const handleAbrir = (lote: LoteSalvo) => {
@@ -26,9 +28,9 @@ export default function HistoricoPage() {
     router.push("/lotes");
   };
 
-  const handleDelete = (id: string) => {
-    deleteLote(id);
-    setLotes(listLotes());
+  const handleDelete = async (id: string) => {
+    await deleteLote(id);
+    setLotes(await listLotes());
   };
 
   return (
@@ -36,7 +38,7 @@ export default function HistoricoPage() {
       <div>
         <h1 className="font-display text-3xl font-semibold text-t-primary">Histórico</h1>
         <p className="text-sm text-t-secondary mt-1">
-          Lotes salvos localmente nesta sessão. Persistência em banco vem com auth.
+          Lotes salvos na sua conta.
         </p>
       </div>
 

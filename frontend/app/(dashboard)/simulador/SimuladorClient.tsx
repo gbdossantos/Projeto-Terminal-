@@ -30,12 +30,14 @@ export default function SimuladorClient() {
   const [loteId, setLoteId] = useState("");
 
   useEffect(() => {
-    const terminacao = listLotes().filter(
-      (l): l is LoteTerminacaoSalvo => l.fase === "terminacao",
-    );
-    setLotes(terminacao);
-    if (terminacao.length > 0) setLoteId(terminacao[0].id);
-    setHydrated(true);
+    listLotes().then((todos) => {
+      const terminacao = todos.filter(
+        (l): l is LoteTerminacaoSalvo => l.fase === "terminacao",
+      );
+      setLotes(terminacao);
+      if (terminacao.length > 0) setLoteId(terminacao[0].id);
+      setHydrated(true);
+    });
   }, []);
 
   const lote = useMemo(() => lotes.find((l) => l.id === loteId) ?? null, [lotes, loteId]);

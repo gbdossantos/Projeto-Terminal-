@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import {
   getProfile,
   saveProfile,
+  DEFAULT_PROFILE,
   ESTADOS,
   BASIS_VALOR_POR_ESTADO,
   type FarmProfile,
@@ -19,15 +20,16 @@ import { ComboboxCidade } from "@/components/ui/ComboboxCidade";
  * Salvar global com estado dirty + toast. Validação inline.
  */
 export default function ConfiguracoesPage() {
-  const [profile, setProfile] = useState<FarmProfile>(getProfile());
-  const [savedProfile, setSavedProfile] = useState<FarmProfile>(getProfile());
+  const [profile, setProfile] = useState<FarmProfile>(DEFAULT_PROFILE);
+  const [savedProfile, setSavedProfile] = useState<FarmProfile>(DEFAULT_PROFILE);
   const [toast, setToast] = useState<string | null>(null);
   const [erros, setErros] = useState<Partial<Record<keyof FarmProfile, string>>>({});
 
   useEffect(() => {
-    const p = getProfile();
-    setProfile(p);
-    setSavedProfile(p);
+    getProfile().then((p) => {
+      setProfile(p);
+      setSavedProfile(p);
+    });
   }, []);
 
   // Detecta diff (estado dirty)
@@ -57,9 +59,9 @@ export default function ConfiguracoesPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!validar()) return;
-    saveProfile(profile);
+    await saveProfile(profile);
     setSavedProfile(profile);
     setToast("Configurações salvas");
     setTimeout(() => setToast(null), 2800);

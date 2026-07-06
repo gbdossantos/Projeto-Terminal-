@@ -1,11 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Settings } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { useProfile } from "@/lib/use-profile";
 import { Bandeira } from "@/lib/bandeiras";
+import { createClient } from "@/lib/supabase/client";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 /**
  * Header canônico — V19 (Vercel-like).
@@ -146,6 +157,7 @@ export function TopNav() {
           >
             <Settings size={16} strokeWidth={1.6} />
           </Link>
+          <UserMenu userName={userName} />
         </div>
       </div>
 
@@ -259,5 +271,67 @@ function PregaoStatus() {
       />
       <span>Pregão {open ? "aberto" : "fechado"}</span>
     </div>
+  );
+}
+
+/** Avatar + menu com "Sair" — sempre acessível no TopNav (decisão aprovada). */
+function UserMenu({ userName }: { userName: string }) {
+  const router = useRouter();
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+    });
+  }, []);
+
+  const iniciais = userName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase())
+    .join("") || "?";
+
+  async function handleSair() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "none",
+          background: "transparent",
+          cursor: "pointer",
+          padding: 0,
+        }}
+        aria-label="Menu do usuário"
+      >
+        <Avatar size="sm">
+          <AvatarFallback style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>
+            {iniciais}
+          </AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {email && (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>{email}</DropdownMenuLabel>
+          </DropdownMenuGroup>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={handleSair}>
+          <LogOut size={14} strokeWidth={1.6} />
+          Sair
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Lista de lotes salvos no localStorage.
+ * Lista de lotes salvos na conta do usuário (Supabase).
  *
  * Pós-refactor fase/sistema: exibe `Fase · Sistema` (middot U+00B7) como
  * info terciária discreta. Hierarquia visual: status > margem > fase·sistema.
@@ -29,7 +29,7 @@ export function LotesSalvosList({ onLoad }: Props) {
   const [lotes, setLotes] = useState<LoteSalvo[]>([]);
 
   useEffect(() => {
-    setLotes(listLotes());
+    listLotes().then(setLotes);
   }, []);
 
   if (lotes.length === 0) return null;
@@ -39,9 +39,9 @@ export function LotesSalvosList({ onLoad }: Props) {
     onLoad?.(lote.fase, lote.sistema);
   };
 
-  const handleDelete = (id: string) => {
-    deleteLote(id);
-    setLotes(listLotes());
+  const handleDelete = async (id: string) => {
+    await deleteLote(id);
+    setLotes(await listLotes());
   };
 
   return (
