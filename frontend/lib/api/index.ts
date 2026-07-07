@@ -16,6 +16,7 @@ import type {
   NoticiasDoDiaResponse,
   SimuladorHistoricoResponse,
   SimuladorCustomResponse,
+  SugerirColunasResponse,
 } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -149,6 +150,38 @@ export async function fetchSimuladorCustom(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Simulador custom: ${res.status}`);
+  }
+  return res.json();
+}
+
+// ============================================================================
+// Import de lotes — sugestão de correspondência de colunas (LLM, Fase 2)
+// ============================================================================
+
+/**
+ * Sugere campo canônico pra headers que não bateram exato no schema
+ * (parser é determinístico — isso só cobre variação semântica: sinônimo,
+ * abreviação, acento, ordem de palavra). Nunca aplica sozinho — o
+ * chamador decide se usa a sugestão.
+ *
+ * Erro (chave ausente, rede, rate limit) → throw. Chamador cai de volta
+ * pro aviso simples de headers desconhecidos, nunca trava o import.
+ */
+export async function sugerirColunas(
+  headersDesconhecidos: string[],
+  camposDisponiveis: { nome: string; label: string }[],
+): Promise<SugerirColunasResponse> {
+  const res = await fetch(`${BASE}/import-lotes/sugerir-colunas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      headers_desconhecidos: headersDesconhecidos,
+      campos_disponiveis: camposDisponiveis,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Sugestão de colunas: ${res.status}`);
   }
   return res.json();
 }

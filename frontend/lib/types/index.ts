@@ -559,3 +559,19 @@ export interface SimuladorCustomResponse {
   margem_cenario_brl: number;
   margem_pct: number;
 }
+
+// ============================================================================
+// Import de lotes — sugestão de correspondência de colunas (LLM, Fase 2)
+// ============================================================================
+// Fuzzy/semântico via Haiku, só pra headers que o parser determinístico não
+// bateu exato. Nunca aplicado sem confirmação do usuário.
+
+export interface SugestaoColuna {
+  header_original: string;
+  campo_sugerido: string | null;
+  confianca: "alta" | "media" | "baixa";
+}
+
+export interface SugerirColunasResponse {
+  sugestoes: SugestaoColuna[];
+}

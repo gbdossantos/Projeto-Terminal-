@@ -680,3 +680,30 @@ class SimuladorCustomResponse(BaseModel):
     margem_cenario: float
     margem_cenario_brl: float
     margem_pct: float
+
+
+# ===========================================================================
+# Import de lotes — sugestão de correspondência de colunas (LLM, Fase 2)
+# ===========================================================================
+# Categoria B do prompt de validação de dado importado: fuzzy/semântico via
+# Haiku. Nunca aplica sozinho — só sugere; frontend exige confirmação do
+# usuário antes de usar. Ver api/services/column_match.py.
+
+class CampoConhecidoSchema(BaseModel):
+    nome: str
+    label: str
+
+
+class SugerirColunasRequest(BaseModel):
+    headers_desconhecidos: list[str] = Field(..., min_length=1, max_length=50)
+    campos_disponiveis: list[CampoConhecidoSchema] = Field(..., min_length=1)
+
+
+class SugestaoColunaSchema(BaseModel):
+    header_original: str
+    campo_sugerido: Optional[str]
+    confianca: Literal["alta", "media", "baixa"]
+
+
+class SugerirColunasResponse(BaseModel):
+    sugestoes: list[SugestaoColunaSchema]
