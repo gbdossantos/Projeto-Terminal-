@@ -14,14 +14,16 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Upload, X, Trash2, Loader2 } from "lucide-react";
+import { Download, Upload, X, Trash2, Loader2, Sparkles } from "lucide-react";
 import { parseArquivo } from "@/lib/import-lotes/parse";
 import { validarTodas, contar, validarLinha } from "@/lib/import-lotes/validate";
 import { batchImport, type BatchProgress } from "@/lib/import-lotes/batch-save";
 import { baixarCsv, baixarXlsx } from "@/lib/import-lotes/template";
 import { CAMPOS, campoAplicavel } from "@/lib/import-lotes/schema";
+import { sugerirColunas } from "@/lib/api";
 import type { LinhaValidada } from "@/lib/import-lotes/validate";
-import type { LinhaBruta } from "@/lib/import-lotes/parse";
+import type { LinhaBruta, HeaderDesconhecido } from "@/lib/import-lotes/parse";
+import type { SugestaoColuna } from "@/lib/types";
 
 export function ImportPlanilha() {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -34,6 +36,13 @@ export function ImportPlanilha() {
   const [progresso, setProgresso] = useState<BatchProgress | null>(null);
   const [menuTemplateAberto, setMenuTemplateAberto] = useState(false);
   const router = useRouter();
+
+  // ─── Sugestão fuzzy de colunas (LLM) ────────────────────────────
+  const [headersDesconhecidos, setHeadersDesconhecidos] = useState<HeaderDesconhecido[]>([]);
+  const [sugestoes, setSugestoes] = useState<SugestaoColuna[]>([]);
+  const [sugestoesStatus, setSugestoesStatus] = useState<"idle" | "carregando" | "ok" | "erro">("idle");
+  const [sugestoesErro, setSugestoesErro] = useState<string | null>(null);
+  const [headersResolvidos, setHeadersResolvidos] = useState<Set<string>>(new Set());
 
   const { ok, comErro } = useMemo(() => contar(linhas), [linhas]);
 
@@ -57,13 +66,60 @@ export function ImportPlanilha() {
       const map: Record<number, Record<string, string>> = {};
       for (const l of res.linhas) map[l.linha] = l.celulas;
       setCelulasOriginais(map);
+
+      // Sugestão fuzzy de colunas (LLM) — não bloqueia abertura do modal
+      setHeadersDesconhecidos(res.headersDesconhecidos);
+      setHeadersResolvidos(new Set());
+      setSugestoes([]);
+      setSugestoesStatus("idle");
+      setSugestoesErro(null);
       setAberto(true);
+      if (res.headersDesconhecidos.length > 0) {
+        buscarSugestoes(res.headersDesconhecidos);
+      }
     } catch (err) {
       setErroParse(err instanceof Error ? err.message : "Falha ao ler arquivo.");
     } finally {
       // Permite re-importar o mesmo arquivo
       if (fileRef.current) fileRef.current.value = "";
     }
+  };
+
+  // ─── Sugestão fuzzy de colunas (LLM) ────────────────────────────
+  const buscarSugestoes = async (headers: HeaderDesconhecido[]) => {
+    setSugestoesStatus("carregando");
+    setSugestoesErro(null);
+    try {
+      const camposDisponiveis = CAMPOS.map((c) => ({ nome: c.nome, label: c.label }));
+      const res = await sugerirColunas(headers.map((h) => h.original), camposDisponiveis);
+      setSugestoes(res.sugestoes);
+      setSugestoesStatus("ok");
+    } catch (err) {
+      setSugestoesStatus("erro");
+      setSugestoesErro(err instanceof Error ? err.message : "Falha ao buscar sugestão.");
+    }
+  };
+
+  /** Aplica a correspondência sugerida: copia o valor da coluna desconhecida
+   * pro campo canônico em todas as linhas, e re-valida. */
+  const aplicarSugestao = (headerNormalizado: string, campoNome: string) => {
+    const novoCelulasOriginais: Record<number, Record<string, string>> = {};
+    for (const [linhaKey, celulas] of Object.entries(celulasOriginais)) {
+      const valor = celulas[headerNormalizado];
+      novoCelulasOriginais[Number(linhaKey)] =
+        valor !== undefined ? { ...celulas, [campoNome]: valor } : celulas;
+    }
+    setCelulasOriginais(novoCelulasOriginais);
+    setLinhas((prev) =>
+      prev.map((l) =>
+        validarLinha({ linha: l.linha, celulas: novoCelulasOriginais[l.linha] ?? {} }),
+      ),
+    );
+    setHeadersResolvidos((prev) => new Set(prev).add(headerNormalizado));
+  };
+
+  const ignorarSugestao = (headerNormalizado: string) => {
+    setHeadersResolvidos((prev) => new Set(prev).add(headerNormalizado));
   };
 
   // ─── Edição inline ────────────────────────────────────────────
@@ -195,6 +251,13 @@ export function ImportPlanilha() {
           comErro={comErro}
           importando={importando}
           progresso={progresso}
+          headersDesconhecidos={headersDesconhecidos}
+          sugestoes={sugestoes}
+          sugestoesStatus={sugestoesStatus}
+          sugestoesErro={sugestoesErro}
+          headersResolvidos={headersResolvidos}
+          onAplicarSugestao={aplicarSugestao}
+          onIgnorarSugestao={ignorarSugestao}
           onEditar={editarCelula}
           onExcluir={excluirLinha}
           onFechar={() => {
@@ -202,6 +265,11 @@ export function ImportPlanilha() {
               setAberto(false);
               setLinhas([]);
               setProgresso(null);
+              setHeadersDesconhecidos([]);
+              setSugestoes([]);
+              setSugestoesStatus("idle");
+              setSugestoesErro(null);
+              setHeadersResolvidos(new Set());
             }
           }}
           onImportar={handleImportar}
@@ -219,6 +287,13 @@ function ModalPreview({
   comErro,
   importando,
   progresso,
+  headersDesconhecidos,
+  sugestoes,
+  sugestoesStatus,
+  sugestoesErro,
+  headersResolvidos,
+  onAplicarSugestao,
+  onIgnorarSugestao,
   onEditar,
   onExcluir,
   onFechar,
@@ -230,6 +305,13 @@ function ModalPreview({
   comErro: number;
   importando: boolean;
   progresso: BatchProgress | null;
+  headersDesconhecidos: HeaderDesconhecido[];
+  sugestoes: SugestaoColuna[];
+  sugestoesStatus: "idle" | "carregando" | "ok" | "erro";
+  sugestoesErro: string | null;
+  headersResolvidos: Set<string>;
+  onAplicarSugestao: (headerNormalizado: string, campoNome: string) => void;
+  onIgnorarSugestao: (headerNormalizado: string) => void;
   onEditar: (linhaIdx: number, campoNome: string, valor: string) => void;
   onExcluir: (linhaIdx: number) => void;
   onFechar: () => void;
@@ -317,6 +399,16 @@ function ModalPreview({
             <X size={20} />
           </button>
         </div>
+
+        <PainelSugestoesColunas
+          headersDesconhecidos={headersDesconhecidos}
+          sugestoes={sugestoes}
+          status={sugestoesStatus}
+          erro={sugestoesErro}
+          headersResolvidos={headersResolvidos}
+          onAplicar={onAplicarSugestao}
+          onIgnorar={onIgnorarSugestao}
+        />
 
         {/* Tabela */}
         <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
@@ -417,6 +509,139 @@ function ModalPreview({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Painel de sugestão fuzzy de colunas (LLM) ────────────────────
+// Só aparece quando há headers que não bateram exato no schema. Nunca
+// aplica sozinho — cada sugestão precisa de clique explícito do usuário.
+function PainelSugestoesColunas({
+  headersDesconhecidos,
+  sugestoes,
+  status,
+  erro,
+  headersResolvidos,
+  onAplicar,
+  onIgnorar,
+}: {
+  headersDesconhecidos: HeaderDesconhecido[];
+  sugestoes: SugestaoColuna[];
+  status: "idle" | "carregando" | "ok" | "erro";
+  erro: string | null;
+  headersResolvidos: Set<string>;
+  onAplicar: (headerNormalizado: string, campoNome: string) => void;
+  onIgnorar: (headerNormalizado: string) => void;
+}) {
+  const pendentes = headersDesconhecidos.filter((h) => !headersResolvidos.has(h.normalizado));
+  if (pendentes.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        padding: "10px 22px",
+        borderBottom: "0.5px solid var(--rule)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        background: "rgba(217, 119, 6, 0.04)",
+      }}
+    >
+      {status === "carregando" && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontFamily: "var(--font-sans)",
+            fontSize: 11.5,
+            color: "var(--ink-3)",
+          }}
+        >
+          <Loader2 size={12} className="animate-spin" />
+          Buscando sugestão pra {pendentes.length} coluna(s) não reconhecida(s)...
+        </div>
+      )}
+
+      {status === "erro" && (
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--warning)" }}>
+          Sugestão automática indisponível ({erro}). As colunas abaixo não serão
+          importadas — renomeie pra bater com o template ou mapeie manualmente:{" "}
+          {pendentes.map((h) => h.original).join(", ")}
+        </div>
+      )}
+
+      {status === "ok" &&
+        pendentes.map((h) => {
+          const sugestao = sugestoes.find((s) => s.header_original === h.original);
+          const campo = sugestao?.campo_sugerido
+            ? CAMPOS.find((c) => c.nome === sugestao.campo_sugerido)
+            : null;
+
+          if (!campo) {
+            return (
+              <div
+                key={h.normalizado}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-3)" }}
+              >
+                Coluna não reconhecida: <strong>{h.original}</strong> — nenhuma correspondência
+                sugerida.
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={h.normalizado}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontFamily: "var(--font-sans)",
+                fontSize: 11.5,
+                color: "var(--ink)",
+                flexWrap: "wrap",
+              }}
+            >
+              <Sparkles size={13} style={{ color: "var(--warning)", flexShrink: 0 }} />
+              <span>
+                Coluna <strong>&quot;{h.original}&quot;</strong> parece ser{" "}
+                <strong>{campo.label}</strong>{" "}
+                <span style={{ color: "var(--ink-3)" }}>(confiança {sugestao!.confianca})</span>
+              </span>
+              <button
+                onClick={() => onAplicar(h.normalizado, campo.nome)}
+                style={{
+                  padding: "3px 10px",
+                  background: "var(--ink)",
+                  color: "var(--paper)",
+                  border: "none",
+                  borderRadius: 5,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                Usar correspondência
+              </button>
+              <button
+                onClick={() => onIgnorar(h.normalizado)}
+                style={{
+                  padding: "3px 10px",
+                  background: "transparent",
+                  color: "var(--ink-3)",
+                  border: "1px solid var(--rule)",
+                  borderRadius: 5,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                Ignorar
+              </button>
+            </div>
+          );
+        })}
     </div>
   );
 }

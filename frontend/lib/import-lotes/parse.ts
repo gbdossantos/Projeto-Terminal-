@@ -21,13 +21,21 @@ export interface LinhaBruta {
   celulas: Record<string, string>;
 }
 
+/** Header que não bateu exato contra o schema — candidato a sugestão fuzzy (LLM). */
+export interface HeaderDesconhecido {
+  /** Header original como veio no arquivo (pra exibir e mandar pro LLM). */
+  original: string;
+  /** Header normalizado — chave correspondente em LinhaBruta.celulas. */
+  normalizado: string;
+}
+
 export interface ParseResult {
   /** Linhas com dados (header excluído, linhas totalmente vazias filtradas). */
   linhas: LinhaBruta[];
   /** Headers encontrados no arquivo, ordem original. */
   headers: string[];
-  /** Headers desconhecidos (não bate com nenhum campo do schema) — só avisar. */
-  headersDesconhecidos: string[];
+  /** Headers desconhecidos (não bate com nenhum campo do schema) — aviso + candidato a sugestão. */
+  headersDesconhecidos: HeaderDesconhecido[];
 }
 
 /** Normaliza header pra snake_case sem acentos. */
@@ -161,9 +169,9 @@ export async function parseArquivo(file: File): Promise<ParseResult> {
   // Importa o schema só pra detectar headers desconhecidos
   const { CAMPOS } = await import("./schema");
   const nomesConhecidos = new Set(CAMPOS.map((c) => c.nome));
-  const headersDesconhecidos = headersOriginais.filter(
-    (_, idx) => headersNorm[idx] && !nomesConhecidos.has(headersNorm[idx]),
-  );
+  const headersDesconhecidos: HeaderDesconhecido[] = headersOriginais
+    .map((original, idx) => ({ original, normalizado: headersNorm[idx] }))
+    .filter((h) => h.normalizado && !nomesConhecidos.has(h.normalizado));
 
   // Converte dados em LinhaBruta
   const linhas: LinhaBruta[] = [];
