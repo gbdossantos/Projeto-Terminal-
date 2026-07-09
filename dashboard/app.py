@@ -37,6 +37,10 @@ from models.production_systems import (
     Fase, Sistema,
     LoteInputCria, LoteInputRecria, LoteInputTerminacao,
 )
+from dashboard.estrada import (
+    CHART_COM_HEDGE, CHART_SEM_HEDGE, COR_SEMAFORO,
+    inject_estrada, render_hero_estrada, render_marca_sidebar,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -50,76 +54,13 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+inject_estrada()
+
 st.markdown("""
 <style>
-    /* ── Reset e base ─────────────────────────────────── */
-    .block-container { padding-top: 1.5rem; }
-    h1 { font-size: 1.6rem !important; font-weight: 600 !important; }
-    h2, .stSubheader { font-size: 1.15rem !important; font-weight: 500 !important;
-                        opacity: 0.7; letter-spacing: 0.02em; }
-
-    /* ── Cards de métrica (respeitam tema) ────────────── */
-    [data-testid="stMetric"] {
-        border: 1px solid rgba(128,128,128,0.2);
-        border-radius: 10px; padding: 14px 18px;
-        background: rgba(128,128,128,0.06);
-    }
-    [data-testid="stMetricLabel"] { font-size: 0.78rem !important; opacity: 0.6;
-                                     text-transform: uppercase; letter-spacing: 0.04em; }
-    [data-testid="stMetricValue"] { font-size: 1.35rem !important; font-weight: 600 !important; }
-
-    /* ── Semáforo grande ──────────────────────────────── */
-    .semaforo {
-        padding: 18px 24px; border-radius: 10px; margin: 8px 0;
-        font-size: 1.05rem; font-weight: 500;
-        display: flex; align-items: center; gap: 12px;
-    }
-    .semaforo-verde  { background: rgba(25,135,84,0.15); border-left: 5px solid #198754; color: #2dd47b; }
-    .semaforo-amarelo { background: rgba(255,193,7,0.15); border-left: 5px solid #ffc107; color: #ffcd39; }
-    .semaforo-vermelho { background: rgba(220,53,69,0.15); border-left: 5px solid #dc3545; color: #ff6b7a; }
-    .semaforo-emoji { font-size: 1.8rem; }
-
-    /* ── Alertas ──────────────────────────────────────── */
-    .alerta-warn { padding: 12px 16px; border-radius: 8px; margin: 6px 0;
-                   background: rgba(255,193,7,0.15); border-left: 4px solid #ffc107;
-                   color: #ffcd39; font-size: 0.9rem; }
-    .alerta-ok   { padding: 12px 16px; border-radius: 8px; margin: 6px 0;
-                   background: rgba(25,135,84,0.15); border-left: 4px solid #198754;
-                   color: #2dd47b; font-size: 0.9rem; }
-
-    /* ── Pergunta invertida ───────────────────────────── */
-    .pergunta-invertida {
-        padding: 16px 20px; border-radius: 10px; margin: 12px 0;
-        font-size: 0.95rem; font-weight: 500; line-height: 1.5;
-    }
-    .pergunta-alerta { background: rgba(255,193,7,0.15); border: 1px solid rgba(255,193,7,0.4); color: #ffcd39; }
-    .pergunta-ok     { background: rgba(25,135,84,0.15); border: 1px solid rgba(25,135,84,0.4); color: #2dd47b; }
-
-    /* ── Tabela de impacto ────────────────────────────── */
-    .impact-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
-    .impact-sub    { font-size: 0.82rem; opacity: 0.5; margin-bottom: 12px; }
-
-    /* ── Sidebar refinada ─────────────────────────────── */
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-        font-size: 0.85rem;
-    }
-
-    /* ── Expanders mais limpos ─────────────────────────── */
-    .streamlit-expanderHeader { font-size: 0.9rem !important; font-weight: 500 !important; }
-
-    /* ── Seção de mercado compacta ─────────────────────── */
-    .mercado-caption { font-size: 0.75rem; opacity: 0.5; margin-top: -8px; }
-
-    /* ── Light mode overrides ─────────────────────────── */
-    @media (prefers-color-scheme: light) {
-        .semaforo-verde  { color: #0f5132; }
-        .semaforo-amarelo { color: #856404; }
-        .semaforo-vermelho { color: #842029; }
-        .alerta-warn { color: #856404; }
-        .alerta-ok   { color: #0f5132; }
-        .pergunta-alerta { color: #856404; }
-        .pergunta-ok     { color: #0f5132; }
-    }
+    /* Ajustes locais sobre o tema Estrada */
+    .mercado-caption { font-size: 0.75rem; opacity: 0.5; margin-top: -8px;
+                       font-family: var(--f-mono); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -191,11 +132,7 @@ def val_float(d: dict, key: str, default: float) -> float:
 # Sidebar
 # ---------------------------------------------------------------------------
 
-st.sidebar.image(
-    "https://em-content.zobj.net/source/google/387/cow_1f404.png", width=56
-)
-st.sidebar.title("Terminal")
-st.sidebar.caption("Inteligência Financeira para Pecuária")
+render_marca_sidebar()
 st.sidebar.divider()
 
 # Upload do Excel
@@ -219,6 +156,9 @@ if usar_tempo_real:
     cotacoes = buscar_cotacoes()
 else:
     cotacoes = cotacoes_ficticias()
+
+# Hero Estrada — o preço no céu, em todas as páginas
+render_hero_estrada(cotacoes.arroba_boi_gordo)
 
 # Sistema produtivo
 st.sidebar.divider()
@@ -363,12 +303,8 @@ def render_painel_impacto(inp, preco_venda: float):
     st.markdown('<p class="impact-header">Painel de impacto econômico</p>', unsafe_allow_html=True)
     st.markdown('<p class="impact-sub">O que acontece com seu lote se a arroba cair?</p>', unsafe_allow_html=True)
 
-    # Tabela HTML customizada — compatível com dark/light mode
-    cor_map = {
-        "verde": ("rgba(25,135,84,0.2)", "#2dd47b"),
-        "amarelo": ("rgba(255,193,7,0.2)", "#ffcd39"),
-        "vermelho": ("rgba(220,53,69,0.2)", "#ff6b7a"),
-    }
+    # Paleta Estrada (osso/pasto/latão/ferrugem)
+    cor_map = COR_SEMAFORO
     emoji_map = {"verde": "🟢", "amarelo": "🟡", "vermelho": "🔴"}
 
     html = """<table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin:8px 0;color:inherit;">
@@ -513,7 +449,7 @@ def render_painel_hedge(inp, preco_venda: float):
                 "Tipo:N",
                 scale=alt.Scale(
                     domain=["Sem hedge", "Com hedge"],
-                    range=["#ff6b7a", "#2dd47b"],
+                    range=[CHART_SEM_HEDGE, CHART_COM_HEDGE],
                 ),
                 legend=alt.Legend(orient="top", title=None),
             ),
@@ -536,9 +472,9 @@ def render_painel_hedge(inp, preco_venda: float):
 
     with col_travar:
         st.markdown(
-            '<div style="background:rgba(25,135,84,0.1);border:1px solid rgba(25,135,84,0.3);'
-            'border-radius:10px;padding:16px;">'
-            '<strong style="color:#2dd47b;">SE TRAVAR</strong><br><br>'
+            '<div style="background:rgba(95,122,70,0.10);border:1px solid rgba(95,122,70,0.35);'
+            'border-radius:14px;padding:18px;">'
+            '<strong style="color:#445932;font-family:var(--f-display);">SE TRAVAR</strong><br><br>'
             f'<span style="font-size:0.85rem;opacity:0.7;">Preço garantido</span><br>'
             f'<span style="font-size:1.3rem;font-weight:600;">R$ {result.preco_travado:,.0f}/@</span><br><br>'
             f'<span style="font-size:0.85rem;opacity:0.7;">Você garante</span><br>'
@@ -553,13 +489,13 @@ def render_painel_hedge(inp, preco_venda: float):
     with col_nao:
         queda_20 = result.cenarios_grafico[0]  # primeiro cenário = queda 20%
         st.markdown(
-            '<div style="background:rgba(220,53,69,0.1);border:1px solid rgba(220,53,69,0.3);'
-            'border-radius:10px;padding:16px;">'
-            '<strong style="color:#ff6b7a;">SE NÃO TRAVAR</strong><br><br>'
+            '<div style="background:rgba(169,67,46,0.08);border:1px solid rgba(169,67,46,0.30);'
+            'border-radius:14px;padding:18px;">'
+            '<strong style="color:#8A3625;font-family:var(--f-display);">SE NÃO TRAVAR</strong><br><br>'
             f'<span style="font-size:0.85rem;opacity:0.7;">Preço atual</span><br>'
             f'<span style="font-size:1.3rem;font-weight:600;">R$ {result.preco_spot:,.0f}/@</span><br><br>'
             f'<span style="font-size:0.85rem;opacity:0.7;">Se cair 20%</span><br>'
-            f'<span style="font-size:1.3rem;font-weight:600;color:#ff6b7a;">'
+            f'<span style="font-size:1.3rem;font-weight:600;color:#A9432E;">'
             f'{"Perde" if queda_20["sem_hedge"] < 0 else "Lucro cai para"} '
             f'R$ {queda_20["sem_hedge"]:,.0f}</span><br><br>'
             f'<span style="font-size:0.8rem;opacity:0.6;">'
