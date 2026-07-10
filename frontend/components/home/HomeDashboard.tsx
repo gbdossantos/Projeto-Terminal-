@@ -19,6 +19,7 @@ import type {
 import { LinhaDoRebanho } from "./LinhaDoRebanho";
 import { FaixaCotacoes } from "./FaixaCotacoes";
 import { ClimaCard } from "./ClimaCard";
+import { HeroPreco } from "./HeroPreco";
 import { TopNav } from "@/components/layout/TopNav";
 import {
   MOCK_LOTES,
@@ -115,6 +116,9 @@ export function HomeDashboard({ empty = false }: Props = {}) {
     <div style={{ background: "var(--paper)", minHeight: "100vh" }}>
       <TopNav />
       <FaixaCotacoes />
+
+      {/* Hero keynote — o palco do preço (estrutura portada do #14, pele V19) */}
+      <HeroPreco spot={spotMS} deltaDia={deltaDia} />
 
       <main style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 32px 60px" }}>
         {/* Linha do rebanho — seção principal */}
