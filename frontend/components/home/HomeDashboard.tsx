@@ -170,26 +170,23 @@ export function HomeDashboard() {
                 }}
               >
                 {empty
-                  ? "Você ainda não tem lote cadastrado."
+                  ? "Do que aconteceu hoje até onde o mercado precifica."
                   : "Do que aconteceu hoje até a saída do último lote."}
               </h1>
             </div>
             {/* Cotações agora vivem na FaixaCotacoes (abaixo do TopNav) */}
           </div>
 
-          {empty ? (
-            <LinhaVazia />
-          ) : lotes == null ? (
-            <div style={{ height: 360 }} />
-          ) : (
-            <LinhaDoRebanho
-              sigmaAnualizado={sigma}
-              historico={histArroba}
-              spotAtual={spotMS}
-              bgi={bgiAlvo}
-              breakEven={BREAK_EVEN}
-            />
-          )}
+          {/* O gráfico é ESTADO DE MERCADO — renderiza sempre, com ou sem
+              lote. Só a camada da operação (break-even) depende de lote. */}
+          <LinhaDoRebanho
+            sigmaAnualizado={sigma}
+            historico={histArroba}
+            spotAtual={spotMS}
+            bgi={bgiAlvo}
+            breakEven={BREAK_EVEN}
+            temLote={numLotes > 0}
+          />
         </section>
 
         {/* Cards resumo */}
@@ -243,7 +240,11 @@ export function HomeDashboard() {
             }
             sub={
               empty ? (
-                <span>cadastre um lote para projetar sua exposição</span>
+                <span>
+                  <Link href="/lotes" style={{ color: "var(--grafite)", textDecoration: "none" }}>
+                    cadastre um lote pra ver o impacto na sua operação →
+                  </Link>
+                </span>
               ) : rebanhoExposto == null ? (
                 <span style={{ color: "var(--ink-3)" }}>cotação indisponível</span>
               ) : (
@@ -276,7 +277,11 @@ export function HomeDashboard() {
             }
             sub={
               empty ? (
-                <span>break-even depende dos seus custos cadastrados</span>
+                <span>
+                  <Link href="/lotes" style={{ color: "var(--grafite)", textDecoration: "none" }}>
+                    cadastre um lote pra ver o impacto na sua operação →
+                  </Link>
+                </span>
               ) : BREAK_EVEN == null ? (
                 <span style={{ color: "var(--ink-3)" }}>
                   configure o break-even no{" "}
@@ -307,17 +312,14 @@ export function HomeDashboard() {
             gap: 24,
           }}
         >
-          {empty ? (
-            <EventosDiaVazio />
-          ) : (
-            <EventosDia
-              noticias={noticias}
-              ultimaAtualizacao={noticiasUltimaAtualizacao}
-              deltaDia={noticiasDeltaDia}
-              dolarPtax={cotacoes?.dolar_ptax ?? null}
-              spotMS={spotMS}
-            />
-          )}
+          {/* Notícias são estado de mercado — aparecem com ou sem lote */}
+          <EventosDia
+            noticias={noticias}
+            ultimaAtualizacao={noticiasUltimaAtualizacao}
+            deltaDia={noticiasDeltaDia}
+            dolarPtax={cotacoes?.dolar_ptax ?? null}
+            spotMS={spotMS}
+          />
           <CaminhosCard empty={empty} numLotes={numLotes} totalCabecas={totalCabecas} />
         </section>
 
@@ -399,46 +401,6 @@ function CardResumo({
     );
   }
   return <div style={estilo}>{conteudo}</div>;
-}
-
-// ─── Estado vazio do gráfico (0 lotes — nunca inventar lote) ─────
-function LinhaVazia() {
-  return (
-    <div
-      style={{
-        height: 360,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        border: "0.5px dashed var(--rule-strong)",
-        borderRadius: 8,
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: 13,
-          color: "var(--ink-2)",
-        }}
-      >
-        Cadastre um lote pra ver a projeção do seu rebanho aqui.
-      </span>
-      <Link
-        href="/lotes"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.04em",
-          color: "var(--grafite)",
-          textDecoration: "none",
-        }}
-      >
-        CADASTRAR LOTE →
-      </Link>
-    </div>
-  );
 }
 
 // ─── O que moveu a linha hoje ────────────────────────────────────
@@ -914,42 +876,6 @@ function CaminhosCard({
           cta="ABRIR MERCADO →"
           href="/mercado"
         />
-      </div>
-    </div>
-  );
-}
-
-// ─── Eventos vazio ───────────────────────────────────────────────
-function EventosDiaVazio() {
-  return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-        <span
-          className="uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.06em",
-            color: "var(--ink-3)",
-          }}
-        >
-          O QUE MOVEU A LINHA HOJE
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-3)" }}>—</span>
-      </div>
-      <div
-        style={{
-          border: "0.5px dashed var(--rule-strong)",
-          borderRadius: 6,
-          padding: "14px 16px",
-          fontFamily: "var(--font-sans)",
-          fontSize: 12,
-          color: "var(--ink-2)",
-          lineHeight: 1.55,
-        }}
-      >
-        Sem lote cadastrado, mostramos só os números do mercado.<br />
-        Quando você cadastrar, cada evento aqui traz o impacto em R$ sobre os @ seus.
       </div>
     </div>
   );

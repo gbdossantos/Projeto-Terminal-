@@ -31,6 +31,12 @@ interface Props {
   bgi: { vencimento: string; preco_ajuste: number } | null;
   /** Break-even do perfil. Null/0 = não configurado → sem linha, com aviso. */
   breakEven: number | null;
+  /**
+   * Se o produtor tem lote cadastrado. O gráfico em si é estado de MERCADO
+   * (renderiza sempre); só a camada da operação — linha de break-even e o
+   * aviso de BE não configurado — depende de lote.
+   */
+  temLote: boolean;
 }
 
 function isoToTs(iso: string): number {
@@ -50,9 +56,11 @@ export function LinhaDoRebanho({
   spotAtual,
   bgi,
   breakEven,
+  temLote,
 }: Props) {
-  // BE=0 significa "não configurado" — nunca desenhar linha em R$ 0.
-  const be = breakEven != null && breakEven > 0 ? breakEven : null;
+  // Camada da operação: BE só com lote. BE=0 significa "não configurado" —
+  // nunca desenhar linha em R$ 0.
+  const be = temLote && breakEven != null && breakEven > 0 ? breakEven : null;
 
   const pontos = useMemo(
     () => gerarLinhaRebanho({ sigmaAnualizado, historico, spotAtual, bgi }),
@@ -342,7 +350,7 @@ export function LinhaDoRebanho({
             ±2σ · 95%
           </LegendaItem>
         )}
-        {be == null && (
+        {temLote && be == null && (
           <span>
             break-even não configurado ·{" "}
             <Link href="/configuracoes" style={{ color: "var(--grafite)", textDecoration: "none" }}>
