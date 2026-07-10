@@ -198,7 +198,7 @@ export function ImportPlanilha() {
                 background: "var(--paper-2)",
                 border: "1px solid var(--rule)",
                 borderRadius: 7,
-                boxShadow: "0 8px 24px -8px rgba(10,10,10,0.18)",
+                boxShadow: "var(--shadow-pop)",
                 zIndex: 20,
                 minWidth: 160,
               }}
@@ -230,8 +230,8 @@ export function ImportPlanilha() {
           style={{
             marginTop: 10,
             padding: "8px 12px",
-            border: "1px solid rgba(217, 119, 6, 0.27)",
-            background: "rgba(217, 119, 6, 0.08)",
+            border: "1px solid var(--ring-soft)",
+            background: "var(--warning-bg)",
             borderRadius: 7,
             color: "var(--warning)",
             fontFamily: "var(--font-sans)",
@@ -328,7 +328,7 @@ function ModalPreview({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(10, 10, 10, 0.40)",
+        background: "var(--overlay)",
         zIndex: 1000,
         display: "flex",
         alignItems: "center",
@@ -349,7 +349,7 @@ function ModalPreview({
           display: "flex",
           flexDirection: "column",
           border: "1px solid var(--rule)",
-          boxShadow: "0 20px 50px -20px rgba(10,10,10,0.40)",
+          boxShadow: "0 20px 50px -20px var(--overlay)",
         }}
       >
         {/* Header */}
@@ -544,7 +544,7 @@ function PainelSugestoesColunas({
         display: "flex",
         flexDirection: "column",
         gap: 8,
-        background: "rgba(217, 119, 6, 0.04)",
+        background: "var(--warning-bg)",
       }}
     >
       {status === "carregando" && (
@@ -685,7 +685,7 @@ function LinhaTabela({
             key={c.nome}
             style={{
               ...tdStyle,
-              background: erro ? "rgba(217, 119, 6, 0.06)" : "transparent",
+              background: erro ? "var(--warning-bg)" : "transparent",
               borderLeft: erro ? "2px solid var(--warning)" : "0.5px solid transparent",
             }}
             title={erro ? `${c.label}: ${erro}` : c.label}

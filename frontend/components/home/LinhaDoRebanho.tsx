@@ -98,8 +98,9 @@ export function LinhaDoRebanho({
   const cursorValor = cursorPonto?.realizado ?? cursorPonto?.esperado ?? null;
 
   // Domínio Y dinâmico baseado nos dados + break-even + padding
+  // (BE <= 0 = não configurado — fora do domínio e sem linha de referência)
   const yDomain = useMemo<[number, number]>(() => {
-    const vals: number[] = [BE];
+    const vals: number[] = BE > 0 ? [BE] : [];
     for (const p of pontos) {
       if (p.realizado != null) vals.push(p.realizado);
       if (p.esperado != null) vals.push(p.esperado);
@@ -139,8 +140,8 @@ export function LinhaDoRebanho({
           <CartesianGrid
             horizontal
             vertical={false}
-            stroke="var(--rule)"
-            strokeWidth={0.5}
+            stroke="var(--chart-grid)"
+            strokeWidth={1}
           />
 
           <XAxis
@@ -187,23 +188,23 @@ export function LinhaDoRebanho({
             width={48}
           />
 
-          {/* Banda ±2σ (mais clara, atrás) */}
+          {/* Banda ±2σ (latão 6%, atrás) */}
           {sigmaAnualizado != null && (
             <Area
               dataKey="sigma2"
-              fill="var(--rule)"
-              fillOpacity={0.45}
+              fill="var(--band-sigma2)"
+              fillOpacity={1}
               stroke="none"
               isAnimationActive={false}
               connectNulls={false}
             />
           )}
-          {/* Banda ±1σ (mais escura, na frente) */}
+          {/* Banda ±1σ (latão 8%, na frente) */}
           {sigmaAnualizado != null && (
             <Area
               dataKey="sigma1"
-              fill="var(--rule-strong)"
-              fillOpacity={0.55}
+              fill="var(--band-sigma1)"
+              fillOpacity={1}
               stroke="none"
               isAnimationActive={false}
               connectNulls={false}
@@ -211,21 +212,23 @@ export function LinhaDoRebanho({
           )}
 
           {/* Break-even horizontal (tracejado) — label inline na esquerda pra não cortar */}
-          <ReferenceLine
-            y={BE}
-            stroke="var(--loss)"
-            strokeWidth={1}
-            strokeDasharray="3 4"
-            ifOverflow="extendDomain"
-            label={{
-              value: `BE  R$ ${fmtBRL(BE, 0)}`,
-              position: "insideBottomLeft",
-              fontSize: 10,
-              fontFamily: "var(--font-mono)",
-              fill: "var(--loss)",
-              offset: 8,
-            }}
-          />
+          {BE > 0 && (
+            <ReferenceLine
+              y={BE}
+              stroke="var(--loss)"
+              strokeWidth={1}
+              strokeDasharray="3 4"
+              ifOverflow="extendDomain"
+              label={{
+                value: `BE  R$ ${fmtBRL(BE, 0)}`,
+                position: "insideBottomLeft",
+                fontSize: 10,
+                fontFamily: "var(--font-mono)",
+                fill: "var(--loss)",
+                offset: 8,
+              }}
+            />
+          )}
 
           {/* Cursor vertical — label dentro do grafico pra nao invadir o titulo acima */}
           <ReferenceLine
@@ -328,10 +331,10 @@ export function LinhaDoRebanho({
         <LegendaItem swatch={<span style={{ display: "inline-block", width: 16, borderTop: "1.5px dashed var(--grafite)" }} />}>
           esperado · curva BGI
         </LegendaItem>
-        <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--rule-strong)", opacity: 0.55 }} />}>
+        <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--band-sigma1)" }} />}>
           ±1σ · provável
         </LegendaItem>
-        <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--rule)", opacity: 0.45 }} />}>
+        <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--band-sigma2)" }} />}>
           ±2σ · 95%
         </LegendaItem>
       </div>

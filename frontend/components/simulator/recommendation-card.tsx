@@ -51,8 +51,8 @@ export function RecommendationCard({
   return (
     <div
       style={{
-        background: "rgba(74, 93, 58, 0.09)",
-        border: "0.5px solid rgba(74, 93, 58, 0.27)",
+        background: "var(--gain-bg)",
+        border: "0.5px solid var(--gain-line)",
         borderRadius: 10,
         padding: "12px 14px",
       }}
@@ -86,7 +86,7 @@ export function RecommendationCard({
 
       <div
         style={{
-          borderTop: "0.5px solid rgba(74, 93, 58, 0.2)",
+          borderTop: "0.5px solid var(--gain-line)",
           paddingTop: 9,
         }}
       >

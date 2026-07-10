@@ -22,8 +22,8 @@ export function HedgeCheckbox({
           width: 13,
           height: 13,
           borderRadius: 3,
-          border: `0.5px solid ${checked ? "rgba(74, 93, 58, 0.27)" : "var(--border-subtle)"}`,
-          background: checked ? "rgba(74, 93, 58, 0.09)" : "transparent",
+          border: `0.5px solid ${checked ? "var(--gain-line)" : "var(--border-subtle)"}`,
+          background: checked ? "var(--gain-bg)" : "transparent",
           transition: "all 150ms",
         }}
       >

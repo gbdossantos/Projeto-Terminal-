@@ -146,8 +146,8 @@ export default function FormConfinamento({ sistema }: Props) {
         <div
           className="rounded-lg flex items-center justify-between"
           style={{
-            background: "rgba(184, 118, 62, 0.07)",
-            border: "0.5px solid rgba(184, 118, 62, 0.25)",
+            background: "var(--sela-bg)",
+            border: "0.5px solid var(--sela-line)",
             padding: "10px 14px",
             marginBottom: 12,
           }}

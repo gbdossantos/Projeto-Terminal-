@@ -195,7 +195,7 @@ export default function FormPasto({ sistema }: Props) {
 
         {error && (
           <div className="rounded-lg px-4 py-3 text-[12px]"
-            style={{ background: "rgba(220, 38, 38, 0.10)", border: "0.5px solid rgba(220, 38, 38, 0.27)", color: "var(--loss-2)" }}>
+            style={{ background: "var(--loss-bg)", border: "0.5px solid var(--loss-line)", color: "var(--loss-2)" }}>
             {error}
           </div>
         )}
@@ -222,8 +222,8 @@ export default function FormPasto({ sistema }: Props) {
             {/* Semaphore */}
             <div className="flex items-center gap-3 px-4 py-3 rounded-lg"
               style={{
-                background: r.margem_percentual >= 0.15 ? "rgba(22, 163, 74, 0.10)" : r.margem_percentual >= 0.05 ? "rgba(217, 119, 6, 0.10)" : "rgba(220, 38, 38, 0.10)",
-                border: `0.5px solid ${r.margem_percentual >= 0.15 ? "rgba(22, 163, 74, 0.27)" : r.margem_percentual >= 0.05 ? "rgba(217, 119, 6, 0.27)" : "rgba(220, 38, 38, 0.27)"}`,
+                background: r.margem_percentual >= 0.15 ? "var(--gain-bg)" : r.margem_percentual >= 0.05 ? "var(--warning-bg)" : "var(--loss-bg)",
+                border: `0.5px solid ${r.margem_percentual >= 0.15 ? "var(--gain-line)" : r.margem_percentual >= 0.05 ? "rgba(173, 138, 72, 0.30)" : "var(--loss-line)"}`,
               }}>
               <div className="w-2 h-2 rounded-full"
                 style={{ background: r.margem_percentual >= 0.15 ? "var(--gain)" : r.margem_percentual >= 0.05 ? "var(--amber)" : "var(--loss)" }} />

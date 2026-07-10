@@ -33,7 +33,7 @@ export function PerguntaInvertidaBlock({ impacto, margemBruta }: Props) {
     <div
       className="rounded-lg"
       style={{
-        background: "rgba(200, 155, 60, 0.09)",   // amber bg sutil
+        background: "var(--warning-bg)",   // amber bg sutil
         borderLeft: "3px solid var(--grafite-2)",          // borda esquerda brand
         padding: "14px 18px",
         marginBottom: 14,

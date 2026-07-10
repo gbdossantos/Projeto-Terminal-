@@ -21,8 +21,8 @@ export function MetricCard({
     neutral: "var(--ink-3)",
   };
   const deltaBg = {
-    positive: "rgba(22, 163, 74, 0.10)",
-    negative: "rgba(220, 38, 38, 0.10)",
+    positive: "var(--gain-bg)",
+    negative: "var(--loss-bg)",
     neutral: "transparent",
   };
 

@@ -157,7 +157,7 @@ export function ComboboxCidade({ uf, value, onChange, placeholder, erro, disable
             background: "var(--paper-2)",
             border: "1px solid var(--rule)",
             borderRadius: 7,
-            boxShadow: "0 8px 24px -8px rgba(10,10,10,0.18)",
+            boxShadow: "var(--shadow-pop)",
             zIndex: 50,
             listStyle: "none",
             padding: "4px 0",

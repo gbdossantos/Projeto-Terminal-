@@ -5,9 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut, Settings } from "lucide-react";
 import { useProfile } from "@/lib/use-profile";
-import { Bandeira } from "@/lib/bandeiras";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { FivelaAvatar } from "./FivelaAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,13 +18,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /**
- * Header canônico — V19 (Vercel-like).
+ * Header canônico — Estrada.
  *
  * Layout em 2 linhas:
- *   Linha 1 (identidade): TERMINAL · BOI GORDO | usuário · fazenda · data + pílula Pregão
+ *   Linha 1 (identidade): TERMINAL · BOI GORDO | usuário · fazenda · data + pílula Pregão + fivela
  *   Linha 2 (nav):        Home | Lotes | Simulador | Histórico | Mercado (tabs pill)
  *
- * Sticky com backdrop-filter pra ficar sobre o fundo aurora.
+ * Sticky com backdrop-filter (vidro de osso) pra ficar sobre o fundo aurora.
+ * Estrada pura: sem bandeirinhas; o avatar do perfil é a fivela de latão.
  */
 export function TopNav() {
   const pathname = usePathname();
@@ -57,7 +57,7 @@ export function TopNav() {
   return (
     <div
       style={{
-        background: "rgba(255, 255, 255, 0.78)",
+        background: "var(--glass)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         borderBottom: "1px solid var(--rule)",
@@ -112,11 +112,6 @@ export function TopNav() {
               color: "var(--ink-2)",
             }}
           >
-            {/* Bandeiras Brasil + estado — reativas ao profile.estado */}
-            <span className="flex items-center" style={{ gap: 4 }}>
-              <Bandeira code="BR" size={14} title="Brasil" />
-              <Bandeira code={estado} size={14} title={estado} />
-            </span>
             <span>{userName}</span>
             <span style={{ color: "var(--ink-3)" }}>·</span>
             <span style={{ color: "var(--ink)", fontWeight: 500 }}>{farmName}</span>
@@ -139,12 +134,12 @@ export function TopNav() {
               height: 30,
               borderRadius: 7,
               color: pathname === "/configuracoes" ? "var(--ink)" : "var(--ink-2)",
-              background: pathname === "/configuracoes" ? "rgba(10, 10, 10, 0.06)" : "transparent",
+              background: pathname === "/configuracoes" ? "var(--paper-3)" : "transparent",
               transition: "background 120ms, color 120ms",
             }}
             onMouseEnter={(e) => {
               if (pathname !== "/configuracoes") {
-                (e.currentTarget as HTMLElement).style.background = "rgba(10, 10, 10, 0.04)";
+                (e.currentTarget as HTMLElement).style.background = "var(--paper-3)";
                 (e.currentTarget as HTMLElement).style.color = "var(--ink)";
               }
             }}
@@ -157,7 +152,7 @@ export function TopNav() {
           >
             <Settings size={16} strokeWidth={1.6} />
           </Link>
-          <UserMenu userName={userName} />
+          <UserMenu farmName={farmName} />
         </div>
       </div>
 
@@ -183,14 +178,14 @@ export function TopNav() {
                 padding: "6px 12px",
                 color: active ? "var(--ink)" : "var(--ink-2)",
                 fontWeight: active ? 600 : 500,
-                background: active ? "rgba(10, 10, 10, 0.06)" : "transparent",
+                background: active ? "var(--paper-3)" : "transparent",
                 borderRadius: 7,
                 textDecoration: "none",
                 transition: "background 120ms, color 120ms",
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(10, 10, 10, 0.035)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--paper-3)";
                   (e.currentTarget as HTMLElement).style.color = "var(--ink)";
                 }
               }}
@@ -250,8 +245,8 @@ function PregaoStatus() {
         gap: 6,
         padding: "4px 10px",
         borderRadius: 999,
-        background: open ? "rgba(22, 163, 74, 0.10)" : "rgba(10, 10, 10, 0.06)",
-        border: `1px solid ${open ? "rgba(22, 163, 74, 0.20)" : "var(--rule)"}`,
+        background: open ? "var(--gain-bg)" : "var(--paper-3)",
+        border: `1px solid ${open ? "var(--gain-line)" : "var(--rule)"}`,
         fontFamily: "var(--font-mono)",
         fontSize: 10,
         color: open ? "var(--gain-2)" : "var(--ink-2)",
@@ -265,7 +260,7 @@ function PregaoStatus() {
           width: 7,
           height: 7,
           borderRadius: "50%",
-          background: open ? "#16A34A" : "var(--ink-3)",
+          background: open ? "var(--gain)" : "var(--ink-3)",
           display: "inline-block",
         }}
       />
@@ -274,8 +269,8 @@ function PregaoStatus() {
   );
 }
 
-/** Avatar + menu com "Sair" — sempre acessível no TopNav (decisão aprovada). */
-function UserMenu({ userName }: { userName: string }) {
+/** Fivela de latão + menu com "Sair" — sempre acessível no TopNav (decisão aprovada). */
+function UserMenu({ farmName }: { farmName: string }) {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
 
@@ -285,13 +280,6 @@ function UserMenu({ userName }: { userName: string }) {
       setEmail(data.user?.email ?? null);
     });
   }, []);
-
-  const iniciais = userName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0]?.toUpperCase())
-    .join("") || "?";
 
   async function handleSair() {
     const supabase = createClient();
@@ -314,11 +302,7 @@ function UserMenu({ userName }: { userName: string }) {
         }}
         aria-label="Menu do usuário"
       >
-        <Avatar size="sm">
-          <AvatarFallback style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>
-            {iniciais}
-          </AvatarFallback>
-        </Avatar>
+        <FivelaAvatar nomeFazenda={farmName} size={26} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {email && (

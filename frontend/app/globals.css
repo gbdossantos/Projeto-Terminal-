@@ -4,45 +4,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── DM Sans + DM Mono via next/font (layout.tsx) ── */
-/* ── V19 — Vercel sobre o shell. Light unico, sem dark mode. ── */
+/* ── Besley + Instrument Sans + Spline Sans Mono via next/font (layout.tsx) ── */
+/* ── ESTRADA — osso, nogueira, sela, latão. Light único, sem dark mode. ── */
 
 @layer base {
   :root {
-    /* Superficies V19 — off-white quente + cards brancos puros */
-    --paper:           #FAFAF9;                  /* fundo da página */
+    /* Superfícies (osso) */
+    --paper:           #F6F4EE;                  /* fundo — branco quente de osso */
     --paper-2:         #FFFFFF;                  /* cards, surfaces */
-    --paper-3:         rgba(10, 10, 10, 0.04);   /* separadores, hover */
+    --paper-3:         rgba(42, 33, 26, 0.05);   /* separadores, hover */
 
-    /* Tinta V19 — preto puro + cinzas neutros */
-    --ink:             #0A0A0A;                  /* texto principal */
-    --ink-2:           #4B5563;                  /* texto secundário */
-    --ink-3:           #6B7280;                  /* texto terciário, eixos */
+    /* Tinta (nogueira) */
+    --ink:             #2A211A;                  /* texto principal */
+    --ink-2:           #6B5D4E;                  /* texto secundário */
+    /* spec: #98897A — escurecido 1 passo p/ AA 4.5:1 sobre --paper (dado financeiro) */
+    --ink-3:           #7A6B5B;                  /* texto terciário, eixos */
 
-    /* Hairlines V19 */
-    --rule:            rgba(10, 10, 10, 0.08);
-    --rule-strong:     rgba(10, 10, 10, 0.14);
+    /* Hairlines */
+    --rule:            rgba(42, 33, 26, 0.14);
+    --rule-strong:     rgba(42, 33, 26, 0.22);
 
-    /* Acento técnico — indigo (substitui azul-grafite anterior) */
-    --grafite:         #6366F1;
-    --grafite-2:       #4338CA;
-    --grafite-soft:    rgba(99, 102, 241, 0.08);
+    /* Acento: sela/latão (substitui o índigo) */
+    --grafite:         #8A5A33;                  /* sela — links, labels de dado */
+    --grafite-2:       #7C602C;                  /* latão escuro — hover, CTAs texto */
+    --grafite-soft:    rgba(173, 138, 72, 0.10);
 
-    /* Deltas V19 (Vercel/Tailwind green-600, red-600) */
-    --gain:            #16A34A;
-    --gain-2:          #15803D;
-    --loss:            #DC2626;
-    --loss-2:          #B91C1C;
+    /* Semântica: pasto e ferrugem */
+    --gain:            #5F7A46;
+    --gain-2:          #445932;
+    --loss:            #A9432E;
+    --loss-2:          #8A3625;
     --neutral:         var(--ink-2);
 
-    /* Brand — V19 não tem âmbar/terroso; brand vira indigo (acento técnico) */
-    --brand:           var(--grafite);
-    --brand-fg:        var(--paper);
+    /* Brand: latão */
+    --brand:           #AD8A48;
+    --brand-fg:        #2A211A;
 
-    /* Sombras + raios V19 */
-    --shadow-card:     0 1px 2px rgba(10, 10, 10, 0.04), 0 8px 24px -12px rgba(10, 10, 10, 0.06);
-    --shadow-card-hover: 0 1px 2px rgba(10, 10, 10, 0.05), 0 12px 32px -12px rgba(10, 10, 10, 0.08);
-    --radius-card:     12px;
+    /* Tokens Estrada (aditivos) */
+    --nogueira:        #2A211A;                  /* bandas escuras internas */
+    --nogueira-3:      #1C1610;                  /* superfície escura profunda */
+    --latao:           #AD8A48;
+    --latao-hi:        #D3B36E;
+    --latao-lo:        #7C602C;
+    --sela:            #8A5A33;
+    --osso-warm:       #F6F4EE;
+
+    /* Superfícies suaves derivadas (bg/linha com alpha — usar em vez de rgba solto) */
+    --gain-bg:         rgba(95, 122, 70, 0.10);
+    --gain-line:       rgba(95, 122, 70, 0.26);
+    --loss-bg:         rgba(169, 67, 46, 0.10);
+    --loss-line:       rgba(169, 67, 46, 0.26);
+    --sela-bg:         rgba(138, 90, 51, 0.08);
+    --sela-line:       rgba(138, 90, 51, 0.24);
+    --ring-soft:       rgba(173, 138, 72, 0.30);
+    --overlay:         rgba(28, 22, 16, 0.45);
+    --glass:           rgba(246, 244, 238, 0.85); /* header sticky sobre a aurora */
+
+    /* Gráficos (Recharts) */
+    --chart-grid:      rgba(42, 33, 26, 0.08);
+    --band-sigma1:     rgba(173, 138, 72, 0.08); /* ±1σ latão */
+    --band-sigma2:     rgba(173, 138, 72, 0.06); /* ±2σ latão */
+
+    /* Sombra: quente, só em objetos "físicos" */
+    --shadow-card:     0 1px 2px rgba(42, 33, 26, 0.04), 0 12px 28px -18px rgba(42, 33, 26, 0.18);
+    --shadow-card-hover: 0 2px 4px rgba(42, 33, 26, 0.05), 0 24px 48px -24px rgba(42, 33, 26, 0.30);
+    --shadow-pop:      0 8px 24px -8px rgba(42, 33, 26, 0.22); /* popovers, dropdowns */
+    --radius-card:     20px;                     /* cards Apple */
+    --radius-control:  10px;                     /* inputs/selects baixos não viram bexiga */
 
     /* Compat shadcn (mapeia paleta nova nos slots antigos) */
     --background:      var(--paper);
@@ -74,20 +102,20 @@
     --text-secondary:  var(--ink-2);
     --text-tertiary:   var(--ink-3);
     --success:         var(--gain);
-    --success-bg:      rgba(22, 163, 74, 0.10);
-    --warning:         #D97706;
-    --warning-bg:      rgba(217, 119, 6, 0.10);
+    --success-bg:      var(--gain-bg);
+    --warning:         #AD8A48;
+    --warning-bg:      rgba(173, 138, 72, 0.12);
     --danger:          var(--loss);
-    --danger-bg:       rgba(220, 38, 38, 0.10);
+    --danger-bg:       var(--loss-bg);
     --terra:           var(--grafite);
     --terra-bg:        var(--grafite-soft);
     --green:           var(--gain);
     --green-2:         var(--gain-2);
-    --amber:           #D97706;
+    --amber:           var(--latao-lo);
     --red:             var(--loss);
     --red-2:           var(--loss-2);
-    --pasto:           #16A34A;
-    --couro:           var(--grafite-2);
+    --pasto:           #5F7A46;
+    --couro:           var(--sela);
     --chart-1:         var(--ink);
     --chart-2:         var(--grafite);
     --chart-3:         var(--gain);
@@ -120,8 +148,8 @@
   }
 
   /*
-    Aurora V19 — 3 radial gradients sutilíssimos, fixos na viewport.
-    z-index -1 garante que ficam atrás de tudo. Pseudo-element no body
+    Aurora Estrada — calor de fim de tarde, fixo na viewport.
+    z-index -1 garante que fica atrás de tudo. Pseudo-element no body
     pra não alterar nenhuma estrutura React.
   */
   body::before {
@@ -131,9 +159,9 @@
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 65% 50% at 0% 0%, rgba(99, 102, 241, 0.05), transparent 70%),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(244, 114, 182, 0.035), transparent 70%),
-      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(99, 102, 241, 0.045), transparent 70%);
+      radial-gradient(ellipse 65% 50% at 0% 0%,   rgba(173, 138, 72, 0.05), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(138, 90, 51, 0.04),  transparent 70%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(95, 122, 70, 0.04), transparent 70%);
   }
 }
 
@@ -154,6 +182,13 @@
     border: 1px solid var(--rule);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-card);
+  }
+  /* Costura de sela — divisor de seções principais (nunca hairline reta) */
+  .stitch {
+    height: 8px;
+    background: repeating-linear-gradient(60deg,
+      transparent 0 8px, var(--sela) 8px 10.5px, transparent 10.5px 20px);
+    opacity: 0.55;
   }
 }
 

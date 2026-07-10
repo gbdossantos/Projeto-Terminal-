@@ -117,7 +117,7 @@ export function FanChart({ data }: FanChartProps) {
           {/* Zero line */}
           <ReferenceLine
             y={0}
-            stroke="#3A3628"
+            stroke="var(--ink)"
             strokeWidth={1}
             strokeDasharray="2 4"
           />

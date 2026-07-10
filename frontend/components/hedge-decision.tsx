@@ -34,7 +34,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
                       badgeVariants({ variant: "outline" }),
                       "h-auto shrink-0 self-start cursor-default gap-1.5 px-3 py-2 rounded-[10px]"
                     )}
-                    style={{ background: "var(--warning-bg)", borderColor: "rgba(217, 119, 6, 0.27)" }}
+                    style={{ background: "var(--warning-bg)", borderColor: "rgba(173, 138, 72, 0.30)" }}
                   />
                 }
               >
@@ -55,7 +55,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Se travar */}
           <div className="rounded-[10px] p-4"
-            style={{ background: "rgba(22, 163, 74, 0.10)", border: "0.5px solid rgba(22, 163, 74, 0.27)" }}>
+            style={{ background: "var(--gain-bg)", border: "0.5px solid var(--gain-line)" }}>
             <p className="text-[9px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--gain-2)" }}>
               Se travar — {hedge.contrato_selecionado.codigo}
             </p>
@@ -69,13 +69,13 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
             <p className="font-mono text-[17px] font-medium mt-0.5" style={{ color: "var(--gain-2)", fontVariantNumeric: "tabular-nums" }}>
               {fmtBRL(hedge.margem_hedgeada_brl)} de lucro
             </p>
-            <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: "0.5px solid rgba(22, 163, 74, 0.20)" }}>
+            <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: "0.5px solid var(--gain-line)" }}>
               <Row label="Contratos" value={`${hedge.contratos_necessarios} (${hedge.arrobas_hedgeadas.toFixed(0)}@)`} />
               <Row label="Cobertura" value={fmtPct(hedge.cobertura_pct, 0)} color="var(--gain-2)" />
             </div>
             <AvisoInline>{hedge.aviso_rolagem}</AvisoInline>
 
-            <div className="mt-3 pt-3" style={{ borderTop: "0.5px solid rgba(22, 163, 74, 0.20)" }}>
+            <div className="mt-3 pt-3" style={{ borderTop: "0.5px solid var(--gain-line)" }}>
               <Accordion>
                 <AccordionItem value="custo" className="border-none">
                   <AccordionTrigger className="py-0 text-[10px] font-normal hover:no-underline" style={{ color: "var(--ink-3)" }}>
@@ -102,7 +102,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
 
           {/* Se nao travar */}
           <div className="rounded-[10px] p-4"
-            style={{ background: "rgba(220, 38, 38, 0.10)", border: "0.5px solid rgba(220, 38, 38, 0.27)" }}>
+            style={{ background: "var(--loss-bg)", border: "0.5px solid var(--loss-line)" }}>
             <p className="text-[9px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--loss-2)" }}>
               Se não travar
             </p>
@@ -114,7 +114,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
             <div className="mt-2 space-y-0">
               {hedge.cenarios_grafico.filter(c => c.cenario.includes("cai") || c.cenario.includes("sobe")).map((c, i) => (
                 <div key={i} className="flex justify-between py-1.5 text-[11px] font-mono"
-                  style={{ borderBottom: "0.5px solid rgba(220, 38, 38, 0.13)", fontVariantNumeric: "tabular-nums" }}>
+                  style={{ borderBottom: "0.5px solid var(--loss-line)", fontVariantNumeric: "tabular-nums" }}>
                   <span style={{ color: "var(--ink-3)" }}>{c.cenario}</span>
                   <span style={{ color: c.sem_hedge < 0 ? "var(--loss-2)" : c.sem_hedge < hedge.margem_spot_brl * 0.7 ? "var(--loss-2)" : "var(--ink)" }}>
                     {fmtBRL(c.sem_hedge)}
@@ -131,7 +131,7 @@ export function HedgeDecision({ hedge }: { hedge: HedgeResult | null }) {
 
       {/* Banner interpretacao */}
       <div className="rounded-lg px-4 py-3 text-[12px] leading-relaxed"
-        style={{ background: "rgba(22, 163, 74, 0.10)", border: "0.5px solid rgba(22, 163, 74, 0.20)", color: "var(--gain-2)" }}>
+        style={{ background: "var(--gain-bg)", border: "0.5px solid var(--gain-line)", color: "var(--gain-2)" }}>
         {/* TODO: gerar via AI Interpretation Layer (Claude API) */}
         {hedge.justificativa}
       </div>

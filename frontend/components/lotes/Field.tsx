@@ -30,7 +30,7 @@ export function Field({
         }}
         onFocus={(e) => {
           e.target.style.borderColor = "var(--grafite-2)";
-          e.target.style.boxShadow = "0 0 0 2px rgba(99, 102, 241, 0.13)";
+          e.target.style.boxShadow = "0 0 0 2px var(--ring-soft)";
         }}
         onBlur={(e) => {
           e.target.style.borderColor = "var(--rule)";

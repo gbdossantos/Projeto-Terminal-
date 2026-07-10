@@ -291,7 +291,7 @@ export default function ConfiguracoesPage() {
             fontWeight: 500,
             padding: "10px 16px",
             borderRadius: 8,
-            boxShadow: "0 8px 24px -8px rgba(10,10,10,0.30)",
+            boxShadow: "var(--shadow-pop)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -467,7 +467,7 @@ function Avatar({ iniciais, cor }: { iniciais: string; cor: string }) {
         height: 56,
         borderRadius: "50%",
         background: cor,
-        color: "#FFFFFF",
+        color: "var(--paper-2)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -475,7 +475,7 @@ function Avatar({ iniciais, cor }: { iniciais: string; cor: string }) {
         fontSize: 22,
         fontWeight: 500,
         letterSpacing: "-0.02em",
-        boxShadow: "0 2px 8px -2px rgba(10,10,10,0.20)",
+        boxShadow: "var(--shadow-card)",
       }}
     >
       {iniciais || "?"}
@@ -493,8 +493,8 @@ function gerarAvatar(nome: string): { iniciais: string; cor: string } {
   } else if (parts.length >= 2) {
     iniciais = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
-  // Paleta V19 — indigo + variações neutras saturadas
-  const cores = ["#6366F1", "#7C3AED", "#EC4899", "#10B981", "#F59E0B", "#06B6D4"];
+  // Paleta Estrada — sela, latão, pasto, ferrugem, nogueira
+  const cores = ["var(--sela)", "var(--latao-lo)", "var(--gain)", "var(--loss)", "var(--nogueira)", "var(--grafite-2)"];
   const hash = nome.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   return { iniciais: iniciais || "?", cor: cores[hash % cores.length] };
 }

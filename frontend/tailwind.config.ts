@@ -12,8 +12,8 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
-        // font-display = alias para sans (DM Sans cobre tudo, mas mantem classes legadas)
-        display: ["var(--font-sans)", "system-ui", "sans-serif"],
+        // Estrada: display = Besley (Clarendon). Nunca em número tabular.
+        display: ["var(--font-display)", "Georgia", "serif"],
       },
       colors: {
         background: "var(--background)",

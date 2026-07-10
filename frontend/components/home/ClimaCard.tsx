@@ -445,8 +445,8 @@ function Zona2({ data }: { data: ForecastData }) {
               style={{
                 padding: "6px 4px",
                 borderRadius: 6,
-                background: isHoje ? "rgba(99, 102, 241, 0.06)" : "transparent",
-                border: isHoje ? "0.5px solid rgba(99, 102, 241, 0.16)" : "0.5px solid transparent",
+                background: isHoje ? "var(--grafite-soft)" : "transparent",
+                border: isHoje ? "0.5px solid var(--ring-soft)" : "0.5px solid transparent",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -497,7 +497,7 @@ function Zona2({ data }: { data: ForecastData }) {
                     letterSpacing: "0.06em",
                     color: "var(--warning)",
                     padding: "1px 4px",
-                    background: "rgba(217, 119, 6, 0.10)",
+                    background: "var(--warning-bg)",
                     borderRadius: 2,
                     marginTop: 1,
                   }}
@@ -635,7 +635,7 @@ function ChipGeada({ texto }: { texto: string }) {
         fontFamily: "var(--font-mono)",
         fontSize: 10,
         padding: "2px 8px",
-        background: "rgba(217, 119, 6, 0.10)",
+        background: "var(--warning-bg)",
         color: "var(--warning)",
         borderRadius: 999,
         letterSpacing: "0.02em",

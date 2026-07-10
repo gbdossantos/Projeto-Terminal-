@@ -81,7 +81,7 @@ export function BasisRegiao() {
             dataKey="basis"
             position="insideRight"
             formatter={(v) => `R$${v}/@`}
-            style={{ fill: "#fff", fontSize: 10, fontWeight: 500 }}
+            style={{ fill: "var(--paper-2)", fontSize: 10, fontWeight: 500 }}
           />
         </Bar>
       </BarChart>

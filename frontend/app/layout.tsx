@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Mono } from "next/font/google";
+import { Besley, Instrument_Sans, Spline_Sans_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const besley = Besley({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  weight: ["400", "700", "900"],
+  style: ["normal", "italic"],
+});
+
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
 });
 
-const dmMono = DM_Mono({
+const splineSansMono = Spline_Sans_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
@@ -29,7 +37,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}>
+      <body
+        className={`${besley.variable} ${instrumentSans.variable} ${splineSansMono.variable} font-sans antialiased`}
+      >
         {children}
         <Analytics />
       </body>
