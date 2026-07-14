@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ComposedChart,
@@ -9,65 +10,68 @@ import {
   YAxis,
   CartesianGrid,
   ReferenceLine,
-  ReferenceDot,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  MOCK_LOTES,
-  MOCK_MERCADO,
-  gerarLinhaRebanho,
-  fmtBRL,
-  fmtData,
-  type PontoLinha,
-} from "@/lib/mock-data";
+import { gerarLinhaRebanho, fmtNum, type PontoLinha } from "@/lib/linha-rebanho";
+
+// Cone de incerteza: a faixa σ é o protagonista visual — a pergunta que o
+// gráfico responde primeiro é "quanta incerteza tem nessa projeção?".
+// Hierarquia: 1) largura do cone, 2) encontro realizado→projetado ("hoje"),
+// 3) linha esperada no centro, 4) break-even como referência.
 
 interface Props {
+  /** σ anualizado (backend). Null → sem cone (só linha esperada). */
   sigmaAnualizado: number | null;
-  /** Sem markers de lote (estado sem cadastro). */
-  empty?: boolean;
-  /** Histórico real de arroba (CEPEA). Se vazio/null, gráfico cai no mock. */
-  historico?: Array<{ data: string; valor: number }>;
-  /** Spot MS atual em R$/@ (CEPEA SP + basis MS). */
-  spotAtual?: number | null;
-  /** BGI próximo contrato (do /api/futuros). */
-  bgi?: { vencimento: string; preco_ajuste: number } | null;
-  /** Break-even médio (vindo do profile do produtor — /configuracoes). */
-  breakEven?: number;
+  /** Histórico real de arroba (CEPEA). */
+  historico: Array<{ data: string; valor: number }>;
+  /** Spot MS atual em R$/@ (CEPEA SP + basis). */
+  spotAtual: number | null;
+  /** Contrato BGI alvo (mais distante da curva). */
+  bgi: { vencimento: string; preco_ajuste: number } | null;
+  /** Break-even do perfil. Null/0 = não configurado → sem linha, com aviso. */
+  breakEven: number | null;
+  /**
+   * Se o produtor tem lote cadastrado. O gráfico em si é estado de MERCADO
+   * (renderiza sempre); só a camada da operação — linha de break-even e o
+   * aviso de BE não configurado — depende de lote.
+   */
+  temLote: boolean;
 }
 
-// Mapeia ISO yyyy-mm-dd → timestamp (ms) para o eixo X numérico
 function isoToTs(iso: string): number {
   return new Date(iso).getTime();
 }
 
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
 function fmtTickEixoX(ts: number): string {
   const d = new Date(ts);
-  const m = d.getUTCMonth();
-  const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-  return `${meses[m]}/26`;
+  return `${MESES[d.getUTCMonth()]}/${String(d.getUTCFullYear()).slice(2)}`;
 }
 
 export function LinhaDoRebanho({
   sigmaAnualizado,
-  empty = false,
   historico,
   spotAtual,
   bgi,
   breakEven,
+  temLote,
 }: Props) {
-  const BE = breakEven ?? MOCK_MERCADO.break_even;
+  // Camada da operação: BE só com lote. BE=0 significa "não configurado" —
+  // nunca desenhar linha em R$ 0.
+  const be = temLote && breakEven != null && breakEven > 0 ? breakEven : null;
+
   const pontos = useMemo(
     () => gerarLinhaRebanho({ sigmaAnualizado, historico, spotAtual, bgi }),
     [sigmaAnualizado, historico, spotAtual, bgi],
   );
 
-  // Cursor: padrao em "hoje" (data real). Hover muda; mouseleave volta.
+  // Cursor: padrão em "hoje". Hover muda; mouseleave volta.
   const hojeReal = new Date();
   hojeReal.setHours(0, 0, 0, 0);
   const [cursorTs, setCursorTs] = useState<number>(hojeReal.getTime());
 
-  // Converte pontos para shape do Recharts (ts numerico no eixo X)
   const data = useMemo(
     () => pontos.map((p: PontoLinha) => ({
       ts: isoToTs(p.data),
@@ -82,7 +86,6 @@ export function LinhaDoRebanho({
   );
 
   const cursorPonto = useMemo(() => {
-    // Encontra ponto mais proximo do cursorTs
     let best = data[0];
     let bestDelta = Infinity;
     for (const p of data) {
@@ -95,24 +98,34 @@ export function LinhaDoRebanho({
     return best;
   }, [data, cursorTs]);
 
-  const cursorValor = cursorPonto?.realizado ?? cursorPonto?.esperado ?? null;
+  // Label do cursor: valor + range ±1σ quando o ponto está dentro do cone
+  const cursorLabel = useMemo(() => {
+    if (!cursorPonto) return "";
+    const valor = cursorPonto.realizado ?? cursorPonto.esperado;
+    if (valor == null) return "";
+    const s1 = cursorPonto.sigma1;
+    if (s1 && Math.abs(s1[1] - s1[0]) > 0.5) {
+      return `R$ ${fmtNum(valor)}/@ · ±1σ ${fmtNum(s1[0], 0)}–${fmtNum(s1[1], 0)}`;
+    }
+    return `R$ ${fmtNum(valor)}/@`;
+  }, [cursorPonto]);
 
-  // Domínio Y dinâmico baseado nos dados + break-even + padding
+  // Domínio Y dinâmico: enquadra realizado + cone + BE com ~10% de padding.
   const yDomain = useMemo<[number, number]>(() => {
-    const vals: number[] = [BE];
+    const vals: number[] = [];
+    if (be != null) vals.push(be);
     for (const p of pontos) {
       if (p.realizado != null) vals.push(p.realizado);
       if (p.esperado != null) vals.push(p.esperado);
       if (p.sigma2_low != null) vals.push(p.sigma2_low);
       if (p.sigma2_high != null) vals.push(p.sigma2_high);
     }
-    if (!vals.length) return [280, 380];
+    if (!vals.length) return [0, 1];
     const min = Math.min(...vals);
     const max = Math.max(...vals);
-    const pad = Math.max(8, (max - min) * 0.08);
-    // Arredonda pra múltiplos de 10 pra ticks limpos
+    const pad = Math.max(8, (max - min) * 0.1);
     return [Math.floor((min - pad) / 10) * 10, Math.ceil((max + pad) / 10) * 10];
-  }, [pontos]);
+  }, [pontos, be]);
 
   const yTicks = useMemo(() => {
     const [lo, hi] = yDomain;
@@ -122,6 +135,42 @@ export function LinhaDoRebanho({
     for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
     return ticks;
   }, [yDomain]);
+
+  // Ticks mensais em ordem cronológica (1 por mês, ano correto no label)
+  const xTicks = useMemo(() => {
+    if (!data.length) return [];
+    const ts0 = data[0].ts;
+    const tsN = data[data.length - 1].ts;
+    const ticks: number[] = [];
+    const cur = new Date(ts0);
+    cur.setUTCDate(1);
+    while (cur.getTime() <= tsN) {
+      ticks.push(cur.getTime());
+      cur.setUTCMonth(cur.getUTCMonth() + 1);
+    }
+    return ticks;
+  }, [data]);
+
+  // Sem dados reais suficientes: estado indisponível honesto (nunca mock).
+  if (data.length < 2) {
+    return (
+      <div
+        style={{
+          height: 360,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "0.5px dashed var(--rule-strong)",
+          borderRadius: 8,
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+          color: "var(--ink-3)",
+        }}
+      >
+        cotações indisponíveis no momento
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: "100%" }}>
@@ -148,26 +197,12 @@ export function LinhaDoRebanho({
             type="number"
             domain={["dataMin", "dataMax"]}
             scale="time"
-            // 1 tick por mês — evita repetir "mai/26 mai/26 mai/26..." quando
-            // pontos da série caem dentro do mesmo mês.
-            ticks={(() => {
-              if (!data.length) return [];
-              const ts0 = data[0].ts;
-              const tsN = data[data.length - 1].ts;
-              const ticks: number[] = [];
-              const cur = new Date(ts0);
-              cur.setUTCDate(1); // primeiro dia do mês
-              while (cur.getTime() <= tsN) {
-                ticks.push(cur.getTime());
-                cur.setUTCMonth(cur.getUTCMonth() + 1);
-              }
-              return ticks;
-            })()}
+            ticks={xTicks}
             tickFormatter={fmtTickEixoX}
             tick={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              fill: "var(--grafite)",
+              fill: "var(--ink-3)",
             }}
             axisLine={false}
             tickLine={false}
@@ -178,7 +213,7 @@ export function LinhaDoRebanho({
             tick={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              fill: "var(--grafite)",
+              fill: "var(--ink-3)",
             }}
             axisLine={false}
             tickLine={false}
@@ -187,56 +222,55 @@ export function LinhaDoRebanho({
             width={48}
           />
 
-          {/* Banda ±2σ (mais clara, atrás) */}
-          {sigmaAnualizado != null && (
-            <Area
-              dataKey="sigma2"
-              fill="var(--rule)"
-              fillOpacity={0.45}
-              stroke="none"
-              isAnimationActive={false}
-              connectNulls={false}
-            />
-          )}
-          {/* Banda ±1σ (mais escura, na frente) */}
-          {sigmaAnualizado != null && (
-            <Area
-              dataKey="sigma1"
-              fill="var(--rule-strong)"
-              fillOpacity={0.55}
-              stroke="none"
-              isAnimationActive={false}
-              connectNulls={false}
-            />
-          )}
-
-          {/* Break-even horizontal (tracejado) — label inline na esquerda pra não cortar */}
-          <ReferenceLine
-            y={BE}
-            stroke="var(--loss)"
-            strokeWidth={1}
-            strokeDasharray="3 4"
-            ifOverflow="extendDomain"
-            label={{
-              value: `BE  R$ ${fmtBRL(BE, 0)}`,
-              position: "insideBottomLeft",
-              fontSize: 10,
-              fontFamily: "var(--font-mono)",
-              fill: "var(--loss)",
-              offset: 8,
-            }}
+          {/* CONE DE INCERTEZA — protagonista. Banda ±2σ (mais transparente, atrás) */}
+          <Area
+            dataKey="sigma2"
+            activeDot={false}
+            fill="var(--grafite)"
+            fillOpacity={0.09}
+            stroke="none"
+            isAnimationActive={false}
+            connectNulls={false}
+          />
+          {/* Banda ±1σ (mais opaca, na frente) — mesma família índigo */}
+          <Area
+            dataKey="sigma1"
+            activeDot={false}
+            fill="var(--grafite)"
+            fillOpacity={0.18}
+            stroke="none"
+            isAnimationActive={false}
+            connectNulls={false}
           />
 
-          {/* Cursor vertical — label dentro do grafico pra nao invadir o titulo acima */}
+          {/* Break-even — referência discreta, só quando configurado */}
+          {be != null && (
+            <ReferenceLine
+              y={be}
+              stroke="var(--loss)"
+              strokeOpacity={0.45}
+              strokeWidth={1}
+              strokeDasharray="3 4"
+              ifOverflow="extendDomain"
+              label={{
+                value: `break-even R$ ${fmtNum(be)}`,
+                position: "insideBottomLeft",
+                fontSize: 10,
+                fontFamily: "var(--font-mono)",
+                fill: "var(--ink-3)",
+                offset: 8,
+              }}
+            />
+          )}
+
+          {/* Cursor vertical com valor + range ±1σ */}
           <ReferenceLine
             x={cursorTs}
             stroke="var(--ink)"
             strokeWidth={1}
             ifOverflow="extendDomain"
             label={{
-              value: cursorValor != null
-                ? `R$ ${fmtBRL(cursorValor)}/@`
-                : "",
+              value: cursorLabel,
               position: "insideTop",
               fontSize: 10,
               fontFamily: "var(--font-mono)",
@@ -245,7 +279,7 @@ export function LinhaDoRebanho({
             }}
           />
 
-          {/* Linha "hoje" — vertical fina (data real) */}
+          {/* Marca "hoje" — separa realizado de projetado */}
           <ReferenceLine
             x={hojeReal.getTime()}
             stroke="var(--ink)"
@@ -260,30 +294,10 @@ export function LinhaDoRebanho({
             }}
           />
 
-          {/* Marcadores de saída por lote (escondidos em estado vazio).
-              Apenas círculos — identificação fica na legenda abaixo do gráfico
-              pra evitar sobreposição de labels e labels órfãos no canto. */}
-          {!empty && MOCK_LOTES.map((lote) => {
-            const ts = isoToTs(lote.data_saida);
-            const ponto = data.find((d) => d.ts === ts);
-            const y = ponto?.esperado ?? MOCK_MERCADO.bgi_q26_ago;
-            return (
-              <ReferenceDot
-                key={lote.id}
-                x={ts}
-                y={y}
-                r={4}
-                fill="var(--paper)"
-                stroke="var(--ink)"
-                strokeWidth={1.5}
-                ifOverflow="extendDomain"
-              />
-            );
-          })}
-
-          {/* Linha "realizado" (sólida, passado) */}
+          {/* Realizado (passado) — sólida, fato consumado */}
           <Line
             dataKey="realizado"
+            activeDot={false}
             stroke="var(--ink)"
             strokeWidth={1.5}
             dot={false}
@@ -291,25 +305,23 @@ export function LinhaDoRebanho({
             connectNulls={false}
           />
 
-          {/* Linha "esperado" (tracejada, projetado) */}
+          {/* Esperado (curva BGI) — mediana do cone, peso menor que a faixa */}
           <Line
             dataKey="esperado"
+            activeDot={false}
             stroke="var(--grafite)"
-            strokeWidth={1.5}
-            strokeDasharray="5 4"
+            strokeWidth={1}
+            strokeDasharray="4 4"
             dot={false}
             isAnimationActive={false}
             connectNulls={false}
           />
 
-          <Tooltip
-            cursor={false}
-            content={() => null}
-          />
+          <Tooltip cursor={false} content={() => null} />
         </ComposedChart>
       </ResponsiveContainer>
 
-      {/* Legenda manual */}
+      {/* Legenda — nota de rodapé */}
       <div
         className="flex items-center"
         style={{
@@ -328,51 +340,25 @@ export function LinhaDoRebanho({
         <LegendaItem swatch={<span style={{ display: "inline-block", width: 16, borderTop: "1.5px dashed var(--grafite)" }} />}>
           esperado · curva BGI
         </LegendaItem>
-        <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--rule-strong)", opacity: 0.55 }} />}>
-          ±1σ · provável
-        </LegendaItem>
-        <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--rule)", opacity: 0.45 }} />}>
-          ±2σ · 95%
-        </LegendaItem>
+        {sigmaAnualizado != null && (
+          <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--grafite)", opacity: 0.18 }} />}>
+            ±1σ · provável
+          </LegendaItem>
+        )}
+        {sigmaAnualizado != null && (
+          <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--grafite)", opacity: 0.09 }} />}>
+            ±2σ · 95%
+          </LegendaItem>
+        )}
+        {temLote && be == null && (
+          <span>
+            break-even não configurado ·{" "}
+            <Link href="/configuracoes" style={{ color: "var(--grafite)", textDecoration: "none" }}>
+              configure no perfil →
+            </Link>
+          </span>
+        )}
       </div>
-
-      {/* Legenda dos lotes (saídas) — referência aos círculos no gráfico */}
-      {!empty && MOCK_LOTES.length > 0 && (
-        <div
-          className="flex items-center"
-          style={{
-            gap: 18,
-            marginTop: 8,
-            paddingLeft: 56,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--ink-2)",
-            flexWrap: "wrap",
-          }}
-        >
-          <span style={{ color: "var(--ink-3)" }}>saídas:</span>
-          {[...MOCK_LOTES]
-            .sort((a, b) => isoToTs(a.data_saida) - isoToTs(b.data_saida))
-            .map((lote) => (
-              <span key={lote.id} className="flex items-center" style={{ gap: 6 }}>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "var(--paper)",
-                    border: "1.5px solid var(--ink)",
-                  }}
-                />
-                <span style={{ color: "var(--ink)" }}>{lote.nome}</span>
-                <span style={{ color: "var(--ink-3)" }}>
-                  {fmtData(lote.data_saida)} · {lote.num_animais.toLocaleString("pt-BR")} cab
-                </span>
-              </span>
-            ))}
-        </div>
-      )}
     </div>
   );
 }

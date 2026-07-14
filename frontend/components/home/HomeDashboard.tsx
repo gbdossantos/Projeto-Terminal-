@@ -21,30 +21,23 @@ import { FaixaCotacoes } from "./FaixaCotacoes";
 import { ClimaCard } from "./ClimaCard";
 import { HeroPreco } from "./HeroPreco";
 import { TopNav } from "@/components/layout/TopNav";
-import {
-  MOCK_LOTES,
-  MOCK_TOTAL_ARROBAS,
-  MOCK_TOTAL_CABECAS,
-  fmtBRL,
-} from "@/lib/mock-data";
+import { fmtNum as fmtBRL } from "@/lib/linha-rebanho";
+import { listLotes, type LoteSalvo } from "@/lib/lotes-storage";
 import { useProfile } from "@/lib/use-profile";
 
-const SIGMA_FALLBACK = 0.18; // ~18% anualizado — típico boi gordo, fallback se endpoint falhar
+// Basis e break-even vem de useProfile() (editaveis em /configuracoes).
+// BREAK_EVEN = 0 significa "não configurado" — vira null e nenhuma tela
+// trata 0 como break-even real.
 
-// Basis e break-even agora vem de useProfile() (editaveis em /configuracoes).
-// Defaults: MS basis -5, break-even R$ 286,50 — definidos em lib/profile.ts.
-
-interface Props {
-  /** Sem lote cadastrado: gráfico só mercado, cards 'R$ —', microcopy honesta. */
-  empty?: boolean;
-}
-
-export function HomeDashboard({ empty = false }: Props = {}) {
+export function HomeDashboard() {
   const { profile } = useProfile();
   const BASIS_MS = profile.basis_valor;
-  const BREAK_EVEN = profile.break_even_medio;
+  const BREAK_EVEN = profile.break_even_medio > 0 ? profile.break_even_medio : null;
 
+  // σ vem do backend (curva BGI real) — sem fallback inventado no frontend.
   const [sigma, setSigma] = useState<number | null>(null);
+  // null = carregando; [] = usuário sem lote (estado vazio honesto)
+  const [lotes, setLotes] = useState<LoteSalvo[] | null>(null);
   const [cotacoes, setCotacoes] = useState<CotacaoMercado | null>(null);
   const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
   const [histArroba, setHistArroba] = useState<HistoricoDolarEntry[]>([]);
@@ -58,8 +51,9 @@ export function HomeDashboard({ empty = false }: Props = {}) {
 
   useEffect(() => {
     fetchVolatilidadeArroba(90)
-      .then((v) => setSigma(v.sigma_anualizado ?? SIGMA_FALLBACK))
-      .catch(() => setSigma(SIGMA_FALLBACK));
+      .then((v) => setSigma(v.sigma_anualizado))
+      .catch(() => setSigma(null));
+    listLotes().then(setLotes).catch(() => setLotes([]));
     fetchCotacoes().then(setCotacoes).catch(() => {});
     fetchFuturos().then(setFuturos).catch(() => {});
     fetchHistoricoArroba().then((h) => Array.isArray(h) && setHistArroba(h)).catch(() => {});
@@ -106,11 +100,36 @@ export function HomeDashboard({ empty = false }: Props = {}) {
     return validos[0] ?? null;
   }, [futuros]);
 
-  // Cálculos do rebanho (ainda dependem de cotação real)
+  // ── Rebanho real (lotes salvos no Supabase) ──
+  const empty = lotes != null && lotes.length === 0;
+  const numLotes = lotes?.length ?? 0;
+
+  // Arrobas projetadas: só terminação tem arroba de saída calculada.
+  const totalArrobas = useMemo(
+    () =>
+      (lotes ?? []).reduce(
+        (acc, l) => acc + (l.fase === "terminacao" ? l.resultadoCache.resultado.arrobas_totais : 0),
+        0,
+      ),
+    [lotes],
+  );
+  const totalCabecas = useMemo(
+    () =>
+      (lotes ?? []).reduce(
+        (acc, l) => acc + (l.fase === "cria" ? l.inputs.num_matrizes : l.inputs.num_animais),
+        0,
+      ),
+    [lotes],
+  );
+
+  // Cálculos do rebanho (dependem de cotação real + lotes reais)
   const spotEfetivo = spotMS; // null quando API indisponível
-  const rebanhoExposto = spotEfetivo != null ? MOCK_TOTAL_ARROBAS * spotEfetivo : null;
-  const margemSobreBE = spotEfetivo != null ? spotEfetivo - BREAK_EVEN : null;
-  const margemTotal = margemSobreBE != null ? margemSobreBE * MOCK_TOTAL_ARROBAS : null;
+  const rebanhoExposto =
+    spotEfetivo != null && totalArrobas > 0 ? totalArrobas * spotEfetivo : null;
+  const margemSobreBE =
+    spotEfetivo != null && BREAK_EVEN != null ? spotEfetivo - BREAK_EVEN : null;
+  const margemTotal =
+    margemSobreBE != null && totalArrobas > 0 ? margemSobreBE * totalArrobas : null;
 
   return (
     <div style={{ background: "var(--paper)", minHeight: "100vh" }}>
@@ -151,20 +170,22 @@ export function HomeDashboard({ empty = false }: Props = {}) {
                 }}
               >
                 {empty
-                  ? "Você ainda não tem lote cadastrado."
+                  ? "Do que aconteceu hoje até onde o mercado precifica."
                   : "Do que aconteceu hoje até a saída do último lote."}
               </h1>
             </div>
             {/* Cotações agora vivem na FaixaCotacoes (abaixo do TopNav) */}
           </div>
 
+          {/* O gráfico é ESTADO DE MERCADO — renderiza sempre, com ou sem
+              lote. Só a camada da operação (break-even) depende de lote. */}
           <LinhaDoRebanho
             sigmaAnualizado={sigma}
-            empty={empty}
             historico={histArroba}
             spotAtual={spotMS}
             bgi={bgiAlvo}
             breakEven={BREAK_EVEN}
+            temLote={numLotes > 0}
           />
         </section>
 
@@ -219,14 +240,18 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             }
             sub={
               empty ? (
-                <span>cadastre um lote para projetar sua exposição</span>
+                <span>
+                  <Link href="/lotes" style={{ color: "var(--grafite)", textDecoration: "none" }}>
+                    cadastre um lote pra ver o impacto na sua operação →
+                  </Link>
+                </span>
               ) : rebanhoExposto == null ? (
                 <span style={{ color: "var(--ink-3)" }}>cotação indisponível</span>
               ) : (
                 <span>
-                  <span className="mono-num">{MOCK_TOTAL_ARROBAS.toLocaleString("pt-BR")}</span> @ em{" "}
-                  <span className="mono-num">{MOCK_LOTES.length}</span> lotes ·{" "}
-                  <span className="mono-num">{MOCK_TOTAL_CABECAS.toLocaleString("pt-BR")}</span> cab
+                  <span className="mono-num">{Math.round(totalArrobas).toLocaleString("pt-BR")}</span> @ em{" "}
+                  <span className="mono-num">{numLotes}</span> {numLotes === 1 ? "lote" : "lotes"} ·{" "}
+                  <span className="mono-num">{totalCabecas.toLocaleString("pt-BR")}</span> cab
                 </span>
               )
             }
@@ -252,7 +277,18 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             }
             sub={
               empty ? (
-                <span>break-even depende dos seus custos cadastrados</span>
+                <span>
+                  <Link href="/lotes" style={{ color: "var(--grafite)", textDecoration: "none" }}>
+                    cadastre um lote pra ver o impacto na sua operação →
+                  </Link>
+                </span>
+              ) : BREAK_EVEN == null ? (
+                <span style={{ color: "var(--ink-3)" }}>
+                  configure o break-even no{" "}
+                  <Link href="/configuracoes" style={{ color: "var(--grafite)", textDecoration: "none" }}>
+                    perfil →
+                  </Link>
+                </span>
               ) : margemTotal == null ? (
                 <span style={{ color: "var(--ink-3)" }}>cotação indisponível</span>
               ) : (
@@ -276,18 +312,15 @@ export function HomeDashboard({ empty = false }: Props = {}) {
             gap: 24,
           }}
         >
-          {empty ? (
-            <EventosDiaVazio />
-          ) : (
-            <EventosDia
-              noticias={noticias}
-              ultimaAtualizacao={noticiasUltimaAtualizacao}
-              deltaDia={noticiasDeltaDia}
-              dolarPtax={cotacoes?.dolar_ptax ?? null}
-              spotMS={spotMS}
-            />
-          )}
-          <CaminhosCard empty={empty} />
+          {/* Notícias são estado de mercado — aparecem com ou sem lote */}
+          <EventosDia
+            noticias={noticias}
+            ultimaAtualizacao={noticiasUltimaAtualizacao}
+            deltaDia={noticiasDeltaDia}
+            dolarPtax={cotacoes?.dolar_ptax ?? null}
+            spotMS={spotMS}
+          />
+          <CaminhosCard empty={empty} numLotes={numLotes} totalCabecas={totalCabecas} />
         </section>
 
         <RodapePlaceholder />
@@ -789,7 +822,15 @@ function formatarHaQuanto(iso: string): string {
 }
 
 // ─── Caminhos (4 quadrantes) ─────────────────────────────────────
-function CaminhosCard({ empty }: { empty?: boolean }) {
+function CaminhosCard({
+  empty,
+  numLotes,
+  totalCabecas,
+}: {
+  empty?: boolean;
+  numLotes: number;
+  totalCabecas: number;
+}) {
   return (
     <div>
       <div
@@ -818,7 +859,7 @@ function CaminhosCard({ empty }: { empty?: boolean }) {
           subtitulo={
             empty
               ? "0 cadastrados"
-              : `${MOCK_LOTES.length} ativos · ${MOCK_TOTAL_CABECAS.toLocaleString("pt-BR")} cab`
+              : `${numLotes} ${numLotes === 1 ? "ativo" : "ativos"} · ${totalCabecas.toLocaleString("pt-BR")} cab`
           }
           cta="VER LOTES →"
           href="/lotes"
@@ -835,42 +876,6 @@ function CaminhosCard({ empty }: { empty?: boolean }) {
           cta="ABRIR MERCADO →"
           href="/mercado"
         />
-      </div>
-    </div>
-  );
-}
-
-// ─── Eventos vazio ───────────────────────────────────────────────
-function EventosDiaVazio() {
-  return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-        <span
-          className="uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.06em",
-            color: "var(--ink-3)",
-          }}
-        >
-          O QUE MOVEU A LINHA HOJE
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-3)" }}>—</span>
-      </div>
-      <div
-        style={{
-          border: "0.5px dashed var(--rule-strong)",
-          borderRadius: 6,
-          padding: "14px 16px",
-          fontFamily: "var(--font-sans)",
-          fontSize: 12,
-          color: "var(--ink-2)",
-          lineHeight: 1.55,
-        }}
-      >
-        Sem lote cadastrado, mostramos só os números do mercado.<br />
-        Quando você cadastrar, cada evento aqui traz o impacto em R$ sobre os @ seus.
       </div>
     </div>
   );

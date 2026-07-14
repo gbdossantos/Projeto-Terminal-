@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { fmtBRL } from "@/lib/mock-data";
+import { fmtNum as fmtBRL } from "@/lib/linha-rebanho";
 
 /**
  * Hero keynote da Home — o palco do preço.
