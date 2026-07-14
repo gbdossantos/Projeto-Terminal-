@@ -25,6 +25,13 @@ export default function MercadoPage() {
   const [histMilho, setHistMilho] = useState<HistoricoDolarEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // resolveCotacao lê sessionStorage, que não existe no SSR: se o cache da
+  // sessão tiver valores, o primeiro render do cliente divergiria do HTML do
+  // servidor (hydration mismatch). Antes do mount, trata tudo como
+  // indisponível — igual ao servidor; o cache entra no render pós-mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     Promise.all([
       fetchCotacoes().catch(() => null),
@@ -43,10 +50,15 @@ export default function MercadoPage() {
     });
   }, []);
 
-  const arrobaStatus = resolveCotacao("arroba_boi_gordo", cotacoes);
-  const dolarStatus = resolveCotacao("dolar_ptax", cotacoes);
-  const milhoStatus = resolveCotacao("milho_esalq", cotacoes);
-  const cdiStatus = resolveCotacao("cdi_anual", cotacoes);
+  const resolve = (field: Parameters<typeof resolveCotacao>[0]) =>
+    mounted
+      ? resolveCotacao(field, cotacoes)
+      : { value: null, state: "unavailable" as const, lastUpdateIso: null };
+
+  const arrobaStatus = resolve("arroba_boi_gordo");
+  const dolarStatus = resolve("dolar_ptax");
+  const milhoStatus = resolve("milho_esalq");
+  const cdiStatus = resolve("cdi_anual");
 
   const spotPrice = arrobaStatus.value;
   const contratos = futuros?.contratos ?? [];
