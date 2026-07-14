@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MetricCard } from "./MetricCard";
 import { CotacaoStatusBadge } from "@/components/cotacoes/cotacao-status-badge";
 import {
@@ -23,15 +23,27 @@ interface Props {
 }
 
 export function PainelMercado({ cotacoes, breakEven }: Props) {
+  // resolveCotacao lê sessionStorage, que não existe no SSR: se o cache da
+  // sessão tiver valores, o primeiro render do cliente divergiria do HTML do
+  // servidor (hydration mismatch). Antes do mount, trata tudo como
+  // indisponível — igual ao servidor; o cache entra no render pós-mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // Persiste sempre que recebe um snapshot — campos nao-nulos viram cache.
   useEffect(() => {
     persistCotacoes(cotacoes);
   }, [cotacoes]);
 
-  const arroba = resolveCotacao("arroba_boi_gordo", cotacoes);
-  const dolar = resolveCotacao("dolar_ptax", cotacoes);
-  const milho = resolveCotacao("milho_esalq", cotacoes);
-  const cdi = resolveCotacao("cdi_anual", cotacoes);
+  const resolve = (field: Parameters<typeof resolveCotacao>[0]) =>
+    mounted
+      ? resolveCotacao(field, cotacoes)
+      : { value: null, state: "unavailable" as const, lastUpdateIso: null };
+
+  const arroba = resolve("arroba_boi_gordo");
+  const dolar = resolve("dolar_ptax");
+  const milho = resolve("milho_esalq");
+  const cdi = resolve("cdi_anual");
 
   return (
     <div>
