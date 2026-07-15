@@ -69,10 +69,13 @@ export function HeroPreco({
         }}
       />
       {/*
-        Dissolve da foto no papel — elimina a linha dura de corte.
-        Rampa côncava (quase transparente até a metade) pra não apagar
-        o gado/cerca da parte inferior. Cor-alvo #F4F1ED = --paper com a
-        faixa quente que abre o conteúdo logo abaixo (HomeDashboard).
+        Dissolve da foto no papel — mata a linha de corte sem comer o
+        gado/cerca. Altura proporcional (12% do hero, escala com o crop
+        panorâmico de telas largas, onde o rebanho cola na base) e curva
+        agressiva: quase transparente até 2/3 da faixa, fecha rápido só
+        nos últimos pixels. Calibrado contra a foto sem fade — a lavagem
+        residual à direita é poeira da própria imagem. Cor-alvo #F4F1ED =
+        --paper com a faixa quente que abre o conteúdo (HomeDashboard).
       */}
       <div
         aria-hidden
@@ -81,10 +84,10 @@ export function HeroPreco({
           left: 0,
           right: 0,
           bottom: 0,
-          height: "clamp(72px, 10vw, 130px)",
+          height: "12%",
           pointerEvents: "none",
           background:
-            "linear-gradient(180deg, rgba(244, 241, 237, 0) 0%, rgba(244, 241, 237, 0.22) 45%, rgba(244, 241, 237, 0.68) 78%, #F4F1ED 100%)",
+            "linear-gradient(180deg, rgba(244, 241, 237, 0) 0%, rgba(244, 241, 237, 0.04) 65%, rgba(244, 241, 237, 0.28) 88%, #F4F1ED 100%)",
         }}
       />
       <div
