@@ -139,6 +139,17 @@ export function HomeDashboard() {
       {/* Hero keynote — o palco do preço (estrutura portada do #14, pele V19) */}
       <HeroPreco spot={spotMS} deltaDia={deltaDia} />
 
+      {/*
+        Faixa de transição hero→conteúdo: a foto "sangra" calor pra dentro
+        da página em vez de cortar. Começa na cor em que o fade do hero
+        termina (--paper + 4.5% do taupe base) e dissipa até --paper puro.
+      */}
+      <div
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(107, 93, 78, 0.045) 0%, rgba(107, 93, 78, 0) 420px)",
+        }}
+      >
       <main style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 32px 60px" }}>
         {/* Linha do rebanho — seção principal */}
         <section style={{ marginTop: 0 }}>
@@ -325,6 +336,7 @@ export function HomeDashboard() {
 
         <RodapePlaceholder />
       </main>
+      </div>
     </div>
   );
 }

@@ -68,6 +68,25 @@ export function HeroPreco({
             "linear-gradient(180deg, rgba(10, 10, 10, 0.82) 0%, rgba(10, 10, 10, 0.68) 42%, rgba(10, 10, 10, 0.48) 62%, rgba(10, 10, 10, 0.2) 100%)",
         }}
       />
+      {/*
+        Dissolve da foto no papel — elimina a linha dura de corte.
+        Rampa côncava (quase transparente até a metade) pra não apagar
+        o gado/cerca da parte inferior. Cor-alvo #F4F1ED = --paper com a
+        faixa quente que abre o conteúdo logo abaixo (HomeDashboard).
+      */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: "clamp(72px, 10vw, 130px)",
+          pointerEvents: "none",
+          background:
+            "linear-gradient(180deg, rgba(244, 241, 237, 0) 0%, rgba(244, 241, 237, 0.22) 45%, rgba(244, 241, 237, 0.68) 78%, #F4F1ED 100%)",
+        }}
+      />
       <div
         style={{
           position: "relative",
