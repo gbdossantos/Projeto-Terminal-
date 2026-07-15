@@ -9,19 +9,23 @@
 
 @layer base {
   :root {
-    /* Superficies V19 — off-white quente + cards brancos puros */
-    --paper:           #FAFAF9;                  /* fundo da página */
-    --paper-2:         #FFFFFF;                  /* cards, surfaces */
-    --paper-3:         rgba(10, 10, 10, 0.04);   /* separadores, hover */
+    /*
+      Superficies V19 aquecidas — terroso é MATERIAL DE FUNDO, nunca
+      linguagem: indigo segue como acento, verde/vermelho como semântica.
+      Base terrosa dos translúcidos: #6B5D4E (taupe) em baixa opacidade.
+    */
+    --paper:           #FAF8F4;                  /* fundo da página — osso quente */
+    --paper-2:         #FFFFFF;                  /* cards, surfaces — branco mantém a camada */
+    --paper-3:         rgba(107, 93, 78, 0.06);  /* separadores, hover — toque morno */
 
     /* Tinta V19 — preto puro + cinzas neutros */
     --ink:             #0A0A0A;                  /* texto principal */
     --ink-2:           #4B5563;                  /* texto secundário */
-    --ink-3:           #6B7280;                  /* texto terciário, eixos */
+    --ink-3:           #6B7280;                  /* texto terciário, eixos — 4.56:1 sobre --paper (AA) */
 
-    /* Hairlines V19 */
-    --rule:            rgba(10, 10, 10, 0.08);
-    --rule-strong:     rgba(10, 10, 10, 0.14);
+    /* Hairlines V19 — marrom translúcido no lugar do cinza neutro */
+    --rule:            rgba(107, 93, 78, 0.12);
+    --rule-strong:     rgba(107, 93, 78, 0.22);
 
     /* Acento técnico — indigo (substitui azul-grafite anterior) */
     --grafite:         #6366F1;

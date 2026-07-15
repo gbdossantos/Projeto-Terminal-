@@ -68,6 +68,28 @@ export function HeroPreco({
             "linear-gradient(180deg, rgba(10, 10, 10, 0.82) 0%, rgba(10, 10, 10, 0.68) 42%, rgba(10, 10, 10, 0.48) 62%, rgba(10, 10, 10, 0.2) 100%)",
         }}
       />
+      {/*
+        Dissolve da foto no papel — mata a linha de corte sem comer o
+        gado/cerca. Altura proporcional (12% do hero, escala com o crop
+        panorâmico de telas largas, onde o rebanho cola na base) e curva
+        agressiva: quase transparente até 2/3 da faixa, fecha rápido só
+        nos últimos pixels. Calibrado contra a foto sem fade — a lavagem
+        residual à direita é poeira da própria imagem. Cor-alvo #F4F1ED =
+        --paper com a faixa quente que abre o conteúdo (HomeDashboard).
+      */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: "12%",
+          pointerEvents: "none",
+          background:
+            "linear-gradient(180deg, rgba(244, 241, 237, 0) 0%, rgba(244, 241, 237, 0.04) 65%, rgba(244, 241, 237, 0.28) 88%, #F4F1ED 100%)",
+        }}
+      />
       <div
         style={{
           position: "relative",
