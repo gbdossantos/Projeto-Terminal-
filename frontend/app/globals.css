@@ -246,6 +246,92 @@ input[type="number"].sim-input {
   -moz-appearance: textfield;
 }
 
+/* ── Cards de cotação sobrepostos ao hero (Home) ── */
+/* Faixa horizontal de 5 cards de vidro fosco (glassmorphism): a foto
+   atravessa os cards via backdrop-blur. O wrap sangra ~metade da altura do
+   card sobre a base da foto (margin-top negativo), POR CIMA do gradiente de
+   transição — z-index garante isso sem forçá-lo a subir. Alinhado à coluna
+   de conteúdo (max-width 1180) pra o gado/cerca respirarem acima da faixa,
+   nos gaps e nas margens laterais. */
+.cards-cotacao-wrap {
+  position: relative;
+  z-index: 2;
+  max-width: 1180px;
+  margin: -80px auto 18px;
+  padding: 0 32px;
+}
+.cards-cotacao {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.cards-cotacao-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 104px;
+  padding: 14px 16px;
+  /* Vidro fosco: o blur é o que garante legibilidade sem opacidade alta.
+     Textos pequenos dentro do card usam os tons -2 (ink-2/grafite-2/gain-2)
+     pra fechar AA sobre o composite translúcido. */
+  background: rgba(255, 255, 255, 0.66);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-card);
+  box-shadow:
+    0 1px 2px rgba(10, 10, 10, 0.06),
+    0 16px 40px -16px rgba(10, 10, 10, 0.28);
+}
+/* Sem suporte a backdrop-filter → sobe a opacidade pra não perder o número */
+@supports not (backdrop-filter: blur(1px)) {
+  .cards-cotacao-card {
+    background: rgba(255, 255, 255, 0.9);
+  }
+}
+/* Tablet: 5 cards quebram em 3 + 2 (auto-flow do grid de 3 colunas) */
+@media (max-width: 1000px) {
+  .cards-cotacao {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/* Mobile: faixa única com scroll horizontal + snap (não espremer 5 cards) */
+@media (max-width: 640px) {
+  .cards-cotacao-wrap {
+    margin-top: -52px;
+    padding: 0 16px;
+  }
+  .cards-cotacao {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(196px, 72vw);
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 16px;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .cards-cotacao-card {
+    scroll-snap-align: start;
+  }
+}
+
+/* ── Skeleton do valor enquanto a fonte não assenta ── */
+@keyframes card-skeleton {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+.card-skeleton-line {
+  background: var(--paper-3);
+  border-radius: 4px;
+  animation: card-skeleton 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
