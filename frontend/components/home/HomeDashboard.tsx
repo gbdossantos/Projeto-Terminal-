@@ -18,6 +18,7 @@ import type {
 } from "@/lib/types";
 import { LinhaDoRebanho } from "./LinhaDoRebanho";
 import { FaixaCotacoes } from "./FaixaCotacoes";
+import { CardsCotacao } from "./CardsCotacao";
 import { ClimaCard } from "./ClimaCard";
 import { HeroPreco } from "./HeroPreco";
 import { TopNav } from "@/components/layout/TopNav";
@@ -138,6 +139,14 @@ export function HomeDashboard() {
 
       {/* Hero keynote — o palco do preço (estrutura portada do #14, pele V19) */}
       <HeroPreco spot={spotMS} deltaDia={deltaDia} />
+
+      {/*
+        Faixa de 5 cards sobrepostos à base do hero (leitura de relance).
+        Convive com o ticker acima. Sangra na fronteira hero→conteúdo via
+        margin-top negativo (globals.css .cards-cotacao-wrap), por cima do
+        gradiente abaixo — sem forçá-lo a subir.
+      */}
+      <CardsCotacao />
 
       {/*
         Faixa de transição hero→conteúdo: a foto "sangra" calor pra dentro
