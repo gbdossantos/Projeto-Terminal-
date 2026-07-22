@@ -29,10 +29,12 @@ import {
  *   loading → skeleton | fresh → valor | stale → valor + badge âmbar
  *   unavailable → "Cotação indisponível" explícito (NUNCA valor inventado)
  *
- * Posição/responsividade vivem em globals.css (.cards-cotacao-*): o wrap usa
- * margin-top negativo pra invadir o terço inferior do hero por cima do
- * gradiente de transição (sem forçá-lo a subir); o gado/cerca respiram nos
- * gaps entre os cards e nas margens laterais.
+ * Posição/estilo vivem em globals.css (.cards-cotacao-*): cards de vidro
+ * fosco (backdrop-blur — a foto atravessa) numa faixa horizontal que sangra
+ * ~metade da altura sobre a base do hero, por cima do gradiente de transição
+ * (sem forçá-lo a subir); gado/cerca respiram acima da faixa e nos gaps.
+ * Textos pequenos usam os tons -2 (ink-2/grafite-2/gain-2/loss-2) pra fechar
+ * AA sobre o composite translúcido.
  */
 
 type Formato = "moeda" | "percentual";
@@ -216,7 +218,7 @@ function CardCotacao({ card }: { card: CardData }) {
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.06em",
-            color: "var(--ink-3)",
+            color: "var(--ink-2)",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -230,7 +232,7 @@ function CardCotacao({ card }: { card: CardData }) {
             fontSize: 9,
             padding: "1px 5px",
             background: "var(--grafite-soft)",
-            color: "var(--grafite)",
+            color: "var(--grafite-2)",
             borderRadius: 2,
             letterSpacing: "0.02em",
             whiteSpace: "nowrap",
@@ -250,7 +252,7 @@ function CardCotacao({ card }: { card: CardData }) {
               fontFamily: "var(--font-mono)",
               fontSize: 22,
               fontWeight: 500,
-              color: "var(--ink-3)",
+              color: "var(--ink-2)",
               lineHeight: 1.1,
             }}
           >
@@ -262,7 +264,7 @@ function CardCotacao({ card }: { card: CardData }) {
               fontFamily: "var(--font-mono)",
               fontSize: 9,
               letterSpacing: "0.04em",
-              color: "var(--loss)",
+              color: "var(--loss-2)",
               marginTop: 6,
             }}
           >
@@ -285,11 +287,11 @@ function CardCotacao({ card }: { card: CardData }) {
             }}
           >
             {card.formato === "moeda" && (
-              <span style={{ fontSize: 13, color: "var(--ink-3)", marginRight: 3 }}>R$</span>
+              <span style={{ fontSize: 13, color: "var(--ink-2)", marginRight: 3 }}>R$</span>
             )}
             {formatarValor(card.valor!, card.decimais, card.formato)}
             {card.unidade && (
-              <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: 3, fontWeight: 400 }}>
+              <span style={{ fontSize: 12, color: "var(--ink-2)", marginLeft: 3, fontWeight: 400 }}>
                 {card.formato === "percentual" ? ` ${card.unidade}` : card.unidade}
               </span>
             )}
@@ -304,16 +306,16 @@ function CardCotacao({ card }: { card: CardData }) {
                 marginTop: 6,
                 color:
                   card.deltaPct < 0
-                    ? "var(--loss)"
+                    ? "var(--loss-2)"
                     : card.deltaPct > 0
-                      ? "var(--gain)"
-                      : "var(--ink-3)",
+                      ? "var(--gain-2)"
+                      : "var(--ink-2)",
                 fontVariantNumeric: "tabular-nums",
               }}
             >
               {card.deltaPct < 0 ? "↘" : "↗"} {card.deltaPct >= 0 ? "+" : ""}
               {card.deltaPct.toFixed(2).replace(".", ",")}%{" "}
-              <span style={{ color: "var(--ink-3)" }}>no dia</span>
+              <span style={{ color: "var(--ink-2)" }}>no dia</span>
             </div>
           )}
 
