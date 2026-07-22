@@ -14,6 +14,7 @@ import {
   formatRelativeTime,
   type CotacaoFieldState,
 } from "@/lib/cotacoes-cache";
+import { SparkLine } from "@/components/mercado/spark-line";
 
 /**
  * Faixa de 5 cards de cotação sobrepostos à base do hero (leitura de relance).
@@ -50,6 +51,12 @@ interface CardData {
   state: CotacaoFieldState;
   lastUpdateIso: string | null;
   loading: boolean;
+  /**
+   * Série curta (últimos ~30 dias) pra sparkline na base do card.
+   * Só quando o pipeline TEM histórico da mesma cotação exibida —
+   * card sem série renderiza sem sparkline (nunca série inventada).
+   */
+  serie?: number[];
 }
 
 export function CardsCotacao() {
@@ -72,7 +79,8 @@ export function CardsCotacao() {
       const p2 = fetchFuturos()
         .then((f) => ativo && setFuturos(f))
         .catch(() => {});
-      const p3 = fetchHistoricoDolar(7)
+      // 30 dias: alimenta a sparkline; o Δ% do dia segue usando os 2 últimos
+      const p3 = fetchHistoricoDolar(30)
         .then((h) => ativo && Array.isArray(h) && setHistDolar(h))
         .catch(() => {});
       const p4 = fetchHistoricoMilho()
@@ -138,6 +146,7 @@ export function CardsCotacao() {
       state: dolarStatus.state,
       lastUpdateIso: dolarStatus.lastUpdateIso,
       loading: carregando && dolarStatus.value == null,
+      serie: histDolar.map((h) => h.valor),
     },
     {
       // 3. Milho ESALQ
@@ -151,6 +160,7 @@ export function CardsCotacao() {
       state: milhoStatus.state,
       lastUpdateIso: milhoStatus.lastUpdateIso,
       loading: carregando && milhoStatus.value == null,
+      serie: histMilho.slice(-30).map((h) => h.valor),
     },
     {
       // 4. Bezerro (indicador ESALQ/CEPEA) — sem Δ% (sem histórico do dia anterior)
@@ -337,6 +347,24 @@ function CardCotacao({ card }: { card: CardData }) {
             >
               {formatRelativeTime(card.lastUpdateIso)}
             </span>
+          )}
+
+          {/* Sparkline — tendência ~30d na base do card. Ornamento
+              informativo: sem eixos, sem pontos, sem tooltip. Cor índigo
+              neutra (a semântica verde/vermelho fica no Δ textual acima).
+              Só cards cuja cotação tem histórico no pipeline (dólar, milho)
+              — os demais renderizam sem, e nunca com série inventada. */}
+          {card.serie != null && card.serie.length >= 2 && (
+            <div style={{ marginTop: "auto", paddingTop: 10, opacity: 0.6 }}>
+              <SparkLine
+                data={card.serie}
+                color="var(--grafite)"
+                width={100}
+                height={26}
+                strokeWidth={1.25}
+                stretch
+              />
+            </div>
           )}
         </>
       )}

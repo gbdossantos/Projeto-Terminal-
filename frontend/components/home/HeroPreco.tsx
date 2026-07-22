@@ -58,14 +58,14 @@ export function HeroPreco({
           }}
         />
       )}
-      {/* Overlay neutro — denso no topo (onde vive o texto), abre embaixo */}
+      {/* Overlay neutro — denso no topo (onde vive o texto), abre embaixo.
+          Token por tema: no dark o overlay abre (a foto já é escura). */}
       <div
         aria-hidden
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "linear-gradient(180deg, rgba(10, 10, 10, 0.82) 0%, rgba(10, 10, 10, 0.68) 42%, rgba(10, 10, 10, 0.48) 62%, rgba(10, 10, 10, 0.2) 100%)",
+          background: "var(--hero-overlay)",
         }}
       />
       {/*
@@ -74,8 +74,9 @@ export function HeroPreco({
         panorâmico de telas largas, onde o rebanho cola na base) e curva
         agressiva: quase transparente até 2/3 da faixa, fecha rápido só
         nos últimos pixels. Calibrado contra a foto sem fade — a lavagem
-        residual à direita é poeira da própria imagem. Cor-alvo #F4F1ED =
-        --paper com a faixa quente que abre o conteúdo (HomeDashboard).
+        residual à direita é poeira da própria imagem. Cor-alvo por tema
+        (token --hero-dissolve): --paper com a faixa quente que abre o
+        conteúdo (HomeDashboard) — light #F4F1ED, dark #14120F.
       */}
       <div
         aria-hidden
@@ -86,8 +87,7 @@ export function HeroPreco({
           bottom: 0,
           height: "12%",
           pointerEvents: "none",
-          background:
-            "linear-gradient(180deg, rgba(244, 241, 237, 0) 0%, rgba(244, 241, 237, 0.04) 65%, rgba(244, 241, 237, 0.28) 88%, #F4F1ED 100%)",
+          background: "var(--hero-dissolve)",
         }}
       />
       <div
@@ -157,24 +157,26 @@ function PrecoSplit({ valor }: { valor: number }) {
 }
 
 /**
- * Pílula clara sobre a foto — deltas nos tons -2 dos tokens V19
- * (gain-2/loss-2) pra fechar AA 4.5:1 em texto pequeno sobre branco.
+ * Pílula clara sobre a foto — o fundo branco é fixo (a foto não muda com o
+ * tema), então as cores do texto são LITERAIS dos tons -2 do tema claro,
+ * não tokens: no dark os tokens viram tons claros e quebrariam o AA sobre
+ * a pílula branca. Fecham 4.5:1 em texto pequeno sobre branco.
  */
 function DeltaPill({ deltaDia }: { deltaDia: number | null }) {
   let texto: string;
   let cor: string;
   if (deltaDia == null) {
     texto = "sem variação registrada hoje";
-    cor = "var(--ink-2)";
+    cor = "#4B5563";
   } else if (deltaDia < 0) {
     texto = `−R$ ${fmtBRL(Math.abs(deltaDia))} no dia`;
-    cor = "var(--loss-2)";
+    cor = "#B91C1C";
   } else if (deltaDia > 0) {
     texto = `+R$ ${fmtBRL(deltaDia)} no dia`;
-    cor = "var(--gain-2)";
+    cor = "#15803D";
   } else {
     texto = "estável no dia";
-    cor = "var(--ink-2)";
+    cor = "#4B5563";
   }
   return (
     <span

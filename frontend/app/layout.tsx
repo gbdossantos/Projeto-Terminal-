@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -28,9 +29,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
+    // suppressHydrationWarning: next-themes escreve a classe do tema no <html>
+    // antes da hidratação (script inline) — divergência esperada e segura.
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}>
-        {children}
+        {/* Tema: system como default inicial, escolha do usuário persiste
+            em localStorage (next-themes). Classe .dark no <html>. */}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 /* ── DM Sans + DM Mono via next/font (layout.tsx) ── */
-/* ── V19 — Vercel sobre o shell. Light unico, sem dark mode. ── */
+/* ── V19 — Vercel sobre o shell. Light default + dark por toggle
+      (next-themes, classe .dark no <html>). ── */
 
 @layer base {
   :root {
@@ -101,11 +102,94 @@
     /* Aliases legados de fonte (componentes antigos referenciam) */
     --font-inter:      var(--font-sans);
     --font-jetbrains:  var(--font-mono);
+
+    /*
+      Superfícies que eram hardcoded (TopNav, glass cards, hero, botão
+      primário, cone σ) viram tokens pra flipar junto com o tema.
+    */
+    --glass-nav:          rgba(255, 255, 255, 0.78);
+    --glass-card:         rgba(255, 255, 255, 0.66);
+    --glass-card-border:  rgba(255, 255, 255, 0.35);
+    --glass-card-solid:   rgba(255, 255, 255, 0.90);   /* sem backdrop-filter */
+    --pill-hover:         rgba(10, 10, 10, 0.04);
+    --pill-active:        rgba(10, 10, 10, 0.06);
+    --btn-primary-bg:     #0A0A0A;
+    --btn-primary-bg-2:   #171717;                     /* hover */
+    --btn-primary-fg:     #FAFAFA;
+    --btn-primary-fg-2:   rgba(250, 250, 250, 0.65);
+    /* Cone de incerteza (bandas σ) — opacidade embutida no token porque o
+       valor que funciona sobre branco não funciona sobre escuro. */
+    --cone-1:             rgba(99, 102, 241, 0.18);    /* ±1σ */
+    --cone-2:             rgba(99, 102, 241, 0.09);    /* ±2σ */
+    /* Overlay do hero (denso no topo) + dissolve da foto no papel.
+       Cor-alvo do dissolve = --paper com a faixa quente do conteúdo. */
+    --hero-overlay: linear-gradient(180deg, rgba(10, 10, 10, 0.82) 0%, rgba(10, 10, 10, 0.68) 42%, rgba(10, 10, 10, 0.48) 62%, rgba(10, 10, 10, 0.2) 100%);
+    --hero-dissolve: linear-gradient(180deg, rgba(244, 241, 237, 0) 0%, rgba(244, 241, 237, 0.04) 65%, rgba(244, 241, 237, 0.28) 88%, #F4F1ED 100%);
   }
 
-  /* Reset hard de dark mode — identidade unica */
+  /*
+    ── Dark (toggle) — reintroduzido por decisão consciente após o V19.
+    Regra de camada (aprendizado do bug que matou o dark anterior): fundo
+    mais escuro, card UM passo acima, separação por hairline — nunca card
+    claro flutuando desajeitado sobre fundo escuro. Sombra quase não lê no
+    escuro; a borda é quem dá camada.
+    Todos os pares texto/fundo abaixo fecham AA ≥ 5.1:1 (verificado).
+  */
   .dark {
-    color-scheme: light;
+    color-scheme: dark;
+
+    --paper:           #100F0D;                    /* fundo — preto terroso */
+    --paper-2:         #1A1815;                    /* cards — um passo acima */
+    --paper-3:         rgba(237, 230, 220, 0.07);  /* separadores, hover */
+
+    --ink:             #F2EFE9;
+    --ink-2:           #B3ADA3;                    /* 7.9:1 sobre --paper-2 */
+    --ink-3:           #8F8A80;                    /* 5.2:1 sobre --paper-2 */
+
+    --rule:            rgba(237, 230, 220, 0.10);
+    --rule-strong:     rgba(237, 230, 220, 0.20);
+
+    /* Índigo clareia um tom — o do light afunda no fundo escuro */
+    --grafite:         #818CF8;
+    --grafite-2:       #A5B4FC;
+    --grafite-soft:    rgba(129, 140, 248, 0.13);
+
+    /* Deltas nos tons -400/-300 — os -600 do light ficam sujos no escuro */
+    --gain:            #4ADE80;
+    --gain-2:          #86EFAC;
+    --loss:            #F87171;
+    --loss-2:          #FCA5A5;
+
+    /* Sombra não dá camada no escuro; fica só um assento sutil */
+    --shadow-card:     0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-card-hover: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -12px rgba(0, 0, 0, 0.40);
+
+    /* Semânticos legados */
+    --success-bg:      rgba(74, 222, 128, 0.12);
+    --warning:         #FBBF24;
+    --warning-bg:      rgba(251, 191, 36, 0.12);
+    --danger-bg:       rgba(248, 113, 113, 0.12);
+    --amber:           #FBBF24;
+    --pasto:           #4ADE80;
+
+    /* Superfícies tokenizadas */
+    --glass-nav:          rgba(16, 15, 13, 0.72);
+    --glass-card:         rgba(20, 18, 16, 0.58);   /* vidro escuro sobre a foto */
+    --glass-card-border:  rgba(237, 230, 220, 0.14);
+    --glass-card-solid:   rgba(20, 18, 16, 0.92);
+    --pill-hover:         rgba(237, 230, 220, 0.05);
+    --pill-active:        rgba(237, 230, 220, 0.08);
+    --btn-primary-bg:     #F2EFE9;                  /* primário inverte (Vercel) */
+    --btn-primary-bg-2:   #E5E1D8;
+    --btn-primary-fg:     #171512;
+    --btn-primary-fg-2:   rgba(23, 21, 18, 0.65);
+    --cone-1:             rgba(129, 140, 248, 0.26);
+    --cone-2:             rgba(129, 140, 248, 0.13);
+    /* Hero no dark: overlay abre um pouco (a foto de crepúsculo já é
+       escura — escurecer igual ao light mataria a separação de camada);
+       o dissolve fecha no --paper dark com a mesma faixa quente. */
+    --hero-overlay: linear-gradient(180deg, rgba(10, 10, 10, 0.74) 0%, rgba(10, 10, 10, 0.56) 42%, rgba(10, 10, 10, 0.34) 62%, rgba(10, 10, 10, 0.10) 100%);
+    --hero-dissolve: linear-gradient(180deg, rgba(20, 18, 15, 0) 0%, rgba(20, 18, 15, 0.06) 65%, rgba(20, 18, 15, 0.32) 88%, #14120F 100%);
   }
 
   * {
@@ -138,6 +222,14 @@
       radial-gradient(ellipse 65% 50% at 0% 0%, rgba(99, 102, 241, 0.05), transparent 70%),
       radial-gradient(ellipse 50% 40% at 100% 0%, rgba(244, 114, 182, 0.035), transparent 70%),
       radial-gradient(ellipse 60% 50% at 100% 100%, rgba(99, 102, 241, 0.045), transparent 70%);
+  }
+  /* Aurora no dark: mesma geometria, índigo um passo mais presente
+     (glow lê menos sobre preto do que mancha sobre branco). */
+  .dark body::before {
+    background:
+      radial-gradient(ellipse 65% 50% at 0% 0%, rgba(129, 140, 248, 0.07), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(244, 114, 182, 0.04), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(129, 140, 248, 0.06), transparent 70%);
   }
 }
 
@@ -272,11 +364,12 @@ input[type="number"].sim-input {
   padding: 14px 16px;
   /* Vidro fosco: o blur é o que garante legibilidade sem opacidade alta.
      Textos pequenos dentro do card usam os tons -2 (ink-2/grafite-2/gain-2)
-     pra fechar AA sobre o composite translúcido. */
-  background: rgba(255, 255, 255, 0.66);
+     pra fechar AA sobre o composite translúcido. No dark o token vira
+     vidro escuro (composite ≥ 6.6:1 com --ink-2, verificado). */
+  background: var(--glass-card);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--glass-card-border);
   border-radius: var(--radius-card);
   box-shadow:
     0 1px 2px rgba(10, 10, 10, 0.06),
@@ -285,7 +378,7 @@ input[type="number"].sim-input {
 /* Sem suporte a backdrop-filter → sobe a opacidade pra não perder o número */
 @supports not (backdrop-filter: blur(1px)) {
   .cards-cotacao-card {
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--glass-card-solid);
   }
 }
 /* Tablet: 5 cards quebram em 3 + 2 (auto-flow do grid de 3 colunas) */
