@@ -6,6 +6,12 @@ interface SparkLineProps {
   width?: number;
   height?: number;
   strokeWidth?: number;
+  /**
+   * true → o SVG estica na largura do container (viewBox vira sistema de
+   * coordenadas; vector-effect mantém o traço fino mesmo esticado).
+   * Usado pelos cards de cotação da Home.
+   */
+  stretch?: boolean;
 }
 
 export function SparkLine({
@@ -14,6 +20,7 @@ export function SparkLine({
   width = 48,
   height = 14,
   strokeWidth = 1.5,
+  stretch = false,
 }: SparkLineProps) {
   if (data.length < 2) return null;
 
@@ -21,21 +28,26 @@ export function SparkLine({
   const max = Math.max(...data);
   const range = max - min || 1;
 
+  // Padding vertical interno pra linha não encostar na borda do viewBox
+  const pad = strokeWidth;
+  const innerH = height - pad * 2;
+
   const points = data
     .map((v, i) => {
       const x = (i / (data.length - 1)) * width;
-      const y = height - ((v - min) / range) * height;
+      const y = pad + (innerH - ((v - min) / range) * innerH);
       return `${x},${y}`;
     })
     .join(" ");
 
   return (
     <svg
-      width={width}
-      height={height}
+      width={stretch ? undefined : width}
+      height={stretch ? undefined : height}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
-      style={{ display: "block" }}
+      aria-hidden
+      style={stretch ? { display: "block", width: "100%", height } : { display: "block" }}
     >
       <polyline
         points={points}
@@ -44,6 +56,7 @@ export function SparkLine({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
       />
     </svg>
   );

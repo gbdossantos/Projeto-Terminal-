@@ -222,12 +222,14 @@ export function LinhaDoRebanho({
             width={48}
           />
 
-          {/* CONE DE INCERTEZA — protagonista. Banda ±2σ (mais transparente, atrás) */}
+          {/* CONE DE INCERTEZA — protagonista. Banda ±2σ (mais transparente,
+              atrás). Opacidade embutida nos tokens --cone-*: o valor que
+              funciona sobre branco não funciona sobre escuro. */}
           <Area
             dataKey="sigma2"
             activeDot={false}
-            fill="var(--grafite)"
-            fillOpacity={0.09}
+            fill="var(--cone-2)"
+            fillOpacity={1}
             stroke="none"
             isAnimationActive={false}
             connectNulls={false}
@@ -236,8 +238,8 @@ export function LinhaDoRebanho({
           <Area
             dataKey="sigma1"
             activeDot={false}
-            fill="var(--grafite)"
-            fillOpacity={0.18}
+            fill="var(--cone-1)"
+            fillOpacity={1}
             stroke="none"
             isAnimationActive={false}
             connectNulls={false}
@@ -341,12 +343,12 @@ export function LinhaDoRebanho({
           esperado · curva BGI
         </LegendaItem>
         {sigmaAnualizado != null && (
-          <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--grafite)", opacity: 0.18 }} />}>
+          <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--cone-1)" }} />}>
             ±1σ · provável
           </LegendaItem>
         )}
         {sigmaAnualizado != null && (
-          <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--grafite)", opacity: 0.09 }} />}>
+          <LegendaItem swatch={<span style={{ display: "inline-block", width: 14, height: 8, background: "var(--cone-2)" }} />}>
             ±2σ · 95%
           </LegendaItem>
         )}

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut, Settings } from "lucide-react";
 import { useProfile } from "@/lib/use-profile";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Bandeira } from "@/lib/bandeiras";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -57,7 +58,7 @@ export function TopNav() {
   return (
     <div
       style={{
-        background: "rgba(255, 255, 255, 0.78)",
+        background: "var(--glass-nav)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         borderBottom: "1px solid var(--rule)",
@@ -127,6 +128,7 @@ export function TopNav() {
             <span>{hojeStr || "—"}</span>
           </div>
           <PregaoStatus />
+          <ThemeToggle />
           {/* Engrenagem → /configuracoes. Fora das tabs principais (decisão #2). */}
           <Link
             href="/configuracoes"
@@ -140,12 +142,12 @@ export function TopNav() {
               height: 30,
               borderRadius: 7,
               color: pathname === "/configuracoes" ? "var(--ink)" : "var(--ink-2)",
-              background: pathname === "/configuracoes" ? "rgba(10, 10, 10, 0.06)" : "transparent",
+              background: pathname === "/configuracoes" ? "var(--pill-active)" : "transparent",
               transition: "background 120ms, color 120ms",
             }}
             onMouseEnter={(e) => {
               if (pathname !== "/configuracoes") {
-                (e.currentTarget as HTMLElement).style.background = "rgba(10, 10, 10, 0.04)";
+                (e.currentTarget as HTMLElement).style.background = "var(--pill-hover)";
                 (e.currentTarget as HTMLElement).style.color = "var(--ink)";
               }
             }}
@@ -184,14 +186,14 @@ export function TopNav() {
                 padding: "6px 12px",
                 color: active ? "var(--ink)" : "var(--ink-2)",
                 fontWeight: active ? 600 : 500,
-                background: active ? "rgba(10, 10, 10, 0.06)" : "transparent",
+                background: active ? "var(--pill-active)" : "transparent",
                 borderRadius: 7,
                 textDecoration: "none",
                 transition: "background 120ms, color 120ms",
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(10, 10, 10, 0.035)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--pill-hover)";
                   (e.currentTarget as HTMLElement).style.color = "var(--ink)";
                 }
               }}
@@ -251,7 +253,7 @@ function PregaoStatus() {
         gap: 6,
         padding: "4px 10px",
         borderRadius: 999,
-        background: open ? "rgba(22, 163, 74, 0.10)" : "rgba(10, 10, 10, 0.06)",
+        background: open ? "var(--success-bg)" : "var(--pill-active)",
         border: `1px solid ${open ? "rgba(22, 163, 74, 0.20)" : "var(--rule)"}`,
         fontFamily: "var(--font-mono)",
         fontSize: 10,
@@ -266,7 +268,7 @@ function PregaoStatus() {
           width: 7,
           height: 7,
           borderRadius: "50%",
-          background: open ? "#16A34A" : "var(--ink-3)",
+          background: open ? "var(--gain)" : "var(--ink-3)",
           display: "inline-block",
         }}
       />
