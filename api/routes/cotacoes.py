@@ -4,7 +4,7 @@ import math
 
 from fastapi import APIRouter
 
-from api.deps import get_cotacoes, get_futuros, get_historico_dolar, get_historico_arroba, get_historico_milho
+from api.deps import get_cotacoes, get_futuros, get_historico_dolar, get_historico_arroba, get_historico_milho, get_historico_cdi
 from api.schemas import CotacaoMercadoSchema, CurvaFuturosSchema
 
 router = APIRouter()
@@ -38,6 +38,12 @@ def historico_arroba():
 def historico_milho():
     """Retorna histórico do indicador CEPEA milho."""
     return get_historico_milho()
+
+
+@router.get("/historico-cdi")
+def historico_cdi(dias: int = 30):
+    """Retorna histórico do CDI anualizado (BCB SGS 4389), em % a.a."""
+    return get_historico_cdi(dias)
 
 
 @router.get("/volatilidade-arroba")

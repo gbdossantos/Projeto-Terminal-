@@ -26,6 +26,7 @@ export function SparkLine({
 
   const min = Math.min(...data);
   const max = Math.max(...data);
+  const flat = max === min; // série constante (ex: CDI estável) → linha no meio
   const range = max - min || 1;
 
   // Padding vertical interno pra linha não encostar na borda do viewBox
@@ -35,7 +36,7 @@ export function SparkLine({
   const points = data
     .map((v, i) => {
       const x = (i / (data.length - 1)) * width;
-      const y = pad + (innerH - ((v - min) / range) * innerH);
+      const y = flat ? height / 2 : pad + (innerH - ((v - min) / range) * innerH);
       return `${x},${y}`;
     })
     .join(" ");
