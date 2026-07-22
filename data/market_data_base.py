@@ -211,6 +211,35 @@ def _buscar_cdi_anual() -> Optional[float]:
     return None
 
 
+def _buscar_historico_cdi(dias: int = 30) -> list[dict]:
+    """Histórico do CDI anualizado (SGS 4389) — mesma fonte do spot.
+
+    API oficial do BCB, funciona em cloud (sem bloqueio de IP de datacenter).
+    Valores em % a.a. (ex: 14.15), formato igual aos demais históricos.
+    SGS limita 'ultimos' a 20 valores nesta série — 20 dias úteis ≈ 1 mês.
+    """
+    try:
+        dias = min(dias, 20)
+        url = (
+            f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.4389/dados/ultimos/{dias}"
+            "?formato=json"
+        )
+        resp = requests.get(url, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        historico = []
+        # SGS 'ultimos' devolve mais recente primeiro → inverte pra cronológica
+        for item in reversed(resp.json()):
+            # SGS: {"data": "22/07/2026", "valor": "14.15"}
+            historico.append({
+                "data": item["data"][:5],  # DD/MM, como nos demais
+                "valor": float(item["valor"]),
+            })
+        return historico
+    except Exception as e:
+        logger.warning("CDI SGS histórico erro: %s", e)
+    return []
+
+
 # ---------------------------------------------------------------------------
 # Histórico do dólar — AwesomeAPI → PTAX Olinda (fallback)
 # ---------------------------------------------------------------------------

@@ -45,6 +45,13 @@ export async function fetchHistoricoMilho(): Promise<HistoricoDolarEntry[]> {
   return res.json();
 }
 
+/** Histórico do CDI anualizado (BCB SGS 4389), valores em % a.a. */
+export async function fetchHistoricoCdi(dias = 30): Promise<HistoricoDolarEntry[]> {
+  const res = await fetch(`${BASE}/historico-cdi?dias=${dias}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
 export async function fetchCotacoes(): Promise<CotacaoMercado> {
   const res = await fetch(`${BASE}/cotacoes`);
   if (!res.ok) throw new Error(`Cotações: ${res.status}`);

@@ -6,6 +6,7 @@ import {
   fetchFuturos,
   fetchHistoricoDolar,
   fetchHistoricoMilho,
+  fetchHistoricoCdi,
 } from "@/lib/api";
 import type { CotacaoMercado, CurvaFuturos, HistoricoDolarEntry } from "@/lib/types";
 import {
@@ -64,6 +65,7 @@ export function CardsCotacao() {
   const [futuros, setFuturos] = useState<CurvaFuturos | null>(null);
   const [histDolar, setHistDolar] = useState<HistoricoDolarEntry[]>([]);
   const [histMilho, setHistMilho] = useState<HistoricoDolarEntry[]>([]);
+  const [histCdi, setHistCdi] = useState<HistoricoDolarEntry[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -86,7 +88,10 @@ export function CardsCotacao() {
       const p4 = fetchHistoricoMilho()
         .then((h) => ativo && Array.isArray(h) && setHistMilho(h))
         .catch(() => {});
-      return Promise.allSettled([p1, p2, p3, p4]);
+      const p5 = fetchHistoricoCdi(30)
+        .then((h) => ativo && Array.isArray(h) && setHistCdi(h))
+        .catch(() => {});
+      return Promise.allSettled([p1, p2, p3, p4, p5]);
     };
     // Primeira passada baixa o loading só depois que todas as fontes assentam
     // (skeleton → dado real ou indisponível, sem piscar card vazio).
@@ -187,6 +192,7 @@ export function CardsCotacao() {
       state: cdiStatus.state,
       lastUpdateIso: cdiStatus.lastUpdateIso,
       loading: carregando && cdiStatus.value == null,
+      serie: histCdi.map((h) => h.valor), // % a.a. — só a forma importa
     },
   ];
 

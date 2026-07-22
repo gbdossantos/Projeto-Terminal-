@@ -12,6 +12,7 @@ from data.market_data_base import (
     _buscar_historico_dolar,
     _buscar_historico_arroba,
     _buscar_historico_milho,
+    _buscar_historico_cdi,
     cotacoes_ficticias,
     futuros_bgi_ficticios,
     TTL_COTACAO,
@@ -51,3 +52,7 @@ def get_historico_arroba():
 
 def get_historico_milho():
     return cached_call("hist_milho", TTL_HISTORICO, _buscar_historico_milho, 180)
+
+
+def get_historico_cdi(dias: int = 30):
+    return cached_call(f"hist_cdi_{dias}", TTL_HISTORICO, _buscar_historico_cdi, dias)
