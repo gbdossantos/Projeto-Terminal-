@@ -212,10 +212,10 @@ def _buscar_cdi_anual() -> Optional[float]:
 
 
 # ---------------------------------------------------------------------------
-# Histórico do dólar — AwesomeAPI
+# Histórico do dólar — AwesomeAPI → PTAX Olinda (fallback)
 # ---------------------------------------------------------------------------
 
-def _buscar_historico_dolar(dias: int = 30) -> list[dict]:
+def _buscar_historico_dolar_awesomeapi(dias: int = 30) -> list[dict]:
     try:
         url = f"https://economia.awesomeapi.com.br/json/daily/USD-BRL/{dias}"
         resp = requests.get(url, timeout=TIMEOUT_SEGUNDOS)
@@ -231,6 +231,51 @@ def _buscar_historico_dolar(dias: int = 30) -> list[dict]:
         return historico
     except Exception as e:
         logger.warning("AwesomeAPI histórico dólar erro: %s", e)
+    return []
+
+
+def _buscar_historico_dolar_ptax(dias: int = 30) -> list[dict]:
+    """
+    Fallback: série PTAX do BCB Olinda (CotacaoDolarPeriodo). Mesma família
+    da PTAX spot, que já funciona em cloud (AwesomeAPI bloqueia IP de
+    datacenter). Só dias úteis; pede janela de 2x dias corridos e corta
+    nos últimos `dias` pontos pra manter paridade com a AwesomeAPI.
+    """
+    try:
+        fim = date.today()
+        inicio = fim - timedelta(days=dias * 2)
+        url = (
+            "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/"
+            "CotacaoDolarPeriodo(dataInicial=@dataInicial,"
+            "dataFinalCotacao=@dataFinalCotacao)"
+            f"?@dataInicial='{inicio.strftime('%m-%d-%Y')}'"
+            f"&@dataFinalCotacao='{fim.strftime('%m-%d-%Y')}'"
+            "&$format=json&$select=cotacaoVenda,dataHoraCotacao"
+        )
+        resp = requests.get(url, timeout=TIMEOUT_SEGUNDOS)
+        resp.raise_for_status()
+        valores = resp.json().get("value", [])
+        historico = []
+        for item in valores:  # Olinda retorna em ordem cronológica crescente
+            ts = datetime.strptime(item["dataHoraCotacao"][:10], "%Y-%m-%d")
+            historico.append({
+                "data": ts.strftime("%d/%m"),
+                "valor": float(item["cotacaoVenda"]),
+            })
+        return historico[-dias:]
+    except Exception as e:
+        logger.warning("PTAX Olinda histórico dólar erro: %s", e)
+    return []
+
+
+def _buscar_historico_dolar(dias: int = 30) -> list[dict]:
+    historico = _buscar_historico_dolar_awesomeapi(dias)
+    if historico:
+        return historico
+    historico = _buscar_historico_dolar_ptax(dias)
+    if historico:
+        return historico
+    logger.error("Histórico dólar: TODAS as fontes falharam — retornando []")
     return []
 
 
@@ -607,44 +652,48 @@ def _buscar_ibov_yahoo() -> tuple[Optional[float], Optional[float]]:
         return None, None
 
 
-def _buscar_ibov_stooq() -> tuple[Optional[float], Optional[float]]:
+def _buscar_ibov_b3() -> tuple[Optional[float], Optional[float]]:
     """
-    Fallback: stooq.com CSV publico, sem chave. Símbolo ^bvp.
+    Fonte oficial: API pública de cotações da B3 (mesma que alimenta o site
+    deles), sem chave. DailyFluctuationHistory/IBOV devolve a série intraday
+    do dia; o último ponto traz closPric (nível atual) e prcFlcn (variação %
+    vs fechamento anterior).
 
-    Endpoint daily entrega OHLC do dia, sem o fechamento anterior. Pra ter
-    delta%, fazemos duas requests:
-      1. /q/l/?s=^bvp&i=d → close atual
-      2. /q/d/l/?s=^bvp&i=d&d1=N-5&d2=N → últimas linhas, pega prevClose
-    Em produção mantemos só a primeira (close atual) e o delta% fica None
-    quando Yahoo não respondeu — verdade > número fictício.
+    Substitui o Stooq, que morreu como fonte scriptável: /q/l/ retorna 404
+    pra qualquer símbolo e /q/d/l/ ganhou desafio JavaScript anti-bot.
     """
     try:
-        url = "https://stooq.com/q/l/?s=%5Ebvp&i=d&f=sd2t2ohlcv"
-        resp = requests.get(url, timeout=TIMEOUT_SEGUNDOS)
+        url = "https://cotacao.b3.com.br/mds/api/v1/DailyFluctuationHistory/IBOV"
+        headers = {
+            "User-Agent": _HEADERS["User-Agent"],
+            "Accept": "application/json",
+        }
+        resp = requests.get(url, headers=headers, timeout=TIMEOUT_SEGUNDOS)
         resp.raise_for_status()
-        # Formato: ^BVP,2026-05-26,20:43:30,177815.95,177815.95,175522.2,175725.55,
-        linha = resp.text.strip().split("\n")[-1]
-        partes = linha.split(",")
-        if len(partes) < 7:
+        data = resp.json()
+        pontos = data.get("TradgFlr", {}).get("scty", {}).get("lstQtn", [])
+        if not pontos:
             return None, None
-        close_str = partes[6]
-        if not close_str or close_str == "N/D":
+        ultimo = pontos[-1]
+        atual = ultimo.get("closPric")
+        if atual is None:
             return None, None
-        return float(close_str), None  # delta% indisponível por aqui
+        delta = ultimo.get("prcFlcn")
+        return float(atual), float(delta) if delta is not None else None
     except Exception as e:
-        logger.warning("Stooq IBOV falhou: %s", e)
+        logger.warning("B3 IBOV falhou: %s", e)
         return None, None
 
 
 def _buscar_ibov() -> tuple[Optional[float], Optional[float]]:
     """
     Retorna (pontos_atual, variacao_pct_dia) do Ibovespa.
-    Cadeia: Yahoo Finance (delta% incluso) → Stooq (só nível, fallback).
+    Cadeia: B3 oficial (nível + delta%) → Yahoo Finance (fallback).
     """
-    val, delta = _buscar_ibov_yahoo()
+    val, delta = _buscar_ibov_b3()
     if val is not None:
         return val, delta
-    return _buscar_ibov_stooq()
+    return _buscar_ibov_yahoo()
 
 
 # ---------------------------------------------------------------------------
