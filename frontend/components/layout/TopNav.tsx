@@ -76,6 +76,7 @@ export function TopNav() {
         }}
       >
         <Link href="/" style={{ textDecoration: "none" }} className="flex items-center gap-2">
+          <img src="/brand/terminal-mark.svg" alt="" width={16} height={16} style={{ opacity: 0.9 }} />
           <span
             className="uppercase"
             style={{

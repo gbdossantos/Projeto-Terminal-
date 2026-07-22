@@ -73,7 +73,8 @@ function LoginForm() {
       style={{ padding: 24 }}
     >
       <div style={{ width: "100%", maxWidth: 360 }}>
-        <div className="flex justify-center" style={{ marginBottom: 28 }}>
+        <div className="flex items-center justify-center" style={{ gap: 8, marginBottom: 28 }}>
+          <img src="/brand/terminal-mark.svg" alt="" width={16} height={16} style={{ opacity: 0.85 }} />
           <span
             className="uppercase"
             style={{
