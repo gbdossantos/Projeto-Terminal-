@@ -3,9 +3,14 @@
 import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+// Campos sobre o card de vidro: fundo sólido (--paper) pra o texto digitado
+// não competir com a foto que atravessa o blur.
+const campoSolido: React.CSSProperties = { background: "var(--paper)" };
 
 export default function LoginPage() {
   return (
@@ -68,110 +73,80 @@ function LoginForm() {
   }
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ padding: 24 }}
-    >
-      <div style={{ width: "100%", maxWidth: 360 }}>
-        <div className="flex items-center justify-center" style={{ gap: 8, marginBottom: 28 }}>
-          <img src="/brand/terminal-mark.svg" alt="" width={16} height={16} style={{ opacity: 0.85 }} />
-          <span
-            className="uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.08em",
-              color: "var(--ink-3)",
-            }}
-          >
-            TERMINAL · BOI GORDO
-          </span>
+    <AuthShell>
+      <h1
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 18,
+          fontWeight: 600,
+          color: "var(--ink)",
+          marginBottom: 4,
+        }}
+      >
+        Entrar
+      </h1>
+      <p style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 20 }}>
+        Acesso restrito a contas autorizadas.
+      </p>
+
+      <form onSubmit={handleSubmit} className="flex flex-col" style={{ gap: 14 }}>
+        <div className="flex flex-col" style={{ gap: 6 }}>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@fazenda.com.br"
+            style={campoSolido}
+          />
         </div>
 
-        <div
+        <div className="flex flex-col" style={{ gap: 6 }}>
+          <Label htmlFor="senha">Senha</Label>
+          <Input
+            id="senha"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            placeholder="••••••••"
+            style={campoSolido}
+          />
+        </div>
+
+        {erro && <p style={{ fontSize: 13, color: "var(--loss)" }}>{erro}</p>}
+
+        {resetEnviado && (
+          <p style={{ fontSize: 13, color: "var(--gain-2)" }}>
+            Se o email existir, enviamos um link de recuperação.
+          </p>
+        )}
+
+        <Button type="submit" size="lg" disabled={loading} className="w-full">
+          {loading ? "Entrando..." : "Entrar"}
+        </Button>
+
+        <button
+          type="button"
+          onClick={handleEsqueciSenha}
+          disabled={enviandoReset}
           style={{
-            background: "var(--paper-2)",
-            border: "1px solid var(--rule)",
-            borderRadius: "var(--radius-card)",
-            boxShadow: "var(--shadow-card)",
-            padding: "28px 24px",
+            fontSize: 12,
+            color: "var(--ink-2)",
+            textAlign: "center",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px 0",
           }}
         >
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 18,
-              fontWeight: 600,
-              color: "var(--ink)",
-              marginBottom: 4,
-            }}
-          >
-            Entrar
-          </h1>
-          <p style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 20 }}>
-            Acesso restrito a contas autorizadas.
-          </p>
-
-          <form onSubmit={handleSubmit} className="flex flex-col" style={{ gap: 14 }}>
-            <div className="flex flex-col" style={{ gap: 6 }}>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@fazenda.com.br"
-              />
-            </div>
-
-            <div className="flex flex-col" style={{ gap: 6 }}>
-              <Label htmlFor="senha">Senha</Label>
-              <Input
-                id="senha"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-
-            {erro && (
-              <p style={{ fontSize: 13, color: "var(--loss)" }}>{erro}</p>
-            )}
-
-            {resetEnviado && (
-              <p style={{ fontSize: 13, color: "var(--gain-2)" }}>
-                Se o email existir, enviamos um link de recuperação.
-              </p>
-            )}
-
-            <Button type="submit" size="lg" disabled={loading} className="w-full">
-              {loading ? "Entrando..." : "Entrar"}
-            </Button>
-
-            <button
-              type="button"
-              onClick={handleEsqueciSenha}
-              disabled={enviandoReset}
-              style={{
-                fontSize: 12,
-                color: "var(--ink-2)",
-                textAlign: "center",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px 0",
-              }}
-            >
-              {enviandoReset ? "Enviando..." : "Esqueci minha senha"}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+          {enviandoReset ? "Enviando..." : "Esqueci minha senha"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }
