@@ -7,6 +7,7 @@ import { LogOut, Settings } from "lucide-react";
 import { useProfile } from "@/lib/use-profile";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Bandeira } from "@/lib/bandeiras";
+import { NelLockup } from "@/components/brand/Marca";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -23,7 +24,7 @@ import {
  * Header canônico — V19 (Vercel-like).
  *
  * Layout em 2 linhas:
- *   Linha 1 (identidade): TERMINAL · BOI GORDO | usuário · fazenda · data + pílula Pregão
+ *   Linha 1 (identidade): [lockup Nel] · BOI GORDO | usuário · fazenda · data + pílula Pregão
  *   Linha 2 (nav):        Home | Lotes | Simulador | Histórico | Mercado (tabs pill)
  *
  * Sticky com backdrop-filter pra ficar sobre o fundo aurora.
@@ -77,18 +78,9 @@ export function TopNav() {
         }}
       >
         <Link href="/" style={{ textDecoration: "none" }} className="flex items-center gap-2">
-          <img src="/brand/terminal-mark.svg" alt="" width={16} height={16} style={{ opacity: 0.9 }} />
-          <span
-            className="uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.08em",
-              color: "var(--ink)",
-              fontWeight: 500,
-            }}
-          >
-            TERMINAL
+          {/* Lockup Nel em currentColor — herda --ink e flipa com o tema */}
+          <span style={{ display: "inline-flex", color: "var(--ink)" }}>
+            <NelLockup height={15} />
           </span>
           <span style={{ color: "var(--ink-3)", fontSize: 11 }}>·</span>
           <span

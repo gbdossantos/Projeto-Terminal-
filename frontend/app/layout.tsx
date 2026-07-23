@@ -19,7 +19,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Terminal — Boi gordo",
+  title: "Nel — Boi gordo",
   description: "Clareza econômica da operação antes de qualquer decisão financeira",
 };
 

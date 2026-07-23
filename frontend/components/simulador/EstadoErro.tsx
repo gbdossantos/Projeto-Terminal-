@@ -42,7 +42,7 @@ export default function EstadoErro({ onRetry }: { onRetry?: () => void }) {
         }}
       >
         Não foi possível montar as situações históricas para este lote. Sem dado, não há
-        simulação — o Terminal não exibe número estimado no lugar.
+        simulação — o Nel não exibe número estimado no lugar.
       </p>
       {onRetry && (
         <Button variant="outline" onClick={onRetry}>
